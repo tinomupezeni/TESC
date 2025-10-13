@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Building, MapPin, Users, GraduationCap, Plus } from "lucide-react";
+import { useState } from "react";
 
 const institutions = [
   {
@@ -65,7 +66,12 @@ const institutions = [
 ];
 
 export default function Institutions() {
+
+  const [registerInst, setRegisterInst] = useState(false);
+
   return (
+    <>
+    
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
@@ -76,7 +82,7 @@ export default function Institutions() {
               Manage Teachers Colleges, Polytechnics, and Industrial Training Centres
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setRegisterInst(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Register Institution
           </Button>
@@ -198,5 +204,9 @@ export default function Institutions() {
         </div>
       </div>
     </DashboardLayout>
+    {registerInst && 
+    <RegisterInst />
+    }
+    </>
   );
 }
