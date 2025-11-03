@@ -12,6 +12,14 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import Profile from "./pages/Profile";
+import Statistics from "./pages/Statistics";
+import Facilities from "./pages/Facilities";
+import Innovation from "./pages/Innovation";
+import Industrialisation from "./pages/Industrialisation";
+import Regional from "./pages/Regional";
+import Setting from "./pages/Settings";
+import Reports from "./pages/Reports";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +65,70 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <ProtectedRoute>
+                  <Statistics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/facilities"
+              element={
+                <ProtectedRoute>
+                  <Facilities />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/innovation"
+              element={
+                <ProtectedRoute>
+                  <Innovation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/industrialisation"
+              element={
+                <ProtectedRoute>
+                  <Industrialisation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/regional"
+              element={
+                <ProtectedRoute>
+                  <Regional />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Setting />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <Help />
                 </ProtectedRoute>
               }
             />
