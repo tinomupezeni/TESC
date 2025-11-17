@@ -1,4 +1,4 @@
-name: Auto Test & Merge
+name: CI/CD Docker Build & Deploy
 
 on:
   pull_request:
@@ -10,12 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ------------------- Checkout -------------------
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # ----------------------------------------------------
-      # 1. Backend: Django setup + tests
-      # ----------------------------------------------------
+      # ------------------- Python Setup -------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,9 +30,7 @@ jobs:
           python manage.py migrate --noinput
           python manage.py test
 
-      # ----------------------------------------------------
-      # 2. Frontend: React build test
-      # ----------------------------------------------------
+      # ------------------- Node Setup -------------------
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -47,30 +44,45 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      # ----------------------------------------------------
-      # 3. Auto-merge if ALL above succeed
-      # ----------------------------------------------------
-      - name: Auto-merge if tests pass
-        if: success()
-        uses: pascalgn/automerge-action@v0.16.3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ----------------------------------------------------
-      # 4. Notify on failure in GitHub logs
-      # ----------------------------------------------------
-      - name: Notify (console)
-        if: failure()
-        run: echo "❌ Build failed for PR #${{ github.event.pull_request.number }}"
-
-      # ----------------------------------------------------
-      # 5. WhatsApp notification via Twilio
-      # ----------------------------------------------------
-      - name: WhatsApp Notification
-        if: failure()
+      # ------------------- Set dynamic tag -------------------
+      - name: Set Docker image tag
+        id: docker_tag
         run: |
-          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_SID }}/Messages.json \
-          --data-urlencode "From=whatsapp:+14155238886" \
-          --data-urlencode "Body=🚨 Build failed for PR #${{ github.event.pull_request.number }}. Fix urgently." \
-          --data-urlencode "To=whatsapp:+263719509816" \
-          -u ${{ secrets.TWILIO_SID }}:${{ secrets.TWILIO_TOKEN }}
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            TAG="pr-${{ github.event.pull_request.number }}"
+          else
+            TAG="${GITHUB_REF_NAME}-${GITHUB_SHA::7}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # ------------------- Build & push Django backend image -------------------
+      - name: Build & push Django backend image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tesc-backend:${{ steps.docker_tag.outputs.tag }} ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/tesc-backend:${{ steps.docker_tag.outputs.tag }}
+
+      # ------------------- Build & push React frontend image -------------------
+      - name: Build & push React frontend image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tesc-frontend:${{ steps.docker_tag.outputs.tag }} ./frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/tesc-frontend:${{ steps.docker_tag.outputs.tag }}
+
+      # ------------------- Optional VM Deploy -------------------
+      - name: Deploy to VM via SSH
+        if: success()
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_KEY }}
+          script: |
+            TAG=${{ steps.docker_tag.outputs.tag }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/tesc-backend:$TAG
+            docker pull ${{ secrets.DOCKER_USERNAME }}/tesc-frontend:$TAG
+            docker stop tesc-backend || true
+            docker rm tesc-backend || true
+            docker stop tesc-frontend || true
+            docker rm tesc-frontend || true
+            docker run -d --name tesc-backend -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/tesc-backend:$TAG
+            docker run -d --name tesc-frontend -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/tesc-frontend:$TAG
