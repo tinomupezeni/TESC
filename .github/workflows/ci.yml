@@ -1,0 +1,76 @@
+name: Auto Test & Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------
+      # 1. Backend: Django setup + tests
+      # ----------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: pip install -r requirements.txt
+
+      - name: Run Django tests
+        working-directory: ./backend
+        run: |
+          python manage.py migrate --noinput
+          python manage.py test
+
+      # ----------------------------------------------------
+      # 2. Frontend: React build test
+      # ----------------------------------------------------
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build React
+        working-directory: ./frontend
+        run: npm run build
+
+      # ----------------------------------------------------
+      # 3. Auto-merge if ALL above succeed
+      # ----------------------------------------------------
+      - name: Auto-merge if tests pass
+        if: success()
+        uses: pascalgn/automerge-action@v0.16.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------------
+      # 4. Notify on failure in GitHub logs
+      # ----------------------------------------------------
+      - name: Notify (console)
+        if: failure()
+        run: echo "❌ Build failed for PR #${{ github.event.pull_request.number }}"
+
+      # ----------------------------------------------------
+      # 5. WhatsApp notification via Twilio
+      # ----------------------------------------------------
+      - name: WhatsApp Notification
+        if: failure()
+        run: |
+          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_SID }}/Messages.json \
+          --data-urlencode "From=whatsapp:+14155238886" \
+          --data-urlencode "Body=🚨 Build failed for PR #${{ github.event.pull_request.number }}. Fix urgently." \
+          --data-urlencode "To=whatsapp:+263719509816" \
+          -u ${{ secrets.TWILIO_SID }}:${{ secrets.TWILIO_TOKEN }}
