@@ -1,88 +1,276 @@
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+// FIX 1: Changed alias import to relative path
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Settings, UserPlus, Key } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Settings } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
-// --- MOCK DATA ---
-const users = [
-  { id: 1, name: "Admin User", email: "admin@tesc.gov.zw", role: "Admin" },
-  { id: 2, name: "Tino Mupezeni", email: "tino@tesc.gov.zw", role: "Developer" },
-  { id: 3, name: "Jane Doe", email: "jane.doe@tesc.gov.zw", role: "Analyst" },
-  { id: 4, name: "John Smith", email: "john.smith@tesc.gov.zw", role: "Viewer" },
-];
+// FIX 2: Changed alias import to relative path
+import {
+  fetchRoles,
+  fetchDepartments,
+  fetchUsers,
+  addRole,
+  editRole,
+  deleteRole,
+  addDepartment,
+  editDepartment,
+  deleteDepartment,
+  addUser,
+  editUser,
+  deleteUser,
+} from "../services/settings.services"; // Assuming services folder is a sibling of the current page folder
+import UserModal from "@/modules/settings/UserModal";
+import { toast } from "sonner";
+import Users from "@/modules/settings/Users";
+export default function SettingsPage() {
+  const navigate = useNavigate();
 
-// --- COMPONENT ---
-export default function Setting() {
+  const [roles, setRoles] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [editingItem, setEditingItem] = useState(null);
+
+  const [newRole, setNewRole] = useState({ name: "", description: "" });
+  const [newDept, setNewDept] = useState({ name: "", description: "" });
+  const [newUser, setNewUser] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    department: "",
+  });
+
+  const [openRoleModal, setOpenRoleModal] = useState(false);
+  const [openDeptModal, setOpenDeptModal] = useState(false);
+  const [openUserModal, setOpenUserModal] = useState(false);
+
+  // Role -> Level mapping for user creation validation
+  const roleLevelMap = {
+    Admin: ["1", "2", "3", "4"],
+    Director: ["2", "3", "4"],
+    Staff: ["4"],
+  };
+
+  // -------------------- Data Fetching --------------------
+
+  const refreshData = useCallback(async () => {
+    const fetchedRoles = await fetchRoles();
+    if (fetchedRoles) setRoles(fetchedRoles);
+
+    const fetchedDepartments = await fetchDepartments();
+    if (fetchedDepartments) setDepartments(fetchedDepartments);
+
+    const fetchedUsers = await fetchUsers();
+    setUsers([fetchedUsers])
+
+    // 1. FIX: Log the *result* of the fetch, not the function itself.
+    console.log("Fetched Users Response:", fetchedUsers);
+
+    // 2. FIX: Check if the response is a DRF pagination object and extract the array.
+    if (fetchedUsers && Array.isArray(fetchedUsers.results)) {
+      setUsers(fetchedUsers.results);
+    } else if (fetchedUsers && Array.isArray(fetchedUsers)) {
+      // Fallback for non-paginated endpoints
+      setUsers(fetchedUsers);
+    } else {
+      // Ensure it's always an array on failure/unexpected format
+      setUsers([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  const addOrEditRole = async () => {
+    if (!newRole.name || !newRole.description)
+      return console.error("Fill all fields for role!");
+    try {
+      if (editingItem) {
+        await editRole(editingItem.id, newRole);
+      } else {
+        await addRole(newRole);
+      }
+      refreshData();
+      setNewRole({ name: "", description: "" });
+      setEditingItem(null);
+      setOpenRoleModal(false);
+    } catch (err) {
+      console.error("Failed to save role.", err);
+    }
+  };
+
+  const editRoleHandler = (role) => {
+    setEditingItem(role);
+    setNewRole({ name: role.name, description: role.description });
+    setOpenRoleModal(true);
+  };
+
+  const deleteRoleHandler = async (id) => {
+    try {
+      await deleteRole(id);
+      refreshData();
+    } catch (err) {
+      console.error("Failed to delete role.", err);
+    }
+  };
+
+  // -------------------- Departments CRUD --------------------
+
+  const addOrEditDepartment = async () => {
+    if (!newDept.name || !newDept.description)
+      return console.error("Fill all fields for department!");
+    try {
+      if (editingItem) {
+        await editDepartment(editingItem.id, newDept);
+      } else {
+        await addDepartment(newDept);
+      }
+      refreshData();
+      setNewDept({ name: "", description: "" });
+      setEditingItem(null);
+      setOpenDeptModal(false);
+    } catch (err) {
+      console.error("Failed to save department.", err);
+    }
+  };
+
+  const editDepartmentHandler = (dep) => {
+    setEditingItem(dep);
+    setNewDept({ name: dep.name, description: dep.description });
+    setOpenDeptModal(true);
+  };
+
+  const deleteDepartmentHandler = async (id) => {
+    try {
+      await deleteDepartment(id);
+      refreshData();
+    } catch (err) {
+      console.error("Failed to delete department.", err);
+    }
+  };
+
+  // -------------------- Users CRUD --------------------
+
+  const addOrEditUser = async () => {
+    // 🚨 Update validation check
+    if (
+      !newUser.firstName ||
+      !newUser.lastName ||
+      !newUser.email ||
+      !newUser.department
+    )
+      return toast.error("Fill all fields for user!");
+
+    const roleId = roles.find((r) => r.name === newUser.role)?.id;
+    const departmentId = departments.find(
+      (d) => d.name === newUser.department
+    )?.id;
+
+    if (!departmentId) {
+      return toast.error("Invalid role or department selected.");
+    }
+
+    const systemUsername =
+      `${newUser.firstName.toLowerCase()}.${newUser.lastName.toLowerCase()}`.replace(
+        /\s/g,
+        "_"
+      );
+
+    try {
+      const payload = {
+        username: systemUsername, // e.g., 'john.doe'
+        first_name: newUser.firstName,
+        last_name: newUser.lastName,
+        email: newUser.email,
+
+        department_id: departmentId,
+
+        // Password is handled by the backend
+      };
+
+      if (editingItem) {
+        await editUser(editingItem.id, payload);
+      } else {
+        await addUser(payload);
+      }
+
+      refreshData();
+      setNewUser({ name: "", email: "", role: "", department: "", level: "" });
+      setEditingItem(null);
+      setOpenUserModal(false);
+    } catch (err) {
+      console.error("Failed to save user.", err);
+    }
+  };
+
+  const editUserHandler = (user) => {
+    setEditingItem(user);
+    setNewUser({
+      name: user.username,
+      email: user.email,
+      role: user.role?.name,
+      department: user.department?.name,
+      level: user.level,
+    });
+    setOpenUserModal(true);
+  };
+
+  const deleteUserHandler = async (id) => {
+    try {
+      await deleteUser(id);
+      refreshData();
+    } catch (err) {
+      console.error("Failed to delete user.", err);
+    }
+  };
+
+  const availableLevels = newUser.role ? roleLevelMap[newUser.role] || [] : [];
+
+  // -------------------- JSX --------------------
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Settings className="h-7 w-7" />
-            System Settings
-          </h1>
-          <p className="text-muted-foreground">
-            Manage system configuration, users, and integrations
-          </p>
-        </div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Settings className="h-7 w-7" /> System Settings
+        </h1>
 
-        {/* General Settings */}
+        {/* Roles */}
         <Card>
-          <CardHeader>
-            <CardTitle>General Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="systemName">System Name</Label>
-                <Input id="systemName" defaultValue="TESC Analytics Dashboard" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="academicYear">Current Academic Year</Label>
-                <Select defaultValue="2024">
-                  <SelectTrigger id="academicYear">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2023">2023</SelectItem>
-                    <SelectItem value="2024">2024</SelectItem>
-                    <SelectItem value="2025">2025</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button>Save General Settings</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* User Management */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>User Management</CardTitle>
-            <Button size="sm">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
+          <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+            <CardTitle>Roles</CardTitle>
+            <Button
+              onClick={() => {
+                setEditingItem(null);
+                setNewRole({ name: "", description: "" });
+                setOpenRoleModal(true);
+              }}
+            >
+              Add Role
             </Button>
           </CardHeader>
           <CardContent>
@@ -90,52 +278,211 @@ export default function Setting() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="w-[150px] text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">Edit</Button>
+                {roles.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-gray-500"
+                    >
+                      No roles defined.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  roles.map((role) => (
+                    <TableRow key={role.id}>
+                      <TableCell>{role.name}</TableCell>
+                      <TableCell>{role.description}</TableCell>
+                      <TableCell className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => editRoleHandler(role)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteRoleHandler(role.id)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
-        
-        {/* API & Integrations */}
+
+        {/* Departments */}
         <Card>
-          <CardHeader>
-            <CardTitle>API & Integrations</CardTitle>
+          <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+            <CardTitle>Departments</CardTitle>
+            <Button
+              onClick={() => {
+                setEditingItem(null);
+                setNewDept({ name: "", description: "" });
+                setOpenDeptModal(true);
+              }}
+            >
+              Add Department
+            </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="apiKey">System API Key</Label>
-                <div className="flex gap-2">
-                    <Input id="apiKey" defaultValue="**************" readOnly />
-                    <Button variant="outline">Regenerate</Button>
-                </div>
-            </div>
-            <Separator />
-            <div className="space-y-2">
-                <Label>ZIMSA Integration</Label>
-                <div className="flex items-center gap-2">
-                    <Input placeholder="ZIMSA API Endpoint" />
-                    <Button>Test Connection</Button>
-                </div>
-            </div>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="w-[150px] text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {departments.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-gray-500"
+                    >
+                      No departments defined.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  departments.map((dep) => (
+                    <TableRow key={dep.id}>
+                      <TableCell>{dep.name}</TableCell>
+                      <TableCell>{dep.description}</TableCell>
+                      <TableCell className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => editDepartmentHandler(dep)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteDepartmentHandler(dep.id)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
+        {/* Users */}
+        <Users
+          setEditingItem={setEditingItem}
+          setNewUser={setNewUser}
+          setOpenUserModal={setOpenUserModal}
+          users={users}
+          editUserHandler={editUserHandler}
+          deleteUserHandler={deleteUserHandler}
+        />
+
+        {/* Modals - Keeping reusable components below the main component for simplicity */}
+        <RoleModal
+          open={openRoleModal}
+          onClose={() => setOpenRoleModal(false)}
+          role={newRole}
+          setRole={setNewRole}
+          onSave={addOrEditRole}
+          editing={!!editingItem}
+        />
+        <DepartmentModal
+          open={openDeptModal}
+          onClose={() => setOpenDeptModal(false)}
+          dept={newDept}
+          setDept={setNewDept}
+          onSave={addOrEditDepartment}
+          editing={!!editingItem}
+        />
+        <UserModal
+          open={openUserModal}
+          onClose={() => setOpenUserModal(false)}
+          user={newUser}
+          setUser={setNewUser}
+          onSave={addOrEditUser}
+          roles={roles}
+          departments={departments}
+          availableLevels={availableLevels}
+          editing={!!editingItem}
+        />
       </div>
     </DashboardLayout>
+  );
+}
+
+// ---------- Reusable Modal Components ----------
+function RoleModal({ open, onClose, role, setRole, onSave, editing }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{editing ? "Edit Role" : "Add Role"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <Input
+            placeholder="Name"
+            value={role.name}
+            onChange={(e) => setRole({ ...role, name: e.target.value })}
+          />
+          <Input
+            placeholder="Description"
+            value={role.description}
+            onChange={(e) => setRole({ ...role, description: e.target.value })}
+          />
+        </div>
+        <DialogFooter>
+          <Button onClick={onSave}>{editing ? "Update" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DepartmentModal({ open, onClose, dept, setDept, onSave, editing }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {editing ? "Edit Department" : "Add Department"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <Input
+            placeholder="Name"
+            value={dept.name}
+            onChange={(e) => setDept({ ...dept, name: e.target.value })}
+          />
+          <Input
+            placeholder="Description"
+            value={dept.description}
+            onChange={(e) => setDept({ ...dept, description: e.target.value })}
+          />
+        </div>
+        <DialogFooter>
+          <Button onClick={onSave}>{editing ? "Update" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

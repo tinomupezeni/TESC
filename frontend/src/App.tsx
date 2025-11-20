@@ -20,6 +20,13 @@ import Regional from "./pages/Regional";
 import Setting from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Help from "./pages/Help";
+import InnovationDashboard from "./pages/dashboards/InnovationDashboard";
+import Hubs from "./modules/innovation/Hubs";
+import Startups from "./modules/innovation/Startups";
+import AdmissionsDashboard from "./modules/admissions/AdmissionDashboard";
+import DropoutAnalysis from "./modules/admissions/DropOut";
+import SpecialEnrollment from "./modules/admissions/SpecialEnrollment";
+import PaymentsAndFees from "./modules/admissions/PaymentsAndFees";
 
 const queryClient = new QueryClient();
 
@@ -35,12 +42,46 @@ const App = () => (
           {/* 3. The Routes will work as before */}
           <Routes>
             <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/innovation"
+              element={
+                <ProtectedRoute>
+                  <InnovationDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admissions"
+              element={
+                <ProtectedRoute>
+                  <AdmissionsDashboard />
+                </ProtectedRoute>
+              }
+            />
+            {/* innovation */}
+            <Route
+              path="/hubs"
+              element={
+                <ProtectedRoute>
+                  <Hubs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/startups"
+              element={
+                <ProtectedRoute>
+                  <Startups />
                 </ProtectedRoute>
               }
             />
@@ -57,6 +98,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Institutions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admissions/dropouts"
+              element={
+                <ProtectedRoute>
+                  <DropoutAnalysis />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admissions/special"
+              element={
+                <ProtectedRoute>
+                  <SpecialEnrollment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admissions/fees"
+              element={
+                <ProtectedRoute>
+                  <PaymentsAndFees />
                 </ProtectedRoute>
               }
             />

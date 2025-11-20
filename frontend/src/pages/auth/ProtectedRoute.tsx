@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { accessToken } = useAuth();
+  
 
   if (!accessToken) {
     // If the user is not authenticated, redirect them to the login page
