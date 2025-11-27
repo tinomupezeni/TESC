@@ -22,4 +22,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('api/users/', include('users.urls')), # Include our API URLs
     path('api/academic/', include('academic.urls')),
+    path("api/instauth/", include("instauth.urls")),
+
 ]

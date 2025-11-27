@@ -1,25 +1,38 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-
-const enrollmentData = [
-  { year: "2019", "Teachers Colleges": 12500, "Polytechnics": 18000, "Industrial Training": 8500 },
-  { year: "2020", "Teachers Colleges": 13200, "Polytechnics": 19500, "Industrial Training": 9200 },
-  { year: "2021", "Teachers Colleges": 14100, "Polytechnics": 21000, "Industrial Training": 10100 },
-  { year: "2022", "Teachers Colleges": 15300, "Polytechnics": 23500, "Industrial Training": 11500 },
-  { year: "2023", "Teachers Colleges": 16800, "Polytechnics": 25200, "Industrial Training": 12800 },
-  { year: "2024", "Teachers Colleges": 18200, "Polytechnics": 27100, "Industrial Training": 14200 },
-];
+import { DashboardService, EnrollmentTrendItem } from "@/services/admin.dashboard.service";
 
 export function EnrollmentChart() {
+  const [data, setData] = useState<EnrollmentTrendItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const trends = await DashboardService.getEnrollmentTrends();
+      setData(trends);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="h-[400px] flex items-center justify-center">
+        <span className="text-muted-foreground">Loading chart data...</span>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Enrollment Trends (2019-2024)</CardTitle>
+        <CardTitle>Enrollment Trends (Last 5 Years)</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={enrollmentData}>
+            <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis 
                 dataKey="year" 
@@ -38,14 +51,16 @@ export function EnrollmentChart() {
               <Legend />
               <Line 
                 type="monotone" 
-                dataKey="Teachers Colleges" 
+                dataKey="Teachers College" 
+                name="Teachers Colleges"
                 stroke="hsl(var(--primary))" 
                 strokeWidth={2}
                 dot={{ fill: "hsl(var(--primary))" }}
               />
               <Line 
                 type="monotone" 
-                dataKey="Polytechnics" 
+                dataKey="Polytechnic" 
+                name="Polytechnics"
                 stroke="hsl(var(--accent))" 
                 strokeWidth={2}
                 dot={{ fill: "hsl(var(--accent))" }}
@@ -53,6 +68,7 @@ export function EnrollmentChart() {
               <Line 
                 type="monotone" 
                 dataKey="Industrial Training" 
+                name="Industrial Training"
                 stroke="hsl(var(--success))" 
                 strokeWidth={2}
                 dot={{ fill: "hsl(var(--success))" }}

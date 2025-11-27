@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "users",
     "academic",
+    'instauth',
     
     
 ]
@@ -84,10 +85,15 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "tesc_db",              # Your Postgres database name
+        "USER": "tesc_user",          # Your Postgres user (change if different)
+        "PASSWORD": "tesc@1234", # Replace with your actual password
+        "HOST": "localhost",         # Or the server IP
+        "PORT": "5432",              # Default Postgres port
     }
 }
+
 
 
 # Password validation
@@ -144,6 +150,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080", # The default port for React's dev server
     "http://127.0.0.1:8000",
+    'http://localhost:8081',
 ]
 
 ALLOWED_HOSTS = ['tesc.zchpc.ac.zw', '127.0.0.1', 'localhost']

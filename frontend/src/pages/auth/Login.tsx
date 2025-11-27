@@ -146,7 +146,7 @@ const Login = () => {
           </form>
 
           <div className="text-center text-sm text-gray-600">
-            Don’t have an account? <br /> Contac the system adminstrator to get
+            Don’t have an account? <br /> Contact the system adminstrator to get
             assistance
           </div>
         </CardContent>

@@ -275,30 +275,7 @@ export default function RegisterInst({
                 />
               </div>
 
-              {/* Capacity */}
-              <div className="space-y-2">
-                <Label htmlFor="capacity">Total Capacity</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  placeholder="0"
-                  value={formData.capacity}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Staff */}
-              <div className="space-y-2">
-                <Label htmlFor="staff">Staff Members</Label>
-                <Input
-                  id="staff"
-                  type="number"
-                  placeholder="0"
-                  value={formData.staff}
-                  onChange={handleInputChange}
-                />
-              </div>
-
+           
               {/* Established Year */}
               <div className="space-y-2">
                 <Label htmlFor="established">Established (Year)</Label>
@@ -311,43 +288,6 @@ export default function RegisterInst({
                 />
               </div>
 
-              {/* Facilities (Dynamic) */}
-              <div className="space-y-2 md:col-span-2">
-                <Label>Facilities</Label>
-                {isLoadingFacilities ? (
-                  <p className="text-sm text-muted-foreground">
-                    Loading facilities...
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 p-4 border rounded-md">
-                    {allFacilities?.map((facility: Facility) => (
-                      <div
-                        key={facility.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={`facility-${facility.id}`}
-                          onCheckedChange={(checked) =>
-                            handleFacilityChange(facility.id, !!checked)
-                          }
-                          checked={selectedFacilities.has(facility.id)}
-                        />
-                        <Label
-                          htmlFor={`facility-${facility.id}`}
-                          className="font-normal"
-                        >
-                          {facility.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {apiErrors.facility_ids && (
-                  <p className="text-xs text-red-500">
-                    {apiErrors.facility_ids[0]}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
 

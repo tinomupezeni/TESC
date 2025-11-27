@@ -245,7 +245,7 @@ export default function Institutions() {
                         className="flex-1"
                         onClick={() => setEditingInstitution(institution)}
                       >
-                        Edit & Edit
+                        View & Edit
                       </Button>
                     </div>
 

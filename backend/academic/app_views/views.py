@@ -3,15 +3,19 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
-from .models import Institution, Program, Facility, Student
-from .serializers.academic_serializers import (
+from ..models import Institution, Program, Facility
+from ..serializers.academic_serializers import (
     InstitutionSerializer, ProgramSerializer, FacilitySerializer,
     StudentWriteSerializer, StudentReadSerializer
 )
-from .services.academic_services import (
-    InstitutionService, ProgramService, FacilityService, StudentService
+from ..services.academic_services import (
+     ProgramService, FacilityService, StudentService
 )
+from instauth.models import InstitutionAdmin
+from users.models import CustomUser
+
 
 class FacilityViewSet(viewsets.ModelViewSet):
     queryset = Facility.objects.all()
@@ -30,12 +34,40 @@ class InstitutionViewSet(viewsets.ModelViewSet):
     queryset = Institution.objects.all()
     serializer_class = InstitutionSerializer
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.service = InstitutionService()
+    def perform_create(self, serializer):
+        institution = serializer.save()
 
-    def get_queryset(self):
-        return self.service.get_all_institutions()
+        # Auto-generate username
+        username = institution.name.lower().replace(" ", "_") + "_admin"
+
+        # Default password (NEEDS RESET on first login)
+        default_password = 'tesc@123'
+
+        # Create the admin user
+        user = CustomUser.objects.create_user(
+            username=username,
+            password=default_password,
+            email=f"admin@{institution.name.replace(' ', '').lower()}.ac.zw",
+            is_staff=True
+        )
+
+        InstitutionAdmin.objects.create(
+            user=user,
+            institution=institution
+        )
+
+        # Return admin creds in response
+        self.admin_credentials = {
+            "username": username,
+            "password": default_password,
+        }
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        # Send admin account login details
+        if hasattr(self, "admin_credentials"):
+            response.data["admin_credentials"] = self.admin_credentials
+        return response
 
 class ProgramViewSet(viewsets.ModelViewSet):
     queryset = Program.objects.all()
