@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Upload, MoreVertical, Filter } from "lucide-react";
+import { Search, Download, Upload, MoreVertical, Filter, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,28 +41,61 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
-
-
+import { getStudents, Student } from "@/services/students.services";
 
 const Students = () => {
-  const [students, setStudents] = useState([])
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgram, setFilterProgram] = useState("all");
-  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         student.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesProgram = filterProgram === "all" || student.program === filterProgram;
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const data = await getStudents();
+      if (Array.isArray(data)) {
+        setStudents(data);
+      } else {
+        setStudents([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch students:", error);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  // --- FIX: UPDATED FILTER LOGIC TO MATCH API FIELDS ---
+  const filteredStudents = students.filter((student) => {
+    const searchLower = searchQuery.toLowerCase();
+    
+    // Safety checks using Optional Chaining (?) and Fallbacks (|| "")
+    const matchesSearch =
+      (student.full_name?.toLowerCase() || "").includes(searchLower) ||
+      (student.student_id?.toLowerCase() || "").includes(searchLower) ||
+      (student.national_id?.toLowerCase() || "").includes(searchLower);
+
+    const matchesProgram =
+      filterProgram === "all" || student.program_name === filterProgram;
+
     return matchesSearch && matchesProgram;
   });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Student Management</h1>
-        <p className="text-muted-foreground mt-1">Manage student registrations and records</p>
+        <h1 className="text-3xl font-bold text-foreground">
+          Student Management
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Manage student registrations and records
+        </p>
       </div>
 
       <Card>
@@ -64,18 +103,12 @@ const Students = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle>Students Directory</CardTitle>
-              <CardDescription>View and manage all registered students</CardDescription>
+              <CardDescription>
+                View and manage all registered students
+              </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <AddStudentDialog />
+              <AddStudentDialog onStudentAdded={fetchStudents} />
             </div>
           </div>
         </CardHeader>
@@ -84,7 +117,7 @@ const Students = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, ID, or email..."
+                placeholder="Search by Name, ID, or National ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -97,10 +130,10 @@ const Students = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Programs</SelectItem>
-                <SelectItem value="Computer Science">Computer Science</SelectItem>
-                <SelectItem value="Engineering">Engineering</SelectItem>
-                <SelectItem value="Business Studies">Business Studies</SelectItem>
-                <SelectItem value="Information Technology">Information Technology</SelectItem>
+                {/* Dynamically get unique program names from the student list */}
+                {Array.from(new Set(students.map(s => s.program_name).filter(Boolean))).map(progName => (
+                   <SelectItem key={progName} value={progName as string}>{progName}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -111,32 +144,51 @@ const Students = () => {
                 <TableRow>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Program</TableHead>
-                  <TableHead>Level</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Enrollment</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.length === 0 ? (
+                {loading ? (
+                   <TableRow>
+                     <TableCell colSpan={7} className="h-24 text-center">
+                       <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Loading students...
+                     </TableCell>
+                   </TableRow>
+                ) : filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No students found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredStudents.map((student) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.id}</TableCell>
-                      <TableCell>{student.name}</TableCell>
-                      <TableCell>{student.email}</TableCell>
-                      <TableCell>{student.program}</TableCell>
-                      <TableCell>{student.level}</TableCell>
+                      <TableCell className="font-medium">
+                        {student.student_id}
+                      </TableCell>
+                      {/* Use full_name from API */}
+                      <TableCell>{student.full_name}</TableCell> 
+                      {/* Use program_name from API */}
+                      <TableCell>{student.program_name}</TableCell>
+                      <TableCell>{student.gender}</TableCell>
+                      <TableCell>{student.enrollment_year}</TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={student.status === "Active" ? "default" : "destructive"}
-                          className={student.status === "Active" ? "bg-success" : ""}
+                        <Badge
+                          variant={
+                            student.status === "Active"
+                              ? "default"
+                              : "destructive"
+                          }
+                          className={
+                            student.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""
+                          }
                         >
                           {student.status}
                         </Badge>
@@ -151,15 +203,12 @@ const Students = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setSelectedStudent(student)}>
+                            <DropdownMenuItem
+                              onClick={() => setSelectedStudent(student)}
+                            >
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem>Edit Student</DropdownMenuItem>
-                            <DropdownMenuItem>View Results</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              Suspend Student
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -169,8 +218,8 @@ const Students = () => {
               </TableBody>
             </Table>
           </div>
-
-          <div className="flex items-center justify-between mt-4">
+          
+           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
               Showing {filteredStudents.length} of {students.length} students
             </p>
@@ -178,13 +227,16 @@ const Students = () => {
         </CardContent>
       </Card>
 
-      {/* Student Detail Dialog */}
-      <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+      {/* Student Detail Dialog - Updated to use correct API fields */}
+      <Dialog
+        open={!!selectedStudent}
+        onOpenChange={(open) => !open && setSelectedStudent(null)}
+      >
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Student Profile</DialogTitle>
             <DialogDescription>
-              Detailed information about {selectedStudent?.name}
+              Detailed information about {selectedStudent?.full_name}
             </DialogDescription>
           </DialogHeader>
           {selectedStudent && (
@@ -196,32 +248,28 @@ const Students = () => {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Student ID</p>
-                      <p className="font-medium">{selectedStudent.id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Student ID
+                      </p>
+                      <p className="font-medium">{selectedStudent.student_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">National ID</p>
+                      <p className="font-medium">{selectedStudent.national_id || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Full Name</p>
-                      <p className="font-medium">{selectedStudent.name}</p>
+                      <p className="font-medium">{selectedStudent.full_name}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{selectedStudent.email}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium">+263 77 123 4567</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Date of Birth</p>
-                      <p className="font-medium">15 March 2001</p>
-                    </div>
-                    <div>
+                     <div>
                       <p className="text-sm text-muted-foreground">Gender</p>
                       <p className="font-medium">{selectedStudent.gender}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Address</p>
-                      <p className="font-medium">123 Main St, Harare</p>
+                      <p className="text-sm text-muted-foreground">
+                        Date of Birth
+                      </p>
+                      <p className="font-medium">{selectedStudent.date_of_birth || "N/A"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -234,46 +282,24 @@ const Students = () => {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Program</p>
-                      <p className="font-medium">{selectedStudent.program}</p>
+                      <p className="text-sm text-muted-foreground">Institution</p>
+                      <p className="font-medium">{selectedStudent.institution_name}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Level</p>
-                      <p className="font-medium">{selectedStudent.level}</p>
+                      <p className="text-sm text-muted-foreground">Program</p>
+                      <p className="font-medium">{selectedStudent.program_name}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium capitalize">{selectedStudent.status}</p>
+                      <p className="font-medium capitalize">
+                        {selectedStudent.status}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Enrollment Date</p>
-                      <p className="font-medium">January 2023</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Expected Graduation</p>
-                      <p className="font-medium">December 2025</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Current GPA</p>
-                      <p className="font-medium">3.8/4.0</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Emergency Contact</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Contact Name</p>
-                      <p className="font-medium">Jane Doe (Mother)</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Contact Phone</p>
-                      <p className="font-medium">+263 71 987 6543</p>
+                      <p className="text-sm text-muted-foreground">
+                        Enrollment Year
+                      </p>
+                      <p className="font-medium">{selectedStudent.enrollment_year}</p>
                     </div>
                   </div>
                 </CardContent>

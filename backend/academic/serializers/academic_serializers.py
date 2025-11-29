@@ -1,7 +1,8 @@
 # academic/serializers.py
 
 from rest_framework import serializers
-from ..models import Institution, Program, Facility, Student
+from ..models import Institution, Facility, Student
+from faculties.models import Program
 
 class FacilitySerializer(serializers.ModelSerializer):
     class Meta:

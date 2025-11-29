@@ -1,66 +1,126 @@
-// const mockInnovations = [
-//   {
-//     id: "INN001",
-//     title: "Smart Irrigation System",
-//     category: "Agriculture Tech",
-//     stage: "Incubation",
-//     team: "AgriTech Innovators",
-//     department: "Engineering",
-//     problemStatement: "Inefficient water usage in farming leading to crop loss and water wastage",
-//     solution: "IoT-based smart irrigation system that uses soil moisture sensors and weather data to optimize water usage",
-//     impact: "40% reduction in water usage, 25% increase in crop yield",
-//     prototypes: 3,
-//     startupStatus: "Pre-seed",
-//     funding: "$5,000",
-//     timeline: "18 months",
-//     members: 5,
-//   },
-//   {
-//     id: "INN002",
-//     title: "Mobile Learning Platform",
-//     category: "EdTech",
-//     stage: "Industrialization",
-//     team: "EduConnect",
-//     department: "Computer Science",
-//     problemStatement: "Limited access to quality educational resources in rural areas",
-//     solution: "Offline-first mobile app with curriculum-aligned content and AI tutoring",
-//     impact: "Reached 10,000+ students, 85% improvement in test scores",
-//     prototypes: 5,
-//     startupStatus: "Seed Funded",
-//     funding: "$50,000",
-//     timeline: "24 months",
-//     members: 8,
-//   },
-//   {
-//     id: "INN003",
-//     title: "Waste to Energy Converter",
-//     category: "Green Energy",
-//     stage: "Rollout",
-//     team: "GreenTech Solutions",
-//     department: "Environmental Science",
-//     problemStatement: "Accumulation of organic waste and energy scarcity in communities",
-//     solution: "Biogas generation system converting organic waste into cooking gas and electricity",
-//     impact: "Processing 2 tons/day waste, powering 50 households",
-//     prototypes: 4,
-//     startupStatus: "Series A",
-//     funding: "$200,000",
-//     timeline: "36 months",
-//     members: 12,
-//   },
-//   {
-//     id: "INN004",
-//     title: "Health Monitoring Wearable",
-//     category: "HealthTech",
-//     stage: "Incubation",
-//     team: "HealthWatch",
-//     department: "Biomedical Engineering",
-//     problemStatement: "Delayed detection of health issues in elderly and chronic patients",
-//     solution: "Low-cost wearable device monitoring vital signs with emergency alerts",
-//     impact: "Early detection of 90% of critical health events",
-//     prototypes: 2,
-//     startupStatus: "Bootstrapped",
-//     funding: "$10,000",
-//     timeline: "12 months",
-//     members: 4,
-//   },
-// ];
+import apiClient from "./api";
+
+// --- Types ---
+
+export type InnovationCategory = 'agritech' | 'edtech' | 'healthtech' | 'fintech' | 'greentech' | 'other';
+export type InnovationStage = 'idea' | 'incubation' | 'prototype' | 'market';
+export type InnovationStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Innovation {
+  id: number;
+  institution: number;
+  institution_name: string; // Read-only
+  title: string;
+  category: InnovationCategory;
+  category_display: string; // Read-only human readable
+  team_name: string;
+  department: string;
+  problem_statement: string;
+  proposed_solution: string;
+  team_size: number;
+  timeline_months: number;
+  stage: InnovationStage;
+  stage_display: string;    // Read-only human readable
+  status: InnovationStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateInnovationData {
+  institution: number;
+  title: string;
+  category: string;
+  team_name: string;
+  department: string;
+  problem_statement: string;
+  proposed_solution: string;
+  team_size: number;
+  timeline_months: number;
+  stage: string;
+}
+
+export interface InnovationFilters {
+  institution_id?: number;
+  category?: string;
+  stage?: string;
+  search?: string; // Search by title, team_name, department
+}
+
+const END_POINT = '/academic/innovations/';
+
+// --- Service Functions ---
+
+/**
+ * Fetch all innovations.
+ * Supports filtering by institution, category, stage, or search query.
+ */
+export const getInnovations = async (filters?: InnovationFilters) => {
+  try {
+    const response = await apiClient.get<Innovation[]>(END_POINT, { params: filters });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching innovations:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get a single innovation by ID.
+ */
+export const getInnovationById = async (id: number) => {
+  try {
+    const response = await apiClient.get<Innovation>(`${END_POINT}${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching innovation ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new innovation.
+ */
+export const createInnovation = async (data: CreateInnovationData): Promise<Innovation> => {
+  try {
+    const response = await apiClient.post<Innovation>(END_POINT, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating innovation:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update an innovation's information.
+ */
+export const updateInnovation = async (id: number, data: Partial<CreateInnovationData>): Promise<Innovation> => {
+  try {
+    const response = await apiClient.patch<Innovation>(`${END_POINT}${id}/`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating innovation ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete an innovation.
+ */
+export const deleteInnovation = async (id: number): Promise<void> => {
+  try {
+    await apiClient.delete(`${END_POINT}${id}/`);
+  } catch (error) {
+    console.error(`Error deleting innovation ${id}:`, error);
+    throw error;
+  }
+};
+
+const innovationService = {
+  getInnovations,
+  getInnovationById,
+  createInnovation,
+  updateInnovation,
+  deleteInnovation
+};
+
+export default innovationService;

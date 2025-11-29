@@ -1,10 +1,12 @@
 # academic/models.py
 
 from django.db import models
-from django.conf import settings # To link to your custom User model
+from django.conf import settings 
+
+# --- REMOVED THE IMPORT FROM FACULTIES TO FIX CIRCULAR ERROR ---
+# from faculties.models import Program  <-- DELETE THIS LINE
 
 # --- CHOICES ---
-# For Institution Model
 INSTITUTION_TYPES = [
     ('Polytechnic', 'Polytechnic'),
     ('Teachers College', 'Teachers College'),
@@ -18,18 +20,6 @@ INSTITUTION_STATUSES = [
     ('Closed', 'Closed'),
 ]
 
-# For Program Model
-PROGRAM_LEVELS = [
-    ('NC', 'NC'),
-    ('ND', 'ND'),
-    ('HND', 'HND'),
-    ('1.1', 'Level 1.1'),
-    ('2.1', 'Level 2.1'),
-    ('3.1', 'Level 3.1'),
-    ('Other', 'Other'),
-]
-
-# For Student Model
 STUDENT_GENDERS = [
     ('Male', 'Male'),
     ('Female', 'Female'),
@@ -44,24 +34,47 @@ STUDENT_STATUSES = [
     ('Deferred', 'Deferred'),
 ]
 
+FACILITY_TYPES = [
+    ('Accommodation', 'Accommodation'),
+    ('Laboratory', 'Laboratory'),
+    ('Library', 'Library'),
+    ('Sports', 'Sports Facility'),
+    ('Innovation', 'Innovation Center'),
+    ('Other', 'Other'),
+]
+
+FACILITY_STATUSES = [
+    ('Active', 'Active'),
+    ('Maintenance', 'Under Maintenance'),
+    ('Inactive', 'Inactive'),
+]
+
+INNOVATION_CATEGORIES = [
+    ('agritech', 'Agriculture Tech'),
+    ('edtech', 'EdTech'),
+    ('healthtech', 'HealthTech'),
+    ('fintech', 'FinTech'),
+    ('greentech', 'Green Energy'),
+    ('other', 'Other'),
+]
+
+INNOVATION_STAGES = [
+    ('idea', 'Idea Phase'),
+    ('incubation', 'Incubation'),
+    ('prototype', 'Prototyping'),
+    ('market', 'Market Ready'),
+]
+
+INNOVATION_STATUSES = [
+    ('pending', 'Pending Review'),
+    ('approved', 'Approved'),
+    ('rejected', 'Rejected'),
+]
+
+
 # --- MODELS ---
 
-class Facility(models.Model):
-    """
-    A facility available at an institution (e.g., Library, Workshop, Hostel)
-    """
-    name = models.CharField(max_length=100, unique=True)
-    
-    class Meta:
-        verbose_name_plural = "Facilities"
-
-    def __str__(self):
-        return self.name
-
 class Institution(models.Model):
-    """
-    An educational institution (Polytechnic, Teachers College, etc.)
-    """
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=50, choices=INSTITUTION_TYPES)
     location = models.CharField(max_length=100, help_text="e.g., Harare Province")
@@ -70,8 +83,6 @@ class Institution(models.Model):
     staff = models.PositiveIntegerField(default=0, help_text="Number of staff members")
     status = models.CharField(max_length=50, choices=INSTITUTION_STATUSES, default='Active')
     established = models.PositiveIntegerField(help_text="Year of establishment, e.g., 1980")
-    
-    facilities = models.ManyToManyField(Facility, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -79,27 +90,40 @@ class Institution(models.Model):
     def __str__(self):
         return self.name
 
-class Program(models.Model):
+
+class Facility(models.Model):
     """
-    An academic program offered by an institution.
+    Physical infrastructure belonging to an institution.
     """
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='programs')
-    name = models.CharField(max_length=255, help_text="e.g., Electrical Engineering")
-    level = models.CharField(max_length=20, choices=PROGRAM_LEVELS, help_text="e.g., HND")
+    institution = models.ForeignKey(
+        Institution, 
+        on_delete=models.CASCADE, 
+        related_name='facilities'
+    )
+    name = models.CharField(max_length=100)
     
+    facility_type = models.CharField(max_length=50, choices=FACILITY_TYPES, default='Other')
+    building = models.CharField(max_length=100, default="Main Building", help_text="Building name or number")
+    capacity = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=FACILITY_STATUSES, default='Active')
+    
+    description = models.TextField(blank=True)
+    equipment = models.TextField(blank=True, help_text="Comma-separated list of equipment")
+    
+    manager = models.CharField(max_length=100, default="Pending", help_text="Name of facility manager")
+    contact_number = models.CharField(max_length=50, default="N/A")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
-        # Prevent duplicate program (name + level) at the same institution
-        unique_together = ('institution', 'name', 'level')
+        verbose_name_plural = "Facilities"
+        unique_together = ('institution', 'name') # Prevent duplicate names in same uni
 
     def __str__(self):
-        return f"{self.name} ({self.level}) - {self.institution.name}"
+        return f"{self.name} ({self.institution.name})"
 
 class Student(models.Model):
-    """
-    A student enrolled at an institution.
-    """
-    # This links to your universal auth app's User model
-    # Use settings.AUTH_USER_MODEL to be safe
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -123,12 +147,14 @@ class Student(models.Model):
     # Academic Links
     institution = models.ForeignKey(
         Institution, 
-        on_delete=models.PROTECT,  # Don't delete institution if students are linked
+        on_delete=models.PROTECT,
         related_name='students'
     )
+    
+    # --- CHANGED TO STRING REFERENCE ---
     program = models.ForeignKey(
-        Program, 
-        on_delete=models.PROTECT, # Don't delete program if students are linked
+        'faculties.Program',  # Use 'app_name.ModelName' string
+        on_delete=models.PROTECT, 
         related_name='students'
     )
     
@@ -141,3 +167,41 @@ class Student(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.student_id})"
+    
+
+class Innovation(models.Model):
+    """
+    Represents an innovation project registered by an institution.
+    """
+    institution = models.ForeignKey(
+        'academic.Institution', 
+        on_delete=models.CASCADE, 
+        related_name='innovations'
+    )
+    
+    # Core Details
+    title = models.CharField(max_length=255)
+    category = models.CharField(max_length=50, choices=INNOVATION_CATEGORIES)
+    team_name = models.CharField(max_length=255)
+    department = models.CharField(max_length=100, help_text="Department backing this innovation")
+    
+    # Project Description
+    problem_statement = models.TextField()
+    proposed_solution = models.TextField()
+    
+    # Metrics
+    team_size = models.PositiveIntegerField(default=1)
+    timeline_months = models.PositiveIntegerField(help_text="Estimated timeline in months")
+    stage = models.CharField(max_length=50, choices=INNOVATION_STAGES, default='idea')
+    
+    # Administrative
+    status = models.CharField(max_length=20, choices=INNOVATION_STATUSES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.team_name})"
+    

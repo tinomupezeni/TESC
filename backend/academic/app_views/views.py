@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 
-from ..models import Institution, Program, Facility
+from ..models import Institution, Facility
+from faculties.models import Program
 from ..serializers.academic_serializers import (
     InstitutionSerializer, ProgramSerializer, FacilitySerializer,
     StudentWriteSerializer, StudentReadSerializer

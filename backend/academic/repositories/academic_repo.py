@@ -1,7 +1,8 @@
 # academic/repositories.py
 
-from ..models import Student, Institution, Program, Facility
+from ..models import Student, Institution,  Facility
 from django.db import transaction
+from faculties.models import Program
 
 class BaseRepository:
     """

@@ -20,6 +20,7 @@ import Innovation from "./pages/Innovation";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
+import Faculties from "./pages/Faculties";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => {
           <Route path="/dashboard/programs" element={<DashboardLayout><Programs /></DashboardLayout>} />
           <Route path="/dashboard/graduates" element={<DashboardLayout><Graduates /></DashboardLayout>} />
           <Route path="/dashboard/facilities" element={<DashboardLayout><Facilities /></DashboardLayout>} />
+          <Route path="/dashboard/faculties" element={<DashboardLayout><Faculties /></DashboardLayout>} />
           <Route path="/dashboard/reports" element={<DashboardLayout><Reports /></DashboardLayout>} />
           <Route path="/dashboard/innovation" element={<DashboardLayout><Innovation /></DashboardLayout>} />
           <Route path="/dashboard/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />

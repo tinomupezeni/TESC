@@ -40,7 +40,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    fetchProfile();
+    const token = localStorage.getItem('accessToken')
+    if (token){
+
+      fetchProfile();
+    }
   }, []);
 
   const logout = () => {

@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -18,16 +17,69 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { createStudent, CreateStudentData } from "@/services/students.services";
+import { getPrograms, Program } from "@/services/programs.services";
 
-export function AddStudentDialog() {
+export function AddStudentDialog({ onStudentAdded }: { onStudentAdded?: () => void }) {
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  
+  // Form State
+  const [formData, setFormData] = useState<Partial<CreateStudentData>>({
+    institution: 1, // Defaulting to 1 for now, or fetch from user context
+    enrollment_year: new Date().getFullYear(),
+    status: 'Active'
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch Programs on Mount
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const data = await getPrograms();
+        setPrograms(data);
+      } catch (error) {
+        console.error("Failed to load programs", error);
+        toast.error("Could not load programs list");
+      }
+    };
+    if (open) fetchPrograms();
+  }, [open]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (field: keyof CreateStudentData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Student added successfully!");
-    setOpen(false);
+    setIsLoading(true);
+
+    try {
+        // Validate required fields
+        if (!formData.student_id || !formData.first_name || !formData.last_name || !formData.program) {
+            toast.error("Please fill in all required fields");
+            return;
+        }
+
+        await createStudent(formData as CreateStudentData);
+        toast.success("Student added successfully!");
+        setOpen(false);
+        setFormData({ institution: 1, enrollment_year: new Date().getFullYear(), status: 'Active' }); // Reset
+        if (onStudentAdded) onStudentAdded(); // Refresh parent list
+    } catch (error: any) {
+        const errorMsg = error.response?.data?.detail || "Failed to create student";
+        toast.error(errorMsg);
+        console.error(error);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -44,92 +96,102 @@ export function AddStudentDialog() {
           <DialogDescription>Register a new student in the system</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* Personal Details */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" placeholder="John" required />
+              <Label htmlFor="first_name">First Name *</Label>
+              <Input id="first_name" placeholder="John" required onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" placeholder="Mukwende" required />
+              <Label htmlFor="last_name">Last Name *</Label>
+              <Input id="last_name" placeholder="Doe" required onChange={handleInputChange} />
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" placeholder="john.m@email.com" required />
+              <Label htmlFor="student_id">Student ID *</Label>
+              <Input id="student_id" placeholder="ST001" required onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" type="tel" placeholder="+263 77 123 4567" required />
+              <Label htmlFor="national_id">National ID</Label>
+              <Input id="national_id" placeholder="63-1234567A00" onChange={handleInputChange} />
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              <Select required>
-                <SelectTrigger id="gender">
+              <Label htmlFor="gender">Gender *</Label>
+              <Select onValueChange={(val) => handleSelectChange('gender', val)} required>
+                <SelectTrigger>
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth</Label>
-              <Input id="dob" type="date" required />
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Input id="date_of_birth" type="date" onChange={handleInputChange} />
             </div>
           </div>
+
+          {/* Academic Details */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="program">Program</Label>
-              <Select required>
-                <SelectTrigger id="program">
+              <Label htmlFor="program">Program *</Label>
+              <Select onValueChange={(val) => handleSelectChange('program', val)} required>
+                <SelectTrigger>
                   <SelectValue placeholder="Select program" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cs">Computer Science</SelectItem>
-                  <SelectItem value="eng">Engineering</SelectItem>
-                  <SelectItem value="bus">Business Studies</SelectItem>
-                  <SelectItem value="it">Information Technology</SelectItem>
+                  {programs.map((prog) => (
+                    <SelectItem key={prog.id} value={prog.id.toString()}>
+                      {prog.name} ({prog.code})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="level">Level</Label>
-              <Select required>
-                <SelectTrigger id="level">
-                  <SelectValue placeholder="Select level" />
+              <Label htmlFor="enrollment_year">Enrollment Year</Label>
+              <Input 
+                id="enrollment_year" 
+                type="number" 
+                defaultValue={new Date().getFullYear()}
+                onChange={handleInputChange} 
+              />
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select onValueChange={(val) => handleSelectChange('status', val)} defaultValue="Active">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Level 1</SelectItem>
-                  <SelectItem value="2">Level 2</SelectItem>
-                  <SelectItem value="3">Level 3</SelectItem>
-                  <SelectItem value="4">Level 4</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Attachment">On Attachment</SelectItem>
+                  <SelectItem value="Suspended">Suspended</SelectItem>
+                  <SelectItem value="Deferred">Deferred</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea id="address" placeholder="Enter full address" rows={2} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="guardian">Guardian Name</Label>
-            <Input id="guardian" placeholder="Parent/Guardian name" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="guardianPhone">Guardian Phone</Label>
-            <Input id="guardianPhone" type="tel" placeholder="+263 77 123 4567" required />
-          </div>
+
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Add Student</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Student
+            </Button>
           </div>
         </form>
       </DialogContent>

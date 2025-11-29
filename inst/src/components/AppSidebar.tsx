@@ -28,6 +28,7 @@ const menuItems = [
   { title: "Students", url: "/dashboard/students", icon: Users },
   { title: "Staff", url: "/dashboard/staff", icon: UserCog },
   { title: "Programs", url: "/dashboard/programs", icon: BookOpen },
+  { title: "Faculties", url: "/dashboard/faculties", icon: BookOpen },
   { title: "Graduates", url: "/dashboard/graduates", icon: GraduationCap },
   { title: "Facilities", url: "/dashboard/facilities", icon: Building2 },
   { title: "Innovation", url: "/dashboard/innovation", icon: Lightbulb },
