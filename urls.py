@@ -1,15 +1,27 @@
-from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
+from rest_framework.routers import DefaultRouter
+from .app_views import views
+from .app_views.admin_views import (
+    DashboardStatsView,
+    EnrollmentTrendsView,
+    InstitutionOverviewView, 
 )
+from .app_views.student_views import StudentViewSet
+from .app_views.facility_views import FacilityViewSet
+from .app_views.innovation_views import InnovationViewSet
+
+router = DefaultRouter()
+router.register(r'students', StudentViewSet, basename='student')
+router.register(r'institutions', views.InstitutionViewSet, basename='institution')
+router.register(r'programs', views.ProgramViewSet, basename='program')
+router.register(r'facilities', FacilityViewSet, basename='facility')
+router.register(r'innovations', InnovationViewSet, basename='innovation')
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
-    path('api/academic/', include('academic.urls')),
-    path('api/settings/', include('settings.urls')),  # ✅ our new settings API
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('', include(router.urls)),
+
+    # --- Dashboard Endpoints ---
+    path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
+    path('dashboard/enrollment-trends/', EnrollmentTrendsView.as_view(), name='enrollment-trends'),
+    path('dashboard/institutions/', InstitutionOverviewView.as_view(), name='dashboard-institutions'),
 ]
