@@ -71,6 +71,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 // --- MAIN STATISTICS PAGE ---
 
 export default function Statistics() {
+
+
+  
   return (
     <DashboardLayout>
       <div className="space-y-6">
