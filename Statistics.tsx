@@ -18,9 +18,14 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { Link } from "react-router-dom";
 import { useInstitutionData } from "@/hooks/useInstitutionData";
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--accent-foreground))", "hsl(var(--success))"];
+const COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent-foreground))",
+  "hsl(var(--success))"
+];
 
 // --- CUSTOM TOOLTIP ---
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -58,12 +63,14 @@ export default function Statistics() {
   const totalStaff = institutions.reduce((sum, inst) => sum + (inst.staff || 0), 0);
 
   // Pie chart for distribution by type
-  const distributionData = institutions.reduce((acc: { name: string; value: number }[], inst) => {
-    const typeEntry = acc.find((e) => e.name === inst.type);
-    if (typeEntry) typeEntry.value += inst.students_count || 0;
-    else acc.push({ name: inst.type, value: inst.students_count || 0 });
-    return acc;
-  }, []);
+  const distributionData = institutions.reduce(
+    (acc: { name: string; value: number }[], inst) => {
+      const typeEntry = acc.find((e) => e.name === inst.type);
+      if (typeEntry) typeEntry.value += inst.students_count || 0;
+      else acc.push({ name: inst.type, value: inst.students_count || 0 });
+      return acc;
+    }, 
+  []);
 
   // Bar chart for student-staff ratio
   const ratioData = institutions.map((inst) => ({
@@ -76,6 +83,7 @@ export default function Statistics() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -83,20 +91,59 @@ export default function Statistics() {
               <BarChart3 className="h-7 w-7" />
               TESC Statistics
             </h1>
-            <p className="text-muted-foreground">Overall insights and analytics for all institutions</p>
+            <p className="text-muted-foreground">
+              Overall insights and analytics for all institutions
+            </p>
           </div>
         </div>
 
-        {/* Key Metrics */}
+        {/* Key Metrics (UPDATED WITH LINKS) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard title="Total Institutions" value={totalInstitutions} description="All institution types" icon={Building} />
-          <StatsCard title="Total Students" value={totalStudents} description="Currently enrolled" icon={Users} variant="accent" />
-          <StatsCard title="Total Programs" value={totalPrograms} description="Across all institutions" icon={GraduationCap} variant="info" />
-          <StatsCard title="Total Staff" value={totalStaff} description="Lecturing & Admin" icon={UserCheck} variant="success" />
+
+          <Link to="/institutions" className="cursor-pointer hover:opacity-90">
+            <StatsCard
+              title="Total Institutions"
+              value={totalInstitutions}
+              description="All institution types"
+              icon={Building}
+            />
+          </Link>
+
+          <Link to="/students" className="cursor-pointer hover:opacity-90">
+            <StatsCard
+              title="Total Students"
+              value={totalStudents}
+              description="Currently enrolled"
+              icon={Users}
+              variant="accent"
+            />
+          </Link>
+
+          <Link to="/programs" className="cursor-pointer hover:opacity-90">
+            <StatsCard
+              title="Total Programs"
+              value={totalPrograms}
+              description="Across all institutions"
+              icon={GraduationCap}
+              variant="info"
+            />
+          </Link>
+
+          <Link to="/staff" className="cursor-pointer hover:opacity-90">
+            <StatsCard
+              title="Total Staff"
+              value={totalStaff}
+              description="Lecturing & Admin"
+              icon={UserCheck}
+              variant="success"
+            />
+          </Link>
+
         </div>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
           {/* Enrollment per Institution */}
           <Card>
             <CardHeader>
@@ -161,6 +208,7 @@ export default function Statistics() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
         </div>
       </div>
     </DashboardLayout>
