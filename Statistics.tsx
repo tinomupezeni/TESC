@@ -5,13 +5,10 @@ import { BarChart3, Users, Building, GraduationCap, UserCheck } from "lucide-rea
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   PieChart,
   Pie,
   Cell,
@@ -21,11 +18,7 @@ import {
 import { Link } from "react-router-dom";
 import { useInstitutionData } from "@/hooks/useInstitutionData";
 
-const COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent-foreground))",
-  "hsl(var(--success))"
-];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--accent-foreground))", "hsl(var(--success))"];
 
 // --- CUSTOM TOOLTIP ---
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -44,17 +37,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// --- MAIN COMPONENT ---
 export default function Statistics() {
-  const {
-    institutions,
-    totalCapacity,
-    totalEnrolled,
-    totalHostelBeds,
-    utilization,
-    capacityData,
-    isLoading,
-  } = useInstitutionData();
+  const { institutions, totalEnrolled, capacityData, isLoading } = useInstitutionData();
 
   // Totals
   const totalInstitutions = institutions.length;
@@ -69,13 +53,14 @@ export default function Statistics() {
       if (typeEntry) typeEntry.value += inst.students_count || 0;
       else acc.push({ name: inst.type, value: inst.students_count || 0 });
       return acc;
-    }, 
-  []);
+    },
+    []
+  );
 
   // Bar chart for student-staff ratio
   const ratioData = institutions.map((inst) => ({
     name: inst.name,
-    ratio: inst.staff ? ((inst.students_count || 0) / inst.staff) : 0,
+    ratio: inst.staff ? (inst.students_count || 0) / inst.staff : 0,
   }));
 
   if (isLoading) return <DashboardLayout>Loading...</DashboardLayout>;
@@ -83,7 +68,6 @@ export default function Statistics() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -91,59 +75,55 @@ export default function Statistics() {
               <BarChart3 className="h-7 w-7" />
               TESC Statistics
             </h1>
-            <p className="text-muted-foreground">
-              Overall insights and analytics for all institutions
-            </p>
+            <p className="text-muted-foreground">Overall insights and analytics for all institutions</p>
           </div>
         </div>
 
-        {/* Key Metrics (UPDATED WITH LINKS) */}
+        {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
           <Link to="/institutions" className="cursor-pointer hover:opacity-90">
-            <StatsCard
-              title="Total Institutions"
-              value={totalInstitutions}
-              description="All institution types"
-              icon={Building}
-            />
+            <StatsCard title="Total Institutions" value={totalInstitutions} description="All institution types" icon={Building} />
           </Link>
 
           <Link to="/students" className="cursor-pointer hover:opacity-90">
-            <StatsCard
-              title="Total Students"
-              value={totalStudents}
-              description="Currently enrolled"
-              icon={Users}
-              variant="accent"
-            />
+            <StatsCard title="Total Students" value={totalStudents} description="Currently enrolled" icon={Users} variant="accent" />
           </Link>
 
           <Link to="/programs" className="cursor-pointer hover:opacity-90">
-            <StatsCard
-              title="Total Programs"
-              value={totalPrograms}
-              description="Across all institutions"
-              icon={GraduationCap}
-              variant="info"
-            />
+            <StatsCard title="Total Programs" value={totalPrograms} description="Across all institutions" icon={GraduationCap} variant="info" />
           </Link>
 
-          <Link to="/staff" className="cursor-pointer hover:opacity-90">
-            <StatsCard
-              title="Total Staff"
-              value={totalStaff}
-              description="Lecturing & Admin"
-              icon={UserCheck}
-              variant="success"
-            />
-          </Link>
-
+          {/* Staff Quick Action */}
+          <Card className="cursor-pointer hover:opacity-90 col-span-1">
+            <CardHeader className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-6 w-6 text-green-500" />
+                  <h2 className="text-lg font-bold">Total Staff: {totalStaff}</h2>
+                </div>
+                <span className="text-sm text-muted-foreground">{totalPrograms} Programs</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+              {institutions.map(
+                (inst) =>
+                  inst.programs?.length > 0 && (
+                    <div key={inst.id} className="border-b border-muted pb-1">
+                      <h3 className="font-semibold">{inst.name}</h3>
+                      <ul className="pl-4 list-disc text-sm text-muted-foreground">
+                        {inst.programs.map((prog: any) => (
+                          <li key={prog.id}>{prog.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
           {/* Enrollment per Institution */}
           <Card>
             <CardHeader>
@@ -208,7 +188,6 @@ export default function Statistics() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
         </div>
       </div>
     </DashboardLayout>
