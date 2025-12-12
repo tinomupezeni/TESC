@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -7,13 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -30,34 +24,66 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Filter, GraduationCap, TrendingUp } from "lucide-react";
+import { Download, Filter, TrendingUp, Loader2, PieChart } from "lucide-react";
+import { getGraduationStats, GraduationStat } from "@/services/students.services";
+import * as XLSX from "xlsx"; // Reusing xlsx for export
 
 const Graduates = () => {
-  const [graduates, setGraduates] = useState([]);
+  const { user } = useAuth();
+  const [stats, setStats] = useState<GraduationStat[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Filters
   const [filterYear, setFilterYear] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
-  const [selectedGraduate, setSelectedGraduate] = useState<
-    (typeof graduates)[0] | null
-  >(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
 
-  const filteredGraduates = graduates.filter((grad) => {
-    const matchesYear = filterYear === "all" || grad.year === filterYear;
-    const matchesProgram =
-      filterProgram === "all" || grad.program === filterProgram;
-    return matchesYear && matchesProgram;
-  });
+  // Fetch Data
+  useEffect(() => {
+    if (user?.institution?.id) {
+      const loadStats = async () => {
+        setLoading(true);
+        try {
+          const data = await getGraduationStats(user.institution.id);
+          setStats(data || []);
+        } catch (error) {
+          console.error("Failed to load graduation stats", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadStats();
+    }
+  }, [user]);
 
-  const totalGraduates2024 = graduates
-    .filter((g) => g.year === "2024")
-    .reduce((sum, g) => sum + g.graduates, 0);
-  const totalGraduates2023 = graduates
-    .filter((g) => g.year === "2023")
-    .reduce((sum, g) => sum + g.graduates, 0);
-  const avgPassRate = (
-    graduates.reduce((sum, g) => sum + parseFloat(g.passRate), 0) /
-    graduates.length
-  ).toFixed(1);
+  // Derived Data (Filters)
+  const filteredStats = useMemo(() => {
+    return stats.filter(stat => {
+      const matchesYear = filterYear === "all" || stat.graduation_year.toString() === filterYear;
+      const matchesProgram = filterProgram === "all" || stat.program__name === filterProgram;
+      return matchesYear && matchesProgram;
+    });
+  }, [stats, filterYear, filterProgram]);
+
+  // Summary Metrics
+  const currentYear = new Date().getFullYear();
+  const totalGraduatesCurrent = stats
+    .filter(s => s.graduation_year === currentYear)
+    .reduce((sum, s) => sum + s.total_graduates, 0);
+    
+  const totalGraduatesPrev = stats
+    .filter(s => s.graduation_year === currentYear - 1)
+    .reduce((sum, s) => sum + s.total_graduates, 0);
+
+  // Get unique options for filters
+  const uniqueYears = Array.from(new Set(stats.map(s => s.graduation_year))).sort((a,b) => b-a);
+  const uniquePrograms = Array.from(new Set(stats.map(s => s.program__name))).sort();
+
+  const handleExport = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredStats);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Graduation_Stats");
+    XLSX.writeFile(wb, "Graduation_Report.xlsx");
+  };
 
   return (
     <div className="space-y-6">
@@ -66,16 +92,16 @@ const Graduates = () => {
           Graduates & Completions
         </h1>
         <p className="text-muted-foreground mt-1">
-          Track student graduations and program completions by year
+          Analytics based on student records marked as 'Graduated'
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>2024 Graduates</CardDescription>
+            <CardDescription>{currentYear} Graduates</CardDescription>
             <CardTitle className="text-3xl text-primary">
-              {totalGraduates2024}
+              {totalGraduatesCurrent}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -86,35 +112,33 @@ const Graduates = () => {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>2023 Graduates</CardDescription>
-            <CardTitle className="text-3xl">{totalGraduates2023}</CardTitle>
+            <CardDescription>{currentYear - 1} Graduates</CardDescription>
+            <CardTitle className="text-3xl">{totalGraduatesPrev}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-1 text-xs text-success">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3" />
-              <span>Previous year</span>
+              <span>Previous year comparison</span>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Average Pass Rate</CardDescription>
-            <CardTitle className="text-3xl text-success">{0}%</CardTitle>
+            <CardDescription>Total Records</CardDescription>
+            <CardTitle className="text-3xl">
+                {stats.reduce((acc, curr) => acc + curr.total_graduates, 0)}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Across all programs</p>
+            <p className="text-xs text-muted-foreground">All time graduates</p>
           </CardContent>
         </Card>
-        <Card>
+        {/* Placeholder for future metric */}
+        <Card className="bg-muted/10 border-dashed">
           <CardHeader className="pb-3">
-            <CardDescription>Active Programs</CardDescription>
-            <CardTitle className="text-3xl">{0}</CardTitle>
+            <CardDescription>Average Pass Rate</CardDescription>
+            <CardTitle className="text-xl text-muted-foreground">N/A</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Offering graduations
-            </p>
-          </CardContent>
         </Card>
       </div>
 
@@ -122,19 +146,15 @@ const Graduates = () => {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle>Graduation Records</CardTitle>
+              <CardTitle>Graduation Statistics</CardTitle>
               <CardDescription>
-                View graduation statistics by program and year
+                Aggregated by Program and Year
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredStats.length === 0}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Report
-              </Button>
-              <Button size="sm" onClick={() => setShowAddDialog(true)}>
-                <GraduationCap className="h-4 w-4 mr-2" />
-                Add Graduation Batch
               </Button>
             </div>
           </div>
@@ -148,29 +168,22 @@ const Graduates = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Years</SelectItem>
-                <SelectItem value="2024">2024</SelectItem>
-                <SelectItem value="2023">2023</SelectItem>
-                <SelectItem value="2022">2022</SelectItem>
+                {uniqueYears.map(y => (
+                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             <Select value={filterProgram} onValueChange={setFilterProgram}>
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full md:w-[250px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by program" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Programs</SelectItem>
-                <SelectItem value="Computer Science">
-                  Computer Science
-                </SelectItem>
-                <SelectItem value="Engineering">Engineering</SelectItem>
-                <SelectItem value="Business Studies">
-                  Business Studies
-                </SelectItem>
-                <SelectItem value="Information Technology">
-                  Information Technology
-                </SelectItem>
+                {uniquePrograms.map(p => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -183,290 +196,57 @@ const Graduates = () => {
                   <TableHead>Program</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Total Graduates</TableHead>
-                  <TableHead>Distinction</TableHead>
-                  <TableHead>Credit</TableHead>
-                  <TableHead>Pass</TableHead>
+                  <TableHead className="text-emerald-600">Distinction</TableHead>
+                  <TableHead className="text-blue-600">Credit</TableHead>
+                  <TableHead className="text-amber-600">Pass</TableHead>
                   <TableHead>Pass Rate</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredGraduates.length === 0 ? (
+                {loading ? (
+                   <TableRow>
+                     <TableCell colSpan={8} className="h-24 text-center">
+                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                     </TableCell>
+                   </TableRow>
+                ) : filteredStats.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={9}
+                      colSpan={8}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      No graduation records found
+                      <PieChart className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                      No graduation records found matching your filters.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredGraduates.map((grad) => (
-                    <TableRow key={grad.id}>
-                      <TableCell className="font-medium">{grad.year}</TableCell>
-                      <TableCell>{grad.program}</TableCell>
-                      <TableCell>{grad.level}</TableCell>
-                      <TableCell className="font-semibold">
-                        {grad.graduates}
-                      </TableCell>
-                      <TableCell>{grad.distinction}</TableCell>
-                      <TableCell>{grad.credit}</TableCell>
-                      <TableCell>{grad.pass}</TableCell>
+                  filteredStats.map((stat, index) => {
+                    const passRate = ((stat.total_graduates > 0) ? 100 : 0).toFixed(1); // Placeholder logic
+                    
+                    return (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{stat.graduation_year}</TableCell>
+                      <TableCell>{stat.program__name}</TableCell>
                       <TableCell>
-                        <Badge variant="default" className="bg-success">
-                          {grad.passRate}
-                        </Badge>
+                        <Badge variant="outline">{stat.program__level}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedGraduate(grad)}
-                        >
-                          View Details
-                        </Button>
+                      <TableCell className="font-bold">
+                        {stat.total_graduates}
+                      </TableCell>
+                      <TableCell>{stat.distinctions}</TableCell>
+                      <TableCell>{stat.credits}</TableCell>
+                      <TableCell>{stat.passes}</TableCell>
+                      <TableCell>
+                        <span className="font-mono text-xs">{passRate}%</span>
                       </TableCell>
                     </TableRow>
-                  ))
+                  )})
                 )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
-
-      {/* Detail Dialog */}
-      <Dialog
-        open={!!selectedGraduate}
-        onOpenChange={(open) => !open && setSelectedGraduate(null)}
-      >
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Graduation Details - {selectedGraduate?.year}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedGraduate?.program} ({selectedGraduate?.level})
-            </DialogDescription>
-          </DialogHeader>
-          {selectedGraduate && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardDescription>Total Graduates</CardDescription>
-                    <CardTitle className="text-2xl">
-                      {selectedGraduate.graduates}
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardDescription>Pass Rate</CardDescription>
-                    <CardTitle className="text-2xl text-success">
-                      {selectedGraduate.passRate}
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Grade Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Distinction</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{
-                              width: `${
-                                (selectedGraduate.distinction /
-                                  selectedGraduate.graduates) *
-                                100
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold w-12 text-right">
-                          {selectedGraduate.distinction}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Credit</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-secondary"
-                            style={{
-                              width: `${
-                                (selectedGraduate.credit /
-                                  selectedGraduate.graduates) *
-                                100
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold w-12 text-right">
-                          {selectedGraduate.credit}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Pass</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-accent"
-                            style={{
-                              width: `${
-                                (selectedGraduate.pass /
-                                  selectedGraduate.graduates) *
-                                100
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold w-12 text-right">
-                          {selectedGraduate.pass}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Program Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Program</p>
-                      <p className="font-medium">{selectedGraduate.program}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Level</p>
-                      <p className="font-medium">{selectedGraduate.level}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Academic Year
-                      </p>
-                      <p className="font-medium">{selectedGraduate.year}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Graduation ID
-                      </p>
-                      <p className="font-medium">{selectedGraduate.id}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add Graduation Batch</DialogTitle>
-            <DialogDescription>
-              Record a new graduation batch for your institution
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Academic Year</label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2024">2024</SelectItem>
-                    <SelectItem value="2023">2023</SelectItem>
-                    <SelectItem value="2022">2022</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Program</label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cs">Computer Science</SelectItem>
-                    <SelectItem value="eng">Engineering</SelectItem>
-                    <SelectItem value="bus">Business Studies</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Level</label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nc">National Certificate</SelectItem>
-                  <SelectItem value="nd">National Diploma</SelectItem>
-                  <SelectItem value="hnd">Higher National Diploma</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Distinction</label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Credit</label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Pass</label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowAddDialog(false);
-                  // Add toast notification here
-                }}
-              >
-                Add Graduation Batch
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

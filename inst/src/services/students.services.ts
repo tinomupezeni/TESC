@@ -33,6 +33,16 @@ export interface CreateStudentData {
   program: number;
 }
 
+export interface GraduationStat {
+  graduation_year: number;
+  program__name: string;
+  program__level: string;
+  total_graduates: number;
+  distinctions: number;
+  credits: number;
+  passes: number;
+}
+
 export interface StudentFilters {
   institution?: number; 
   program?: number;
@@ -74,12 +84,35 @@ export const createStudent = async (data: CreateStudentData): Promise<Student> =
   }
 };
 
+export const bulkUploadStudents = async (formData: FormData): Promise<any> => {
+  try {
+    // Post to /academic/students/bulk_upload/
+    const response = await apiClient.post(`${END_POINT}bulk_upload/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error uploading students:", error);
+    throw error;
+  }
+};
+
+export const getGraduationStats = async (institutionId: number) => {
+  const response = await apiClient.get<GraduationStat[]>(
+    `${END_POINT}graduation-stats/`, 
+    { params: { institution_id: institutionId } }
+  );
+  return response.data;
+};
+
 // ... updateStudent and deleteStudent remain the same ...
 
 const studentService = {
   getStudents,
   getStudentById,
   createStudent,
+  bulkUploadStudents,
+  getGraduationStats,
   // ...
 };
 

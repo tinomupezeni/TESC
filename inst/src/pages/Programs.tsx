@@ -28,7 +28,7 @@ const Programs = () => {
   const { user } = useAuth();
   
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start as true
   const [searchQuery, setSearchQuery] = useState("");
 
   // 3. Update fetch logic to use Institution ID
@@ -42,14 +42,17 @@ const Programs = () => {
       const data = await getPrograms({ 
         institution_id: user.institution.id 
       });
-      setPrograms(data);
+      // Ensure we set an array
+      setPrograms(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch programs", error);
+      setPrograms([]);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
+  // Initial fetch when user context is ready
   useEffect(() => {
     fetchPrograms();
   }, [fetchPrograms]);
@@ -83,10 +86,12 @@ const Programs = () => {
           />
         </div>
         {/* Pass ID to Add Dialog if needed */}
-        <AddProgramDialog 
-            institutionId={user?.institution?.id} 
-            onProgramAdded={fetchPrograms} 
-        />
+        {user?.institution?.id && (
+            <AddProgramDialog 
+                institutionId={user.institution.id} 
+                onSuccess={fetchPrograms} // Using onSuccess to match AddFacultyDialog pattern
+            />
+        )}
       </div>
 
       {loading ? (
@@ -96,12 +101,14 @@ const Programs = () => {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {filteredPrograms.length === 0 ? (
-             <div className="col-span-2 text-center py-10 text-muted-foreground">
-                No programs found.
+             <div className="col-span-2 text-center py-12 border rounded-lg border-dashed text-muted-foreground bg-muted/10">
+                <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                <p>No programs found.</p>
+                {searchQuery && <p className="text-sm">Try adjusting your search terms.</p>}
              </div>
           ) : (
             filteredPrograms.map((program) => (
-              <Card key={program.id} className="hover:shadow-md transition-shadow">
+              <Card key={program.id} className="hover:shadow-md transition-shadow group flex flex-col h-full">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -109,7 +116,6 @@ const Programs = () => {
                         <BookOpen className="h-5 w-5 text-primary" />
                         <Badge variant="outline">{program.code}</Badge>
                         <Badge variant="secondary">
-                           {/* Level is a good thing to show here */}
                            {program.level}
                         </Badge>
                       </div>
@@ -120,7 +126,7 @@ const Programs = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-1 flex flex-col justify-between">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -134,22 +140,21 @@ const Programs = () => {
                         <Users className="h-4 w-4" />
                         <span className="text-xs">Capacity</span>
                       </div>
-                      {/* Note: using student_capacity from interface */}
                       <p className="text-sm font-medium">{program.student_capacity}</p>
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <FileText className="h-4 w-4" />
-                        <span className="text-xs">Faculty</span>
+                        <span className="text-xs">Department</span>
                       </div>
-                      {/* Truncate faculty name if too long */}
-                      <p className="text-sm font-medium truncate w-24" title={program.faculty_name}>
-                        {program.faculty_name || "N/A"}
+                      {/* Show Department name here, fallback to Faculty if Dept missing */}
+                      <p className="text-sm font-medium truncate w-28" title={program.department_name || program.faculty_name}>
+                        {program.department_name || program.faculty_name || "N/A"}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mt-auto">
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="flex-1">
@@ -160,34 +165,33 @@ const Programs = () => {
                         <DialogHeader>
                           <DialogTitle>{program.name}</DialogTitle>
                           <DialogDescription>
-                            Program Details and Information
+                            {program.code} • {program.department_name}
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-4 py-2">
+                          <div className="p-3 bg-muted rounded-md text-sm">
+                             {program.description || "No description available."}
+                          </div>
                           <div>
-                            <h4 className="font-medium mb-2">
-                              Program Information
+                            <h4 className="font-medium mb-2 flex items-center gap-2">
+                              <BookOpen className="h-4 w-4" /> Program Details
                             </h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Code:</span>
-                                <span className="font-medium">{program.code}</span>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground text-xs">Level</span>
+                                <p className="font-medium">{program.level}</p>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Level:</span>
-                                <span className="font-medium">{program.level}</span>
+                              <div>
+                                <span className="text-muted-foreground text-xs">Coordinator</span>
+                                <p className="font-medium">{program.coordinator || "Unassigned"}</p>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Coordinator:</span>
-                                <span className="font-medium">{program.coordinator}</span>
+                              <div className="col-span-2">
+                                <span className="text-muted-foreground text-xs">Entry Requirements</span>
+                                <p className="font-medium">{program.entry_requirements || "None specified"}</p>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Modules:</span>
-                                <span className="font-medium">{program.modules}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Entry Requirements:</span>
-                                <span className="font-medium text-right max-w-[200px]">{program.entry_requirements}</span>
+                              <div className="col-span-2">
+                                <span className="text-muted-foreground text-xs">Modules</span>
+                                <p className="font-medium">{program.modules || "No modules listed"}</p>
                               </div>
                             </div>
                           </div>

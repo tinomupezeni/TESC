@@ -160,6 +160,13 @@ class Student(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    graduation_year = models.IntegerField(null=True, blank=True)
+    final_grade = models.CharField(
+        max_length=20, 
+        choices=[('Distinction', 'Distinction'), ('Credit', 'Credit'), ('Pass', 'Pass'), ('Fail', 'Fail')],
+        null=True, blank=True
+    )
 
     @property
     def full_name(self):

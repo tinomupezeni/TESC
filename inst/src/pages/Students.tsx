@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { getStudents, Student } from "@/services/students.services"; // Ensure correct import path
+import { UploadStudentsDialog } from "@/components/helpers/UploadStudentsDialog";
 
 const Students = () => {
   // 2. Get the user from AuthContext
@@ -121,6 +122,7 @@ const Students = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <UploadStudentsDialog onSuccess={fetchStudents} />
               {/* Pass the ID to the Add Dialog too if needed */}
               <AddStudentDialog 
                 onStudentAdded={fetchStudents} 
