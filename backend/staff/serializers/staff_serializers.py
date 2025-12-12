@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from ..models import Staff
+from ..models import Staff, Vacancy
 
 class StaffSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.name', read_only=True)
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
     full_name = serializers.CharField(read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
 
     class Meta:
         model = Staff
@@ -23,6 +24,7 @@ class StaffSerializer(serializers.ModelSerializer):
             'employee_id',
             'position',
             'department',
+            'department_name',
             'qualification',
             'specialization',
             'date_joined',
@@ -42,3 +44,30 @@ class StaffSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError("This Employee ID is already in use.")
         return value
+
+
+class VacancySerializer(serializers.ModelSerializer):
+    institution_name = serializers.CharField(source='institution.name', read_only=True)
+
+    class Meta:
+        model = Vacancy
+        fields = [
+            'id', 
+            'institution', 
+            'institution_name',
+            'title', 
+            'faculty', 
+            'department', 
+            'quantity', 
+            'deadline', 
+            'description', 
+            'status', 
+            'created_at'
+        ]
+        read_only_fields = ['created_at', 'status']
+
+    def create(self, validated_data):
+        # Ensure status is Open on create
+        validated_data['status'] = 'Open'
+        return super().create(validated_data)    
+

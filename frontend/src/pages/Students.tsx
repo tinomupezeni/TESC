@@ -142,10 +142,7 @@ export default function Students() {
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <Button onClick={() => setAddStudent(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Student
-              </Button>
+             
             </div>
           </div>
 

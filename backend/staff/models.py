@@ -45,6 +45,14 @@ class Staff(models.Model):
         blank=True, 
         related_name='staff_members'
     )
+    
+    department = models.ForeignKey(
+        'faculties.Department',  # Link to the new Department model
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='staff_members'
+    )
 
     # Personal Details
     first_name = models.CharField(max_length=100)
@@ -55,7 +63,6 @@ class Staff(models.Model):
     # Employment Details
     employee_id = models.CharField(max_length=50, unique=True)
     position = models.CharField(max_length=50, choices=STAFF_POSITIONS)
-    department = models.CharField(max_length=100, help_text="Department name (e.g. Computer Science)")
     
     # Academic/Professional Details
     qualification = models.CharField(max_length=50, choices=QUALIFICATIONS)
@@ -77,3 +84,35 @@ class Staff(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.position})"
+    
+class Vacancy(models.Model):
+    STATUS_CHOICES = [
+        ('Open', 'Open'),
+        ('Closed', 'Closed'),
+    ]
+    institution = models.ForeignKey('academic.Institution', on_delete=models.CASCADE, related_name='vacancies')
+    
+    title = models.CharField(max_length=150)
+    
+    # --- UPDATED: STRICT SELECTION ---
+    faculty = models.ForeignKey(
+        'faculties.Faculty', 
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='vacancies'
+    )
+    
+    department = models.ForeignKey(
+        'faculties.Department', 
+        on_delete=models.CASCADE,
+        related_name='vacancies'
+    )
+    # ----------------------------------
+
+    quantity = models.PositiveIntegerField(default=1)
+    deadline = models.DateField()
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

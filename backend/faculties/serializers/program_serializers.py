@@ -3,14 +3,18 @@ from ..models import Program
 
 class ProgramSerializer(serializers.ModelSerializer):
     # Helpful to see the faculty name in responses, not just the ID
-    faculty_name = serializers.CharField(source='faculty.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    faculty_name = serializers.CharField(source='department.faculty.name', read_only=True)
+    institution_name = serializers.CharField(source='department.faculty.institution.name', read_only=True)
 
     class Meta:
         model = Program
         fields = [
             'id', 
-            'faculty', 
-            'faculty_name',
+            'department', 
+            'department_name',
+            'faculty_name',     # Optional: Show faculty name via department
+            'institution_name', # Optional: Show institution name via department
             'name', 
             'code', 
             'duration', 

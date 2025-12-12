@@ -1,18 +1,19 @@
 import apiClient from "./api";
 
-// --- Types ---
+// =======================
+// --- FACULTY TYPES ---
+// =======================
 
 export interface Faculty {
   id: number;
   institution: number;
-  institution_name: string;
+  institution_name?: string;
   name: string;
   dean: string;
   location: string;
   email: string;
   description: string;
   status: 'Active' | 'Setup' | 'Review' | 'Archived';
-  departments_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -22,9 +23,8 @@ export interface FacultyStats {
   active_faculties: number;
 }
 
-// Omit read-only fields for creation
 export interface CreateFacultyData {
-  institution: number; // ID of the institution
+  institution: number;
   name: string;
   dean?: string;
   location?: string;
@@ -33,62 +33,94 @@ export interface CreateFacultyData {
   status?: string;
 }
 
-// Partial for updates
-export interface UpdateFacultyData extends Partial<CreateFacultyData> {}
+// ==========================
+// --- DEPARTMENT TYPES ---
+// ==========================
 
-const END_POINT = '/faculties/faculties/';
+export interface Department {
+  id: number;
+  faculty: number;
+  name: string;
+  code: string;
+  head_of_department: string;
+  description?: string;
+}
 
-// --- Service Functions ---
+export interface CreateDepartmentData {
+  faculty: number;
+  name: string;
+  code?: string;
+  head_of_department?: string;
+  description?: string;
+}
+
+export interface DepartmentFilters {
+  faculty?: number;
+  institution?: number;
+}
+
+const FACULTY_ENDPOINT = '/faculties/faculties/';
+const DEPT_ENDPOINT = '/faculties/departments/';
+
+// ==========================
+// --- FACULTY SERVICES ---
+// ==========================
 
 /**
- * Fetch all faculties.
- * Optionally filter by institution ID.
+ * Fetch faculties.
+ * accepts institutionId to filter the dropdown.
  */
-export const getFaculties = async (): Promise<Faculty[]> => {
-  const response = await apiClient.get<Faculty[]>(END_POINT);
-  console.log(response);
-  
-
+export const getFaculties = async (institutionId?: number): Promise<Faculty[]> => {
+  const params = institutionId ? { institution: institutionId } : {};
+  const response = await apiClient.get<Faculty[]>(FACULTY_ENDPOINT, { params });
   return response.data;
 };
 
-/**
- * Get a single faculty by ID
- */
 export const getFaculty = async (id: number): Promise<Faculty> => {
-  const response = await apiClient.get<Faculty>(`${END_POINT}${id}/`);
+  const response = await apiClient.get<Faculty>(`${FACULTY_ENDPOINT}${id}/`);
   return response.data;
 };
 
-/**
- * Create a new faculty
- */
 export const createFaculty = async (data: CreateFacultyData): Promise<Faculty> => {
-  const response = await apiClient.post<Faculty>(END_POINT, data);
+  const response = await apiClient.post<Faculty>(FACULTY_ENDPOINT, data);
   return response.data;
 };
 
-/**
- * Update an existing faculty (PATCH)
- */
-export const updateFaculty = async (id: number, data: UpdateFacultyData): Promise<Faculty> => {
-  const response = await apiClient.patch<Faculty>(`${END_POINT}${id}/`, data);
+export const updateFaculty = async (id: number, data: Partial<CreateFacultyData>): Promise<Faculty> => {
+  const response = await apiClient.patch<Faculty>(`${FACULTY_ENDPOINT}${id}/`, data);
   return response.data;
 };
 
-/**
- * Delete a faculty
- */
 export const deleteFaculty = async (id: number): Promise<void> => {
-  await apiClient.delete(`${END_POINT}${id}/`);
+  await apiClient.delete(`${FACULTY_ENDPOINT}${id}/`);
 };
 
-/**
- * Get faculty summary statistics
- */
 export const getFacultyStats = async (): Promise<FacultyStats> => {
-  const response = await apiClient.get<FacultyStats>(`${END_POINT}stats/`);
+  const response = await apiClient.get<FacultyStats>(`${FACULTY_ENDPOINT}stats/`);
   return response.data;
+};
+
+// =============================
+// --- DEPARTMENT SERVICES ---
+// =============================
+
+/**
+ * Fetch departments.
+ * Filter by faculty_id is crucial for the cascading dropdown.
+ */
+export const getDepartments = async (filters?: DepartmentFilters): Promise<Department[]> => {
+  // Pass the filters object directly as params
+  const response = await apiClient.get<Department[]>(DEPT_ENDPOINT, { params: filters });
+  return response.data;
+};
+
+export const createDepartment = async (data: CreateDepartmentData): Promise<Department> => {
+  const response = await apiClient.post<Department>(DEPT_ENDPOINT, data);
+  return response.data;
+};
+
+export const deleteDepartment = async (id: number): Promise<void> => {
+  await apiClient.delete(`${DEPT_ENDPOINT}${id}/`);
 };
 
 const facultyService = {
@@ -97,7 +129,11 @@ const facultyService = {
     createFaculty,
     updateFaculty,
     deleteFaculty,
-    getFacultyStats
+    getFacultyStats,
+    // Departments
+    getDepartments,
+    createDepartment,
+    deleteDepartment
 };
 
 export default facultyService;

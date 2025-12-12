@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+// 1. Import useAuth
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Upload, MoreVertical, Filter, Loader2 } from "lucide-react";
+import { Search, MoreVertical, Filter, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,19 +43,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
-import { getStudents, Student } from "@/services/students.services";
+import { getStudents, Student } from "@/services/students.services"; // Ensure correct import path
 
 const Students = () => {
+  // 2. Get the user from AuthContext
+  const { user } = useAuth();
+  
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgram, setFilterProgram] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  const fetchStudents = async () => {
+  // 3. Update fetch function to use user.institution.id
+  const fetchStudents = useCallback(async () => {
+    // Safety check: Don't fetch if user or institution is missing
+    if (!user?.institution?.id) return;
+
     try {
       setLoading(true);
-      const data = await getStudents();
+      
+      // PASS THE ID HERE
+      const data = await getStudents({ 
+        institution: user.institution.id 
+      });
+      
       if (Array.isArray(data)) {
         setStudents(data);
       } else {
@@ -65,17 +79,16 @@ const Students = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]); // Re-create function if user changes
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [fetchStudents]);
 
-  // --- FIX: UPDATED FILTER LOGIC TO MATCH API FIELDS ---
+  // --- Client-Side Filtering ---
   const filteredStudents = students.filter((student) => {
     const searchLower = searchQuery.toLowerCase();
     
-    // Safety checks using Optional Chaining (?) and Fallbacks (|| "")
     const matchesSearch =
       (student.full_name?.toLowerCase() || "").includes(searchLower) ||
       (student.student_id?.toLowerCase() || "").includes(searchLower) ||
@@ -94,7 +107,7 @@ const Students = () => {
           Student Management
         </h1>
         <p className="text-muted-foreground mt-1">
-          Manage student registrations and records
+          Manage student registrations for <span className="font-semibold text-primary">{user?.institution?.name}</span>
         </p>
       </div>
 
@@ -108,11 +121,16 @@ const Students = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <AddStudentDialog onStudentAdded={fetchStudents} />
+              {/* Pass the ID to the Add Dialog too if needed */}
+              <AddStudentDialog 
+                onStudentAdded={fetchStudents} 
+                institutionId={user?.institution?.id} 
+              />
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Filters Bar */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -130,7 +148,6 @@ const Students = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Programs</SelectItem>
-                {/* Dynamically get unique program names from the student list */}
                 {Array.from(new Set(students.map(s => s.program_name).filter(Boolean))).map(progName => (
                    <SelectItem key={progName} value={progName as string}>{progName}</SelectItem>
                 ))}
@@ -164,7 +181,9 @@ const Students = () => {
                       colSpan={7}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      No students found
+                      {students.length === 0 
+                        ? "No students found for this institution." 
+                        : "No matching results."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -173,9 +192,7 @@ const Students = () => {
                       <TableCell className="font-medium">
                         {student.student_id}
                       </TableCell>
-                      {/* Use full_name from API */}
                       <TableCell>{student.full_name}</TableCell> 
-                      {/* Use program_name from API */}
                       <TableCell>{student.program_name}</TableCell>
                       <TableCell>{student.gender}</TableCell>
                       <TableCell>{student.enrollment_year}</TableCell>
@@ -227,7 +244,7 @@ const Students = () => {
         </CardContent>
       </Card>
 
-      {/* Student Detail Dialog - Updated to use correct API fields */}
+      {/* Detail Dialog */}
       <Dialog
         open={!!selectedStudent}
         onOpenChange={(open) => !open && setSelectedStudent(null)}
@@ -241,16 +258,14 @@ const Students = () => {
           </DialogHeader>
           {selectedStudent && (
             <div className="space-y-6">
-              <Card>
+               <Card>
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Student ID
-                      </p>
+                      <p className="text-sm text-muted-foreground">Student ID</p>
                       <p className="font-medium">{selectedStudent.student_id}</p>
                     </div>
                     <div>
@@ -266,9 +281,7 @@ const Students = () => {
                       <p className="font-medium">{selectedStudent.gender}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Date of Birth
-                      </p>
+                      <p className="text-sm text-muted-foreground">Date of Birth</p>
                       <p className="font-medium">{selectedStudent.date_of_birth || "N/A"}</p>
                     </div>
                   </div>
@@ -291,14 +304,10 @@ const Students = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium capitalize">
-                        {selectedStudent.status}
-                      </p>
+                      <p className="font-medium capitalize">{selectedStudent.status}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Enrollment Year
-                      </p>
+                      <p className="text-sm text-muted-foreground">Enrollment Year</p>
                       <p className="font-medium">{selectedStudent.enrollment_year}</p>
                     </div>
                   </div>

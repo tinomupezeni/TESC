@@ -22,18 +22,22 @@ class StudentViewSet(viewsets.ModelViewSet):
         # Use select_related to fetch ForeignKeys in one query
         queryset = Student.objects.select_related('institution', 'program')
         
-        # Filter by Institution
-        institution_id = self.request.query_params.get('institution_id')
-        if institution_id:
-            queryset = queryset.filter(institution_id=institution_id)
+        institution_param = self.request.query_params.get('institution') 
+        if institution_param:
+            queryset = queryset.filter(institution_id=institution_param)
 
         # Filter by Program
         program_id = self.request.query_params.get('program_id')
+        # Check for just 'program' too just in case
+        if not program_id:
+             program_id = self.request.query_params.get('program')
+             
         if program_id:
             queryset = queryset.filter(program_id=program_id)
             
         return queryset
-
+    
+    
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

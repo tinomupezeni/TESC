@@ -38,6 +38,9 @@ const menuItems = [
 export default function AppSidebar() {
   const { user, logout } = useAuth();
 
+  console.log(user);
+  
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -58,9 +61,9 @@ export default function AppSidebar() {
             <h2 className="font-bold text-sidebar-foreground truncate">
               {user?.institution?.name || "Loading..."}
             </h2>
-            <p className="text-xs text-sidebar-foreground/70 truncate">
+            {/* <p className="text-xs text-sidebar-foreground/70 truncate">
               {user ? `${user.first_name || ""} ${user.last_name || ""} (${user.role || "Admin"})` : "Loading..."}
-            </p>
+            </p> */}
           </div>
         </div>
 

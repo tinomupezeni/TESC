@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,47 +18,62 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext"; // Import Auth Context
 import { createStaff, CreateStaffData } from "@/services/staff.services";
-import { getFaculties, Faculty } from "@/services/faculties.services"; 
+// Import Department services
+import { getFaculties, getDepartments, Faculty, Department } from "@/services/faculties.services"; 
 
 export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) {
+  const { user } = useAuth(); // Get user context for Institution ID
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Data State
   const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   // Form State
   const [formData, setFormData] = useState<Partial<CreateStaffData>>({
-    institution: 1, // Default to current institution
-    date_joined: new Date().toISOString().split('T')[0], // Today's date YYYY-MM-DD
+    institution: user?.institution?.id, 
+    date_joined: new Date().toISOString().split('T')[0], 
     position: '',
     qualification: '',
-    department: '',
+    department: undefined, // Stores the department ID (number)
+    faculty: undefined,    // Stores the faculty ID (number)
     is_active: true
   });
 
-  // Fetch Faculties when dialog opens
+  // --- 1. Fetch Data on Open ---
   useEffect(() => {
-    if (open) {
-      const loadFaculties = async () => {
+    if (open && user?.institution?.id) {
+      const loadData = async () => {
         try {
-          const data = await getFaculties();
-          // Ensure we have an array
-          if (Array.isArray(data)) {
-            setFaculties(data);
-          } else {
-             console.error("Invalid faculties data format", data);
-             setFaculties([]);
-          }
+          // Fetch both faculties and departments for the institution
+          const [facData, deptData] = await Promise.all([
+            getFaculties(user.institution.id),
+            getDepartments({ institution: user.institution.id })
+          ]);
+
+          setFaculties(Array.isArray(facData) ? facData : []);
+          setDepartments(Array.isArray(deptData) ? deptData : []);
         } catch (error) {
-          console.error("Failed to load faculties", error);
-          toast.error("Could not load faculty list. Please check your connection.");
+          console.error("Failed to load academic data", error);
+          toast.error("Could not load faculty/department lists.");
         }
       };
-      loadFaculties();
+      loadData();
     }
-  }, [open]);
+  }, [open, user]);
+
+  // --- 2. Filter Departments (Cascading Logic) ---
+  const filteredDepartments = useMemo(() => {
+    if (!formData.faculty) return [];
+    return departments.filter(d => d.faculty === formData.faculty);
+  }, [departments, formData.faculty]);
+
+  // --- Handlers ---
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -66,9 +81,19 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
   };
 
   const handleSelectChange = (field: keyof CreateStaffData, value: string) => {
-    // Convert ID string to number for faculty/institution relationships
-    const val = (field === 'faculty' || field === 'institution') ? parseInt(value) : value;
-    setFormData(prev => ({ ...prev, [field]: val }));
+    // Convert IDs to numbers
+    const val = (field === 'faculty' || field === 'institution' || field === 'department') 
+      ? parseInt(value) 
+      : value;
+
+    setFormData(prev => {
+        const newData = { ...prev, [field]: val };
+        // If faculty changes, clear the selected department
+        if (field === 'faculty') {
+            newData.department = undefined; 
+        }
+        return newData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,29 +101,29 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
     setIsLoading(true);
 
     try {
-      // Basic Validation
-      if (!formData.first_name || !formData.last_name || !formData.employee_id || !formData.email || !formData.position) {
+      // Validation
+      if (!formData.first_name || !formData.last_name || !formData.employee_id || !formData.email || !formData.position || !formData.faculty || !formData.department) {
         toast.error("Please fill in all required fields.");
         setIsLoading(false);
         return;
       }
 
-      // Call the Real Service
       await createStaff(formData as CreateStaffData);
       
       toast.success("Staff member added successfully!");
       setOpen(false);
       
-      // Reset form to defaults
+      // Reset form
       setFormData({
-        institution: 1,
+        institution: user?.institution?.id,
         date_joined: new Date().toISOString().split('T')[0],
         position: '',
         qualification: '',
+        faculty: undefined,
+        department: undefined,
         is_active: true
       });
       
-      // Trigger refresh in parent component
       if (onStaffAdded) onStaffAdded();
       
     } catch (error: any) {
@@ -149,6 +174,54 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
           </div>
 
           {/* Employment Info */}
+          <div className="p-4 bg-muted/30 rounded-md border space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground">Placement</h4>
+            <div className="grid grid-cols-2 gap-4">
+                {/* 1. Faculty Select */}
+                <div className="space-y-2">
+                <Label htmlFor="faculty">Faculty *</Label>
+                <Select onValueChange={(val) => handleSelectChange('faculty', val)}>
+                    <SelectTrigger id="faculty">
+                    <SelectValue placeholder="Select faculty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {faculties.map((fac) => (
+                        <SelectItem key={fac.id} value={fac.id.toString()}>
+                        {fac.name}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                </div>
+
+                {/* 2. Department Select (Cascading) */}
+                <div className="space-y-2">
+                <Label htmlFor="department">Department *</Label>
+                <Select 
+                    onValueChange={(val) => handleSelectChange('department', val)}
+                    disabled={!formData.faculty || filteredDepartments.length === 0}
+                    value={formData.department ? formData.department.toString() : ""}
+                >
+                    <SelectTrigger id="department">
+                    <SelectValue placeholder={!formData.faculty ? "Select faculty first" : "Select department"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {filteredDepartments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                        {dept.name}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                {formData.faculty && filteredDepartments.length === 0 && (
+                    <span className="text-[10px] text-destructive flex items-center mt-1">
+                        <AlertCircle className="w-3 h-3 mr-1" /> No departments found
+                    </span>
+                )}
+                </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="position">Position *</Label>
@@ -164,28 +237,6 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="faculty">Faculty</Label>
-              <Select onValueChange={(val) => handleSelectChange('faculty', val)}>
-                <SelectTrigger id="faculty">
-                  <SelectValue placeholder="Select faculty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {faculties.map((fac) => (
-                    <SelectItem key={fac.id} value={fac.id.toString()}>
-                      {fac.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="department">Department *</Label>
-              <Input id="department" placeholder="Computer Science" required onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="qualification">Highest Qualification *</Label>

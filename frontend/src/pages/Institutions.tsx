@@ -185,7 +185,7 @@ export default function Institutions() {
                           Programs
                         </div>
                         <div className="font-bold text-lg">
-                          {institution.program_count.toLocaleString()}
+                          {institution.program_count?.toLocaleString()}
                         </div>
                       </div>
                     </div>

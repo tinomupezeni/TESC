@@ -3,19 +3,27 @@ import { createContext, useContext, useState, ReactNode, useEffect } from "react
 import apiClient from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
+// 1. Update User interface to match what Sidebar expects (nested institution object)
+interface Institution {
+  id: number;
+  name: string;
+  email?: string;
+}
+
 interface User {
   id: number;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
-  institution_id: number;
   role: string;
+  institution: Institution; // Changed from institution_id to object
 }
 
 interface AuthContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
+  // 2. Add login function definition
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -34,18 +42,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       console.error("Failed to fetch profile:", err);
       setUser(null);
+      // Optional: if profile fetch fails (e.g. invalid token), clear storage
+      // localStorage.removeItem("accessToken");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken')
-    if (token){
-
+    const token = localStorage.getItem('accessToken');
+    if (token) {
       fetchProfile();
+    } else {
+      setLoading(false); // Stop loading if no token
     }
   }, []);
+
+  // 3. Implement the login function
+  const login = async (accessToken: string, refreshToken: string) => {
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    // Crucial: Fetch profile immediately after setting tokens
+    await fetchProfile();
+  };
 
   const logout = () => {
     localStorage.removeItem("accessToken");
@@ -55,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

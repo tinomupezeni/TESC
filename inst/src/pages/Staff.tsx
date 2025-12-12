@@ -1,8 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -20,7 +34,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, MoreVertical, Filter, Mail, Phone, Users, TrendingDown, Briefcase, GraduationCap, Award, Loader2 } from "lucide-react";
+import {
+  Search,
+  Download,
+  MoreVertical,
+  Filter,
+  Mail,
+  Phone,
+  Users,
+  TrendingDown,
+  Briefcase,
+  GraduationCap,
+  Award,
+  Loader2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,61 +57,89 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddStaffDialog } from "@/components/AddStaffDialog";
-import { getStaff, Staff as StaffType } from "@/services/staff.services";
+import { 
+  getStaff,
+  Staff as StaffType,
+  getVacancies,
+  Vacancy,
+} from "@/services/staff.services";
+import { AddVacancyDialog } from "@/components/AddVacancyDialog";
+import { UploadStaffDialog } from "@/components/helpers/UploadStaffDialog";
 
 const Staff = () => {
+  const { user } = useAuth();
+
   const [staff, setStaff] = useState<StaffType[]>([]);
-  const [loading, setLoading] = useState(true);
   
-  // Mock vacant positions for now (Backend not yet implemented for Job Openings)
-  const [vacantPositions, setVacantPositions] = useState([
-    { id: 1, position: "Senior Lecturer", faculty: "Engineering", department: "Computer Science", required: 2, deadline: "2024-05-30" },
-    { id: 2, position: "Lab Technician", faculty: "Applied Sciences", department: "Physics", required: 1, deadline: "2024-06-15" }
-  ]);
+  // FIX: Use this single 'loading' state for the staff table
+  const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterFaculty, setFilterFaculty] = useState("all");
   const [selectedStaff, setSelectedStaff] = useState<StaffType | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  
+  const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [vacanciesLoading, setVacanciesLoading] = useState(true);
 
-  const fetchStaff = async () => {
+  // 1. Fetch Staff - FIX: Updated to use setLoading
+  const fetchStaff = useCallback(async () => {
+    if (!user?.institution?.id) return;
     try {
-      setLoading(true);
-      const data = await getStaff();
-      if (Array.isArray(data)) {
-        setStaff(data);
-      }
+      setLoading(true); // Start loading
+      const data = await getStaff({ institution_id: user.institution.id });
+      
+      if (Array.isArray(data)) setStaff(data);
     } catch (error) {
       console.error("Failed to fetch staff:", error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading
     }
-  };
+  }, [user]);
 
+  // 2. Fetch Vacancies
+  const fetchVacancies = useCallback(async () => {
+    if (!user?.institution?.id) return;
+    try {
+      setVacanciesLoading(true);
+      const data = await getVacancies(user.institution.id);
+      if (Array.isArray(data)) setVacancies(data);
+    } catch (error) {
+      console.error("Failed to fetch vacancies:", error);
+    } finally {
+      setVacanciesLoading(false);
+    }
+  }, [user]);
+
+  // Initial Load
   useEffect(() => {
     fetchStaff();
-  }, []);
+    fetchVacancies();
+  }, [fetchStaff, fetchVacancies]);
 
-  const filteredStaff = staff.filter(s => {
-    const matchesSearch = 
+  // Client-side filtering on the fetched data
+  const filteredStaff = staff.filter((s) => {
+    const matchesSearch =
       (s.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
       (s.employee_id?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
       (s.email?.toLowerCase() || "").includes(searchQuery.toLowerCase());
-      
-    const matchesDepartment = filterDepartment === "all" || s.department === filterDepartment;
-    // Note: Backend might return null for faculty if it's generic staff, handle gracefully
-    const matchesFaculty = filterFaculty === "all" || (s.faculty_name || "Unassigned") === filterFaculty;
-    
+
+    const matchesDepartment =
+      filterDepartment === "all" || s.department === filterDepartment;
+    const matchesFaculty =
+      filterFaculty === "all" ||
+      (s.faculty_name || "Unassigned") === filterFaculty;
+
     return matchesSearch && matchesDepartment && matchesFaculty;
   });
 
-  // Statistics Calculations based on Real Data
+  // Statistics Calculations
   const totalStaff = staff.length;
-  const professors = staff.filter(s => s.position === "Professor").length;
-  const lecturers = staff.filter(s => s.position === "Lecturer").length;
-  const assistants = staff.filter(s => s.position === "Assistant").length;
-  
+  const professors = staff.filter((s) => s.position === "Professor").length;
+  const lecturers = staff.filter((s) => s.position === "Lecturer").length;
+  const assistants = staff.filter((s) => s.position === "Assistant").length;
+
   const requiredProfessors = 8;
   const requiredLecturers = 25;
   const requiredAssistants = 10;
@@ -94,15 +149,24 @@ const Staff = () => {
     setShowProfile(true);
   };
 
-  // Extract unique departments/faculties for filters dynamically
-  const uniqueDepartments = Array.from(new Set(staff.map(s => s.department).filter(Boolean)));
-  const uniqueFaculties = Array.from(new Set(staff.map(s => s.faculty_name).filter(Boolean)));
+  const uniqueDepartments = Array.from(
+    new Set(staff.map((s) => s.department_name).filter(Boolean))
+  );
+  
+  const uniqueFaculties = Array.from(
+    new Set(staff.map((s) => s.faculty_name).filter(Boolean))
+  );
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Staff Management</h1>
-        <p className="text-muted-foreground mt-1">Manage academic and non-academic staff</p>
+        <p className="text-muted-foreground mt-1">
+          Manage academic and non-academic staff for{" "}
+          <span className="font-semibold text-primary">
+            {user?.institution?.name}
+          </span>
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -122,13 +186,18 @@ const Staff = () => {
               Professors
             </CardDescription>
             <CardTitle className="text-3xl">
-              {professors} <span className="text-sm text-muted-foreground font-normal">/ {requiredProfessors}</span>
+              {professors}{" "}
+              <span className="text-sm text-muted-foreground font-normal">
+                / {requiredProfessors}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-1 text-xs text-destructive">
               <TrendingDown className="h-3 w-3" />
-              <span>{Math.max(0, requiredProfessors - professors)} positions short</span>
+              <span>
+                {Math.max(0, requiredProfessors - professors)} positions short
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -139,13 +208,18 @@ const Staff = () => {
               Lecturers
             </CardDescription>
             <CardTitle className="text-3xl">
-              {lecturers} <span className="text-sm text-muted-foreground font-normal">/ {requiredLecturers}</span>
+              {lecturers}{" "}
+              <span className="text-sm text-muted-foreground font-normal">
+                / {requiredLecturers}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-1 text-xs text-destructive">
               <TrendingDown className="h-3 w-3" />
-              <span>{Math.max(0, requiredLecturers - lecturers)} positions short</span>
+              <span>
+                {Math.max(0, requiredLecturers - lecturers)} positions short
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -156,13 +230,18 @@ const Staff = () => {
               Assistants
             </CardDescription>
             <CardTitle className="text-3xl">
-              {assistants} <span className="text-sm text-muted-foreground font-normal">/ {requiredAssistants}</span>
+              {assistants}{" "}
+              <span className="text-sm text-muted-foreground font-normal">
+                / {requiredAssistants}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-1 text-xs text-destructive">
               <TrendingDown className="h-3 w-3" />
-              <span>{Math.max(0, requiredAssistants - assistants)} positions short</span>
+              <span>
+                {Math.max(0, requiredAssistants - assistants)} positions short
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -173,50 +252,90 @@ const Staff = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Vacant Positions</CardTitle>
-              <CardDescription>Open positions awaiting recruitment</CardDescription>
+              <CardDescription>
+                Open positions awaiting recruitment
+              </CardDescription>
             </div>
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-              {vacantPositions.length} Open
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="secondary"
+                className="bg-amber-100 text-amber-800 hover:bg-amber-200"
+              >
+                {vacancies.length} Open
+              </Badge>
+              <AddVacancyDialog
+                institutionId={user?.institution?.id}
+                onVacancyAdded={fetchVacancies}
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {vacantPositions.map((position) => (
-              <div key={position.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-4">
-                  <Briefcase className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{position.position}</p>
-                    <p className="text-sm text-muted-foreground">{position.faculty} - {position.department}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm font-medium">{position.required} position(s)</p>
-                    <p className="text-xs text-muted-foreground">Deadline: {position.deadline}</p>
-                  </div>
-                  <Button size="sm" variant="outline">View Details</Button>
-                </div>
+            {vacanciesLoading ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                Loading vacancies...
               </div>
-            ))}
+            ) : vacancies.length === 0 ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                No active job openings.
+              </div>
+            ) : (
+              vacancies.map((position) => (
+                <div
+                  key={position.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{position.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {position.faculty ? `${position.faculty} - ` : ""}
+                        {position.department}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm font-medium">
+                        {position.quantity} position(s)
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Deadline: {position.deadline}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      View
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
-
+      
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle>Staff Directory</CardTitle>
-              <CardDescription>View and manage all staff members</CardDescription>
+              <CardDescription>
+                View and manage all staff members
+              </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <AddStaffDialog onStaffAdded={fetchStaff} />
+              <UploadStaffDialog onSuccess={fetchStaff} />
+              <AddStaffDialog
+                onStaffAdded={fetchStaff}
+                institutionId={user?.institution?.id}
+              />
             </div>
           </div>
         </CardHeader>
@@ -239,11 +358,16 @@ const Staff = () => {
               <SelectContent>
                 <SelectItem value="all">All Faculties</SelectItem>
                 {uniqueFaculties.map((fac) => (
-                    <SelectItem key={fac} value={fac as string}>{fac}</SelectItem>
+                  <SelectItem key={fac} value={fac as string}>
+                    {fac}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <Select
+              value={filterDepartment}
+              onValueChange={setFilterDepartment}
+            >
               <SelectTrigger className="w-full md:w-[200px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by department" />
@@ -251,7 +375,9 @@ const Staff = () => {
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
                 {uniqueDepartments.map((dept) => (
-                    <SelectItem key={dept} value={dept as string}>{dept}</SelectItem>
+                  <SelectItem key={dept} value={dept as string}>
+                    {dept}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -272,31 +398,39 @@ const Staff = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* FIX: Now checks the correct 'loading' state */}
                 {loading ? (
-                    <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                            <span className="text-xs text-muted-foreground mt-2 block">Loading Staff...</span>
-                        </TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                      <span className="text-xs text-muted-foreground mt-2 block">
+                        Loading Staff...
+                      </span>
+                    </TableCell>
+                  </TableRow>
                 ) : filteredStaff.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No staff members found
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No staff members found for {user?.institution?.name}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredStaff.map((staff) => (
-                    <TableRow 
+                    <TableRow
                       key={staff.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleViewProfile(staff)}
                     >
-                      <TableCell className="font-medium">{staff.employee_id}</TableCell>
+                      <TableCell className="font-medium">
+                        {staff.employee_id}
+                      </TableCell>
                       <TableCell>{staff.full_name}</TableCell>
                       <TableCell>{staff.position}</TableCell>
                       <TableCell>{staff.faculty_name || "N/A"}</TableCell>
-                      <TableCell>{staff.department}</TableCell>
+                      <TableCell>{staff.department_name}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 text-sm">
@@ -310,14 +444,21 @@ const Staff = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
+                        <Badge
                           variant={staff.is_active ? "default" : "secondary"}
-                          className={staff.is_active ? "bg-green-600 hover:bg-green-700" : "bg-gray-500"}
+                          className={
+                            staff.is_active
+                              ? "bg-green-600 hover:bg-green-700"
+                              : "bg-gray-500"
+                          }
                         >
-                          {staff.is_active ? 'Active' : 'Inactive'}
+                          {staff.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableCell
+                        className="text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -327,7 +468,9 @@ const Staff = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleViewProfile(staff)}>
+                            <DropdownMenuItem
+                              onClick={() => handleViewProfile(staff)}
+                            >
                               View Profile
                             </DropdownMenuItem>
                             <DropdownMenuItem>Edit Details</DropdownMenuItem>
@@ -358,25 +501,35 @@ const Staff = () => {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">Staff Profile</DialogTitle>
-            <DialogDescription>Detailed information and qualifications</DialogDescription>
+            <DialogDescription>
+              Detailed information and qualifications
+            </DialogDescription>
           </DialogHeader>
-          
+
           {selectedStaff && (
             <div className="space-y-6">
               <div className="flex items-start gap-4 p-4 bg-muted rounded-lg">
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold">{selectedStaff.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedStaff.position}</p>
-                  <Badge 
+                  <h3 className="text-xl font-semibold">
+                    {selectedStaff.full_name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStaff.position}
+                  </p>
+                  <Badge
                     variant={selectedStaff.is_active ? "default" : "secondary"}
-                    className={`mt-2 ${selectedStaff.is_active ? "bg-green-600" : ""}`}
+                    className={`mt-2 ${
+                      selectedStaff.is_active ? "bg-green-600" : ""
+                    }`}
                   >
-                     {selectedStaff.is_active ? 'Active' : 'Inactive'}
+                    {selectedStaff.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
                 <div className="text-right text-sm">
                   <p className="font-medium">{selectedStaff.employee_id}</p>
-                  <p className="text-muted-foreground">Joined: {selectedStaff.date_joined}</p>
+                  <p className="text-muted-foreground">
+                    Joined: {selectedStaff.date_joined}
+                  </p>
                 </div>
               </div>
 
@@ -388,20 +541,30 @@ const Staff = () => {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Institution:</span>
-                      <p className="font-medium">{selectedStaff.institution_name}</p>
+                      <span className="text-muted-foreground">
+                        Institution:
+                      </span>
+                      <p className="font-medium">
+                        {selectedStaff.institution_name}
+                      </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Faculty:</span>
-                      <p className="font-medium">{selectedStaff.faculty_name || "N/A"}</p>
+                      <p className="font-medium">
+                        {selectedStaff.faculty_name || "N/A"}
+                      </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Department:</span>
-                      <p className="font-medium">{selectedStaff.department}</p>
+                      <p className="font-medium">{selectedStaff.department_name}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Specialization:</span>
-                      <p className="font-medium">{selectedStaff.specialization || "Not Specified"}</p>
+                      <span className="text-muted-foreground">
+                        Specialization:
+                      </span>
+                      <p className="font-medium">
+                        {selectedStaff.specialization || "Not Specified"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -432,16 +595,21 @@ const Staff = () => {
                   Academic Qualifications
                 </h4>
                 <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                      <Award className="h-4 w-4 text-primary mt-0.5" />
-                      <p className="text-sm">Highest Qualification: <strong>{selectedStaff.qualification}</strong></p>
-                    </div>
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Award className="h-4 w-4 text-primary mt-0.5" />
+                    <p className="text-sm">
+                      Highest Qualification:{" "}
+                      <strong>{selectedStaff.qualification}</strong>
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div className="flex gap-2 pt-4">
                 <Button className="flex-1">Edit Profile</Button>
-                <Button variant="outline" className="flex-1">Download CV</Button>
+                <Button variant="outline" className="flex-1">
+                  Download CV
+                </Button>
                 <Button variant="outline">Reset Password</Button>
               </div>
             </div>

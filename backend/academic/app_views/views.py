@@ -1,6 +1,6 @@
 # academic/views.py
-
-from rest_framework import viewsets, status
+from django.db import transaction
+from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -36,39 +36,68 @@ class InstitutionViewSet(viewsets.ModelViewSet):
     serializer_class = InstitutionSerializer
 
     def perform_create(self, serializer):
-        institution = serializer.save()
+        with transaction.atomic():
+            # 1. Save the Institution first to get the ID and Name
+            institution = serializer.save()
 
-        # Auto-generate username
-        username = institution.name.lower().replace(" ", "_") + "_admin"
+            email = getattr(institution, 'email', None) or self.request.data.get('email')
 
-        # Default password (NEEDS RESET on first login)
-        default_password = 'tesc@123'
+            if not email:
+                raise serializers.ValidationError(
+                    {"email": "An institutional email is required for registration."}
+                )
 
-        # Create the admin user
-        user = CustomUser.objects.create_user(
-            username=username,
-            password=default_password,
-            email=f"admin@{institution.name.replace(' ', '').lower()}.ac.zw",
-            is_staff=True
-        )
+            # 3. Check if a user with this email already exists
+            if CustomUser.objects.filter(email=email).exists():
+                raise serializers.ValidationError(
+                    {"email": "A user with this email already exists."}
+                )
 
-        InstitutionAdmin.objects.create(
-            user=user,
-            institution=institution
-        )
+            # 4. Create the User Account
+            default_password = 'tesc@123'
+            
+            # We use the email as the username to ensure it's unique and matches the login flow
+            user = CustomUser.objects.create_user(
+                username=email, 
+                email=email,
+                password=default_password,
+                first_name=institution.name,
+                is_staff=True # Adjust permissions as needed
+            )
 
-        # Return admin creds in response
-        self.admin_credentials = {
-            "username": username,
-            "password": default_password,
-        }
+            # 5. Link User to Institution via InstitutionAdmin
+            InstitutionAdmin.objects.create(
+                user=user,
+                institution=institution
+            )
+
+            # 6. Store credentials to return them in the response
+            self.admin_credentials = {
+                "email": email,
+                "password": default_password,
+                "note": "Please change this password immediately on first login."
+            }
 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        # Send admin account login details
-        if hasattr(self, "admin_credentials"):
-            response.data["admin_credentials"] = self.admin_credentials
-        return response
+        # We wrap the standard create logic to inject the credentials into the response
+        try:
+            response = super().create(request, *args, **kwargs)
+            
+            # If creds were generated successfully, add them to the response
+            if hasattr(self, "admin_credentials"):
+                response.data["admin_credentials"] = self.admin_credentials
+                
+            return response
+            
+        except serializers.ValidationError as e:
+            # Pass validation errors (like duplicate email) straight to the frontend
+            raise e
+        except Exception as e:
+            # Handle unexpected errors
+            # print(e) # For debugging
+            raise serializers.ValidationError(
+                {"detail": "Failed to register institution. Please check the data and try again."}
+            )
 
 class ProgramViewSet(viewsets.ModelViewSet):
     queryset = Program.objects.all()

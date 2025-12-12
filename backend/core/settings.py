@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     "academic",
     'instauth',
     'faculties',
-    "staff"
+    "staff",
+    "reports"
     
     
 ]

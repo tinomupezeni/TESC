@@ -46,6 +46,29 @@ export interface CreateStaffData {
   is_active?: boolean;
 }
 
+export interface Vacancy {
+  id: number;
+  institution: number;
+  title: string;
+  department: string;
+  faculty?: string;
+  quantity: number;
+  deadline: string; // YYYY-MM-DD
+  description?: string;
+  status: 'Open' | 'Closed';
+  created_at: string;
+}
+
+export interface CreateVacancyData {
+  institution: number;
+  title: string;
+  department: string;
+  faculty?: string;
+  quantity: number;
+  deadline: string;
+  description?: string;
+}
+
 export interface StaffFilters {
   institution_id?: number;
   faculty_id?: number;
@@ -54,6 +77,7 @@ export interface StaffFilters {
 }
 
 const END_POINT = '/staff/members/';
+const VACANCY_ENDPOINT = '/staff/vacancies/'; // Assuming this endpoint exists
 
 // --- Service Functions ---
 
@@ -70,6 +94,8 @@ export const getStaff = async (filters?: StaffFilters) => {
     throw error;
   }
 };
+
+
 
 /**
  * Get a single staff member by ID.
@@ -122,12 +148,63 @@ export const deleteStaff = async (id: number): Promise<void> => {
   }
 };
 
+export const getVacancies = async (institutionId: number) => {
+  try {
+    const response = await apiClient.get<Vacancy[]>(VACANCY_ENDPOINT, { 
+      params: { institution: institutionId, status: 'Open' } 
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vacancies:", error);
+    throw error;
+  }
+};
+
+export const createVacancy = async (data: CreateVacancyData): Promise<Vacancy> => {
+  try {
+    const response = await apiClient.post<Vacancy>(VACANCY_ENDPOINT, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating vacancy:", error);
+    throw error;
+  }
+};
+
+export const deleteVacancy = async (id: number): Promise<void> => {
+  try {
+    await apiClient.delete(`${VACANCY_ENDPOINT}${id}/`);
+  } catch (error) {
+    console.error(`Error deleting vacancy ${id}:`, error);
+    throw error;
+  }
+};
+
+export const bulkUploadStaff = async (formData: FormData): Promise<any> => {
+  try {
+    // Note: Don't set Content-Type header manually here; 
+    // axios/browser sets it automatically with the boundary for FormData
+    const response = await apiClient.post(`${END_POINT}bulk_upload/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error uploading bulk staff:", error);
+    throw error;
+  }
+};
+
 const staffService = {
   getStaff,
   getStaffById,
   createStaff,
   updateStaff,
-  deleteStaff
+  deleteStaff,
+  getVacancies,
+  createVacancy,
+  deleteVacancy,
+  bulkUploadStaff,
 };
 
 export default staffService;

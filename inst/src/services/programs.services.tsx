@@ -4,10 +4,14 @@ import apiClient from "./api";
 
 export interface Program {
   id: number;
-  institution: number;
-  institution_name?: string; // Read-only
-  faculty: number;
-  faculty_name?: string;     // Read-only
+  
+  // Hierarchy
+  department: number;
+  department_name?: string;   // Read-only
+  faculty_name?: string;      // Read-only (via department)
+  institution_name?: string;  // Read-only (via department)
+
+  // Details
   name: string;
   code: string;
   duration: number;
@@ -17,12 +21,13 @@ export interface Program {
   student_capacity: number;
   modules: string;
   entry_requirements: string;
+  
   created_at: string;
   updated_at: string;
 }
 
 export interface CreateProgramData {
-  faculty: number;
+  department: number; // Changed from 'faculty' to 'department'
   name: string;
   code: string;
   duration: number;
@@ -34,15 +39,22 @@ export interface CreateProgramData {
   entry_requirements?: string;
 }
 
+// Updated filters to match backend
+export interface ProgramFilters {
+  department_id?: number;
+  faculty_id?: number;
+  institution_id?: number;
+}
+
 const END_POINT = '/faculties/programs/';
 
 // --- Service Functions ---
 
 /**
  * Fetch all programs.
- * Supports filtering by faculty_id or institution_id via query params
+ * Supports hierarchical filtering.
  */
-export const getPrograms = async (filters?: { faculty_id?: number; institution_id?: number }) => {
+export const getPrograms = async (filters?: ProgramFilters) => {
   try {
     const response = await apiClient.get<Program[]>(END_POINT, { params: filters });
     return response.data;
@@ -52,9 +64,6 @@ export const getPrograms = async (filters?: { faculty_id?: number; institution_i
   }
 };
 
-/**
- * Create a new program
- */
 export const createProgram = async (data: CreateProgramData): Promise<Program> => {
   try {
     const response = await apiClient.post<Program>(END_POINT, data);
@@ -65,9 +74,6 @@ export const createProgram = async (data: CreateProgramData): Promise<Program> =
   }
 };
 
-/**
- * Update a program
- */
 export const updateProgram = async (id: number, data: Partial<CreateProgramData>): Promise<Program> => {
   try {
     const response = await apiClient.patch<Program>(`${END_POINT}${id}/`, data);
@@ -78,9 +84,6 @@ export const updateProgram = async (id: number, data: Partial<CreateProgramData>
   }
 };
 
-/**
- * Delete a program
- */
 export const deleteProgram = async (id: number): Promise<void> => {
   try {
     await apiClient.delete(`${END_POINT}${id}/`);

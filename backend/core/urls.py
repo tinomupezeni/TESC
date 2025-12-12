@@ -25,5 +25,7 @@ urlpatterns = [
     path("api/instauth/", include("instauth.urls")),
     path("api/faculties/", include("faculties.urls")),
     path("api/staff/", include("staff.urls")),
+    path("api/v1/reports/", include("reports.urls")),
+    
 
 ]

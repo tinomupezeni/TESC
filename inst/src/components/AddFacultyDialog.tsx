@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { Plus, Building2, User, MapPin, Mail, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  Plus, Building2, MapPin, Mail, FileText, 
+  Check, ChevronsUpDown, Loader2, AlertCircle 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast"; // Ensure this hook exists in your project
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -21,17 +24,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createFaculty } from "@/services/faculties.services";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
-export function AddFacultyDialog({ institutionId = 1, onSuccess }) {
+import { createFaculty } from "@/services/faculties.services";
+import { getStaff, Staff } from "@/services/staff.services";
+
+export function AddFacultyDialog({ institutionId, onSuccess }: { institutionId: number, onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  
+  // Combobox State
+  const [openCombobox, setOpenCombobox] = useState(false);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [isStaffLoading, setIsStaffLoading] = useState(false);
 
   // Initial State
   const initialData = {
     name: "",
-    dean: "",
+    dean: "", 
+    dean_id: null as number | null, 
     location: "",
     email: "",
     status: "Active",
@@ -40,58 +64,67 @@ export function AddFacultyDialog({ institutionId = 1, onSuccess }) {
 
   const [formData, setFormData] = useState(initialData);
 
-  // Handle Text Inputs
-  const handleChange = (e) => {
+  // Fetch Staff
+  useEffect(() => {
+    if (open && institutionId) {
+      const loadStaff = async () => {
+        setIsStaffLoading(true);
+        try {
+          const data = await getStaff({ institution_id: institutionId, status: 'active' });
+          if (Array.isArray(data)) {
+            setStaffList(data);
+          }
+        } catch (err) {
+          console.error("Failed to load staff", err);
+        } finally {
+          setIsStaffLoading(false);
+        }
+      };
+      loadStaff();
+    }
+  }, [open, institutionId]);
+
+  // Handlers
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
-  // Handle Select Input separately (Radix UI pattern)
-  const handleStatusChange = (value) => {
+  const handleStatusChange = (value: string) => {
     setFormData((prev) => ({ ...prev, status: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!institutionId) {
+        toast.error("Institution ID missing.");
+        return;
+    }
     setLoading(true);
 
     try {
-      // Prepare payload (ensure institution ID is included)
       const payload = {
         ...formData,
         institution: institutionId,
+        dean: formData.dean, 
       };
 
       await createFaculty(payload);
-
-      toast({
-        title: "Success",
-        description: "Faculty created successfully.",
-        variant: "default", // or "success" if you have custom variants
-      });
-
-      // Reset form and close dialog
+      toast.success("Faculty created successfully.");
       setFormData(initialData);
       setOpen(false);
-      
-      // Refresh parent list if callback provided
       if (onSuccess) onSuccess();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create faculty:", error);
-      const errorMessage = error.response?.data?.detail || 
-                           error.response?.data?.name?.[0] || 
-                           "Failed to create faculty. Please try again.";
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      const errorMessage = error.response?.data?.detail || "Failed to create faculty.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  const noStaffAvailable = !isStaffLoading && staffList.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -101,58 +134,107 @@ export function AddFacultyDialog({ institutionId = 1, onSuccess }) {
           Add Faculty
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      
+      <DialogContent className="sm:max-w-[600px] overflow-visible"> 
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add New Faculty</DialogTitle>
             <DialogDescription>
-              Create a new faculty department. Fill in the administration details below.
+              Create a new faculty. You can assign a Dean now or later.
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-6 py-4">
             
-            {/* Basic Info Section */}
-            <div className="grid gap-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Faculty Name
-                </Label>
-                <div className="col-span-3 relative">
-                  <Building2 className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="name" 
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="e.g. Faculty of Science" 
-                    className="pl-9" 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dean" className="text-right">
-                  Dean / Lead
-                </Label>
-                <div className="col-span-3 relative">
-                  <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="dean" 
-                    value={formData.dean}
-                    onChange={handleChange}
-                    placeholder="e.g. Dr. Jane Doe" 
-                    className="pl-9" 
-                    required 
-                  />
-                </div>
+            {/* Faculty Name */}
+            <div className="grid gap-2">
+              <Label htmlFor="name">Faculty Name *</Label>
+              <div className="relative">
+                <Building2 className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="name" 
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="e.g. Faculty of Science" 
+                  className="pl-9" 
+                  required 
+                />
               </div>
             </div>
 
-            {/* Contact & Location Section */}
+            {/* Dean Selection (Optional) */}
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="dean">Dean / Lead (Optional)</Label>
+                {noStaffAvailable && (
+                    <span className="text-[10px] text-amber-600 flex items-center">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        No staff available yet
+                    </span>
+                )}
+              </div>
+              
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    // Disable if no staff available to avoid confusion
+                    disabled={noStaffAvailable}
+                    className="w-full justify-between pl-3 text-left font-normal"
+                  >
+                    {formData.dean ? (
+                       <span className="flex items-center">
+                          <Check className="mr-2 h-4 w-4 text-green-600" />
+                          {formData.dean}
+                       </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {noStaffAvailable ? "Create staff first to assign Dean" : "Select a staff member..."}
+                      </span>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Type name..." />
+                    <CommandList>
+                        <CommandGroup>
+                            {staffList.map((staff) => (
+                            <CommandItem
+                                key={staff.id}
+                                value={staff.full_name} 
+                                onSelect={() => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        dean: staff.full_name, 
+                                        dean_id: staff.id      
+                                    }));
+                                    setOpenCombobox(false);
+                                }}
+                            >
+                                <Check
+                                className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.dean_id === staff.id ? "opacity-100" : "opacity-0"
+                                )}
+                                />
+                                {staff.full_name}
+                            </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Other Fields (Location, Email, etc) remain same... */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="location">Location / Building</Label>
+              {/* <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
                 <div className="relative">
                   <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
@@ -163,7 +245,7 @@ export function AddFacultyDialog({ institutionId = 1, onSuccess }) {
                     className="pl-9" 
                   />
                 </div>
-              </div>
+              </div> */}
               <div className="space-y-2">
                 <Label htmlFor="email">Contact Email</Label>
                 <div className="relative">
@@ -178,45 +260,27 @@ export function AddFacultyDialog({ institutionId = 1, onSuccess }) {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Status & Description */}
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="status" className="text-right pt-2">
-                Status
-              </Label>
-              <div className="col-span-3">
-                <Select 
-                  value={formData.status} 
-                  onValueChange={handleStatusChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
+            <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Active">Active</SelectItem>
                     <SelectItem value="Setup">In Setup</SelectItem>
-                    <SelectItem value="Review">Under Review</SelectItem>
-                    <SelectItem value="Archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+            </div>
             </div>
 
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="description" className="text-right pt-2">
-                Description
-              </Label>
-              <div className="col-span-3 relative">
-                <FileText className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                <Textarea 
-                  id="description" 
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Brief description of the faculty's academic focus..." 
-                  className="pl-9 min-h-[100px]"
-                />
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea 
+                id="description" 
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Brief description..." 
+              />
             </div>
 
           </div>
@@ -226,7 +290,8 @@ export function AddFacultyDialog({ institutionId = 1, onSuccess }) {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Faculty"}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Faculty
             </Button>
           </DialogFooter>
         </form>

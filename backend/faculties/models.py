@@ -1,8 +1,4 @@
-# faculties/models.py
-
 from django.db import models
-# --- REMOVED THE IMPORT FROM ACADEMIC TO FIX CIRCULAR ERROR ---
-# from academic.models import Institution <-- DELETE THIS LINE
 
 # --- CHOICES ---
 FACULTY_STATUSES = [
@@ -22,9 +18,8 @@ PROGRAM_LEVELS = [
 ]
 
 class Faculty(models.Model):
-    # --- CHANGED TO STRING REFERENCE ---
     institution = models.ForeignKey(
-        'academic.Institution', # Use 'app_name.ModelName' string
+        'academic.Institution', 
         on_delete=models.CASCADE, 
         related_name='faculties'
     )
@@ -43,14 +38,37 @@ class Faculty(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        # Note: We cannot access self.institution.name easily in __str__ 
-        # if using lazy loading during migrations sometimes, but usually it works fine.
-        # If it errors, just return self.name
         return f"{self.name}" 
+
+class Department(models.Model):
+    """
+    Represents a specific department within a Faculty.
+    e.g., Faculty of Engineering -> Department of Computer Science
+    """
+    faculty = models.ForeignKey(
+        Faculty, 
+        on_delete=models.CASCADE, 
+        related_name='departments'
+    )
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=50, blank=True, help_text="e.g. CS")
+    head_of_department = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.faculty.name})"
 
 
 class Program(models.Model):
-    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name='programs')
+    # Changed from Faculty to Department
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='programs')
+    
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, help_text="e.g., BSCS")
     duration = models.PositiveIntegerField(help_text="Duration in years")
@@ -67,7 +85,8 @@ class Program(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ('faculty', 'code')
+        # --- FIX IS HERE: Changed 'faculty' to 'department' ---
+        unique_together = ('department', 'code') 
 
     def __str__(self):
         return f"{self.name} ({self.code})"

@@ -1,53 +1,22 @@
+// frontend/src/pages/Statistics.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Users, Building, GraduationCap, UserCheck } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-
-// --- RECHARTS IMPORTS ---
-import { 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend,
+import {
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   PieChart,
   Pie,
   Cell,
   BarChart,
   Bar,
-  Rectangle
 } from "recharts";
-
-// --- DATA FOR CHARTS ---
-
-// Data for EnrollmentChart (from your example)
-const enrollmentData = [
-  { year: "2019", "Teachers Colleges": 12500, "Polytechnics": 18000, "Industrial Training": 8500 },
-  { year: "2020", "Teachers Colleges": 13200, "Polytechnics": 19500, "Industrial Training": 9200 },
-  { year: "2021", "Teachers Colleges": 14100, "Polytechnics": 21000, "Industrial Training": 10100 },
-  { year: "2022", "Teachers Colleges": 15300, "Polytechnics": 23500, "Industrial Training": 11500 },
-  { year: "2023", "Teachers Colleges": 16800, "Polytechnics": 25200, "Industrial Training": 12800 },
-  { year: "2024", "Teachers Colleges": 18200, "Polytechnics": 27100, "Industrial Training": 14200 },
-];
-
-// Data for DistributionChart (using 2024 numbers)
-const distributionData = [
-  { name: "Polytechnics", value: 27100 },
-  { name: "Teachers Colleges", value: 18200 },
-  { name: "Industrial Training", value: 14200 },
-];
-
-// Data for RatioChart (example data)
-const ratioData = [
-  { name: "Harare Poly", ratio: 28 },
-  { name: "Mkoba TC", ratio: 22 },
-  { name: "Bulawayo ITC", ratio: 15 },
-  { name: "Mutare Poly", ratio: 25 },
-  { name: "Masvingo Poly", ratio: 26 },
-];
+import { Link } from "react-router-dom";
+import { useInstitutionData } from "@/hooks/useInstitutionData";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent-foreground))", "hsl(var(--success))"];
 
@@ -68,12 +37,34 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// --- MAIN STATISTICS PAGE ---
-
 export default function Statistics() {
+  const { institutions, totalEnrolled, capacityData, isLoading } = useInstitutionData();
 
+  // Totals
+  const totalInstitutions = institutions.length;
+  const totalStudents = totalEnrolled;
+  const totalPrograms = institutions.reduce((sum, inst) => sum + (inst.program_count || 0), 0);
+  const totalStaff = institutions.reduce((sum, inst) => sum + (inst.staff || 0), 0);
 
-  
+  // Pie chart for distribution by type
+  const distributionData = institutions.reduce(
+    (acc: { name: string; value: number }[], inst) => {
+      const typeEntry = acc.find((e) => e.name === inst.type);
+      if (typeEntry) typeEntry.value += inst.students_count || 0;
+      else acc.push({ name: inst.type, value: inst.students_count || 0 });
+      return acc;
+    },
+    []
+  );
+
+  // Bar chart for student-staff ratio
+  const ratioData = institutions.map((inst) => ({
+    name: inst.name,
+    ratio: inst.staff ? (inst.students_count || 0) / inst.staff : 0,
+  }));
+
+  if (isLoading) return <DashboardLayout>Loading...</DashboardLayout>;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -84,191 +75,121 @@ export default function Statistics() {
               <BarChart3 className="h-7 w-7" />
               TESC Statistics
             </h1>
-            <p className="text-muted-foreground">
-              Overall insights and analytics for all institutions
-            </p>
+            <p className="text-muted-foreground">Overall insights and analytics for all institutions</p>
           </div>
         </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Total Institutions"
-            value={78}
-            description="All institution types"
-            icon={Building}
-            variant="default"
-          />
-          <StatsCard
-            title="Total Students (2024)"
-            value={59500} // Sum of 2024 data
-            description="Currently enrolled"
-            icon={Users}
-            variant="accent"
-          />
-          <StatsCard
-            title="Total Programs"
-            value={420}
-            description="Across all institutions"
-            icon={GraduationCap}
-            variant="info" 
-          />
-           <StatsCard
-            title="Total Staff"
-            value={3850}
-            description="Lecturing & Admin"
-            icon={UserCheck}
-            variant="success"
-          />
+          <Link to="/institutions" className="cursor-pointer hover:opacity-90">
+            <StatsCard title="Total Institutions" value={totalInstitutions} description="All institution types" icon={Building} />
+          </Link>
+
+          <Link to="/students" className="cursor-pointer hover:opacity-90">
+            <StatsCard title="Total Students" value={totalStudents} description="Currently enrolled" icon={Users} variant="accent" />
+          </Link>
+
+          <Link to="" className="cursor-pointer hover:opacity-90">
+            <StatsCard title="Total Programs" value={totalPrograms} description="Across all institutions" icon={GraduationCap} variant="info" />
+          </Link>
+
+          {/* Staff Quick Action */}
+          <Card className="cursor-pointer hover:opacity-90 col-span-1">
+            <CardHeader className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-6 w-6 text-green-500" />
+                  <h2 className="text-lg font-bold">Total Staff: {totalStaff}</h2>
+                </div>
+                <span className="text-sm text-muted-foreground">{totalPrograms} Programs</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+              {institutions.map(
+                (inst) =>
+                  inst.programs?.length > 0 && (
+                    <div key={inst.id} className="border-b border-muted pb-1">
+                      <h3 className="font-semibold">{inst.name}</h3>
+                      <ul className="pl-4 list-disc text-sm text-muted-foreground">
+                        {inst.programs.map((prog: any) => (
+                          <li key={prog.id}>{prog.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* Chart 1: Student Enrollment Trends (Your Component) */}
-          <EnrollmentChart />
-
-          {/* Chart 2: Student Distribution by Type (Donut Chart) */}
-          <DistributionChart />
-
-          {/* Chart 3: Staff vs. Student Ratio (Bar Chart) */}
-           <Card className="lg:col-span-2">
+          {/* Enrollment per Institution */}
+          <Card>
             <CardHeader>
-              <CardTitle>Student-Staff Ratio (Example Institutions)</CardTitle>
+              <CardTitle>Enrollment per Institution</CardTitle>
             </CardHeader>
-            <CardContent>
-               <div className="h-80 w-full">
-                 <RatioChart />
-              </div>
+            <CardContent className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={capacityData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="Enrolled" fill="hsl(var(--primary))" />
+                  <Bar dataKey="Capacity" fill="hsl(var(--muted))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Student Distribution by Type */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Distribution by Type</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip content={<CustomTooltip />} />
+                  <Pie
+                    data={distributionData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={100}
+                    paddingAngle={3}
+                  >
+                    {distributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Student-Staff Ratio */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Student-Staff Ratio</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ratioData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="ratio" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
       </div>
     </DashboardLayout>
-  );
-}
-
-// --- CHART COMPONENTS ---
-
-/**
- * Your provided Enrollment Trends Line Chart
- */
-export function EnrollmentChart() {
-  return (
-    <Card className="lg:col-span-1"> {/* Modified this to fit grid */}
-      <CardHeader>
-        <CardTitle>Enrollment Trends (2019-2024)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={enrollmentData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis 
-                dataKey="year" 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="Teachers Colleges" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                dot={false}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="Polytechnics" 
-                stroke="hsl(var(--accent-foreground))" 
-                strokeWidth={2}
-                dot={false}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="Industrial Training" 
-                stroke="hsl(var(--success))" 
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * New Donut Chart for Student Distribution
- */
-function DistributionChart() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Student Distribution (2024)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Pie
-                data={distributionData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={70}
-                outerRadius={100}
-                paddingAngle={3}
-                fill="#8884d8"
-              >
-                {distributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * New Bar Chart for Student-Staff Ratios
- */
-function RatioChart() {
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={ratioData}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis 
-          dataKey="name" 
-          stroke="hsl(var(--muted-foreground))"
-          fontSize={12}
-        />
-        <YAxis 
-          stroke="hsl(var(--muted-foreground))"
-          fontSize={12}
-          label={{ value: 'Students per Staff', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend />
-        <Bar 
-          dataKey="ratio" 
-          name="Student-Staff Ratio"
-          fill="hsl(var(--primary))" 
-          activeBar={<Rectangle fill="hsl(var(--primary-foreground))" />} 
-        />
-      </BarChart>
-    </ResponsiveContainer>
   );
 }
