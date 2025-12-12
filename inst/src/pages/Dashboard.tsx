@@ -158,10 +158,10 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              {/* <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                 <TrendingUp className="h-3 w-3 text-green-600" />
                 <span className="text-green-600">{stat.change}</span> from last month
-              </p>
+              </p> */}
             </CardContent>
           </Card>
         ))}

@@ -1,31 +1,27 @@
 import apiClient from "./api";
-
+import * as XLSX from "xlsx"; // Import SheetJS
 // --- Types ---
 
 export interface Staff {
   id: number;
-  user?: number | null; // ID of the linked Auth User
+  user?: number | null;
   institution: number;
-  institution_name: string; // Read-only from backend
+  institution_name: string;
   faculty?: number | null;
-  faculty_name?: string;    // Read-only from backend
-  
+  faculty_name?: string;
+  department?: number | null; // Added based on recent changes
+  department_name?: string;   // Added based on recent changes
   first_name: string;
   last_name: string;
-  full_name: string;        // Read-only
+  full_name: string;
   email: string;
   phone: string;
-  
   employee_id: string;
-  position: 'Professor' | 'Lecturer' | 'Assistant' | 'Admin' | 'Other';
-  department: string;
-  
-  qualification: 'PhD' | 'Masters' | 'Bachelors' | 'Diploma' | 'Certificate' | 'Other';
+  position: string;
+  qualification: string;
   specialization: string;
-  
-  date_joined: string; // YYYY-MM-DD
+  date_joined: string;
   is_active: boolean;
-  
   created_at: string;
   updated_at: string;
 }
@@ -195,6 +191,46 @@ export const bulkUploadStaff = async (formData: FormData): Promise<any> => {
   }
 };
 
+/**
+ * Export a list of staff members to an Excel file (.xlsx).
+ * * @param staffList - Array of Staff objects to export
+ * @param filename - Name of the file to download (default: 'Staff_List.xlsx')
+ */
+export const exportStaffToExcel = (staffList: Staff[], filename: string = "Staff_List.xlsx") => {
+  if (!staffList || staffList.length === 0) {
+    console.warn("No staff data to export.");
+    return;
+  }
+
+  // 1. Prepare Data for Excel
+  // We map the raw data to "User Friendly" column headers
+  const excelData = staffList.map((staff) => ({
+    "Employee ID": staff.employee_id,
+    "First Name": staff.first_name,
+    "Last Name": staff.last_name,
+    "Email": staff.email,
+    "Phone": staff.phone,
+    "Position": staff.position,
+    "Faculty": staff.faculty_name || "N/A",
+    "Department": staff.department_name || "N/A",
+    "Qualification": staff.qualification,
+    "Specialization": staff.specialization,
+    "Status": staff.is_active ? "Active" : "Inactive",
+    "Date Joined": staff.date_joined,
+  }));
+
+  // 2. Create Workbook and Worksheet
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = XLSX.utils.book_new();
+  
+  // Append the worksheet to the workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Staff Directory");
+
+  // 3. Trigger Download
+  // This automatically creates a blob and triggers the browser download behavior
+  XLSX.writeFile(workbook, filename);
+};
+
 const staffService = {
   getStaff,
   getStaffById,
@@ -205,6 +241,7 @@ const staffService = {
   createVacancy,
   deleteVacancy,
   bulkUploadStaff,
+  exportStaffToExcel,
 };
 
 export default staffService;

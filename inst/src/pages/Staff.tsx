@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import {
   Card,
   CardContent,
@@ -47,6 +46,8 @@ import {
   GraduationCap,
   Award,
   Loader2,
+  UserCog, // Generic icon
+  Shield, // Admin icon
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -65,15 +66,13 @@ import {
 } from "@/services/staff.services";
 import { AddVacancyDialog } from "@/components/AddVacancyDialog";
 import { UploadStaffDialog } from "@/components/helpers/UploadStaffDialog";
+import { exportStaffToExcel } from "@/services/staff.services";
 
 const Staff = () => {
   const { user } = useAuth();
 
   const [staff, setStaff] = useState<StaffType[]>([]);
-  
-  // FIX: Use this single 'loading' state for the staff table
   const [loading, setLoading] = useState(true);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterFaculty, setFilterFaculty] = useState("all");
@@ -83,18 +82,17 @@ const Staff = () => {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [vacanciesLoading, setVacanciesLoading] = useState(true);
 
-  // 1. Fetch Staff - FIX: Updated to use setLoading
+  // 1. Fetch Staff
   const fetchStaff = useCallback(async () => {
     if (!user?.institution?.id) return;
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
       const data = await getStaff({ institution_id: user.institution.id });
-      
       if (Array.isArray(data)) setStaff(data);
     } catch (error) {
       console.error("Failed to fetch staff:", error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   }, [user]);
 
@@ -104,6 +102,7 @@ const Staff = () => {
     try {
       setVacanciesLoading(true);
       const data = await getVacancies(user.institution.id);
+      
       if (Array.isArray(data)) setVacancies(data);
     } catch (error) {
       console.error("Failed to fetch vacancies:", error);
@@ -112,13 +111,33 @@ const Staff = () => {
     }
   }, [user]);
 
-  // Initial Load
   useEffect(() => {
     fetchStaff();
     fetchVacancies();
   }, [fetchStaff, fetchVacancies]);
 
-  // Client-side filtering on the fetched data
+  // --- DYNAMIC CALCULATIONS ---
+
+  // 1. Calculate counts for every unique position found in the data
+  const roleStats = useMemo(() => {
+    return staff.reduce((acc, person) => {
+        const role = person.position || "Other";
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+  }, [staff]);
+
+  // 2. Helper to get icon based on role name
+  const getRoleIcon = (role: string) => {
+    const r = role.toLowerCase();
+    if (r.includes('professor')) return <Award className="h-4 w-4" />;
+    if (r.includes('lecturer')) return <GraduationCap className="h-4 w-4" />;
+    if (r.includes('assistant')) return <Users className="h-4 w-4" />;
+    if (r.includes('admin')) return <Shield className="h-4 w-4" />;
+    return <UserCog className="h-4 w-4" />;
+  };
+
+  // --- Filtering ---
   const filteredStaff = staff.filter((s) => {
     const matchesSearch =
       (s.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
@@ -126,7 +145,7 @@ const Staff = () => {
       (s.email?.toLowerCase() || "").includes(searchQuery.toLowerCase());
 
     const matchesDepartment =
-      filterDepartment === "all" || s.department === filterDepartment;
+      filterDepartment === "all" || s.department_name === filterDepartment;
     const matchesFaculty =
       filterFaculty === "all" ||
       (s.faculty_name || "Unassigned") === filterFaculty;
@@ -134,28 +153,19 @@ const Staff = () => {
     return matchesSearch && matchesDepartment && matchesFaculty;
   });
 
-  // Statistics Calculations
-  const totalStaff = staff.length;
-  const professors = staff.filter((s) => s.position === "Professor").length;
-  const lecturers = staff.filter((s) => s.position === "Lecturer").length;
-  const assistants = staff.filter((s) => s.position === "Assistant").length;
+  const uniqueDepartments = Array.from(new Set(staff.map((s) => s.department_name).filter(Boolean)));
+  const uniqueFaculties = Array.from(new Set(staff.map((s) => s.faculty_name).filter(Boolean)));
 
-  const requiredProfessors = 8;
-  const requiredLecturers = 25;
-  const requiredAssistants = 10;
+  const handleExport = () => {
+    if (filteredStaff.length === 0) return;
+    const dateStr = new Date().toISOString().split('T')[0];
+    exportStaffToExcel(filteredStaff, `Staff_Export_${dateStr}.xlsx`);
+  };
 
   const handleViewProfile = (staffMember: StaffType) => {
     setSelectedStaff(staffMember);
     setShowProfile(true);
   };
-
-  const uniqueDepartments = Array.from(
-    new Set(staff.map((s) => s.department_name).filter(Boolean))
-  );
-  
-  const uniqueFaculties = Array.from(
-    new Set(staff.map((s) => s.faculty_name).filter(Boolean))
-  );
 
   return (
     <div className="space-y-6">
@@ -169,82 +179,37 @@ const Staff = () => {
         </p>
       </div>
 
+      {/* --- DYNAMIC STATS GRID --- */}
       <div className="grid gap-4 md:grid-cols-4">
+        
+        {/* Always keep Total Staff card */}
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Staff</CardDescription>
-            <CardTitle className="text-3xl">{totalStaff}</CardTitle>
+            <CardTitle className="text-3xl">{staff.length}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">All departments</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <Award className="h-4 w-4" />
-              Professors
-            </CardDescription>
-            <CardTitle className="text-3xl">
-              {professors}{" "}
-              <span className="text-sm text-muted-foreground font-normal">
-                / {requiredProfessors}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-1 text-xs text-destructive">
-              <TrendingDown className="h-3 w-3" />
-              <span>
-                {Math.max(0, requiredProfessors - professors)} positions short
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              Lecturers
-            </CardDescription>
-            <CardTitle className="text-3xl">
-              {lecturers}{" "}
-              <span className="text-sm text-muted-foreground font-normal">
-                / {requiredLecturers}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-1 text-xs text-destructive">
-              <TrendingDown className="h-3 w-3" />
-              <span>
-                {Math.max(0, requiredLecturers - lecturers)} positions short
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Assistants
-            </CardDescription>
-            <CardTitle className="text-3xl">
-              {assistants}{" "}
-              <span className="text-sm text-muted-foreground font-normal">
-                / {requiredAssistants}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-1 text-xs text-destructive">
-              <TrendingDown className="h-3 w-3" />
-              <span>
-                {Math.max(0, requiredAssistants - assistants)} positions short
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+
+        {/* Generate a card for each role found in DB */}
+        {Object.entries(roleStats).map(([role, count]) => (
+            <Card key={role}>
+                <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center gap-2">
+                        {getRoleIcon(role)}
+                        {role}s {/* Simple pluralization */}
+                    </CardDescription>
+                    <CardTitle className="text-3xl">
+                        {count}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Active records</p>
+                </CardContent>
+            </Card>
+        ))}
       </div>
 
       <Card>
@@ -292,8 +257,8 @@ const Staff = () => {
                     <div>
                       <p className="font-medium">{position.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {position.faculty ? `${position.faculty} - ` : ""}
-                        {position.department}
+                        {position.faculty ? `${position.faculty_name} - ` : ""}
+                        {position.department_name}
                       </p>
                     </div>
                   </div>
@@ -327,19 +292,19 @@ const Staff = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
               <UploadStaffDialog onSuccess={fetchStaff} />
               <AddStaffDialog
                 onStaffAdded={fetchStaff}
-                institutionId={user?.institution?.id}
               />
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Filters Bar */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -398,7 +363,6 @@ const Staff = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* FIX: Now checks the correct 'loading' state */}
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
@@ -499,6 +463,7 @@ const Staff = () => {
 
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {/* ... Profile details (same as before) ... */}
           <DialogHeader>
             <DialogTitle className="text-2xl">Staff Profile</DialogTitle>
             <DialogDescription>

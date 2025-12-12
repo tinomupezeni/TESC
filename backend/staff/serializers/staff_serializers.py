@@ -48,6 +48,9 @@ class StaffSerializer(serializers.ModelSerializer):
 
 class VacancySerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.name', read_only=True)
+    
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
 
     class Meta:
         model = Vacancy
@@ -57,7 +60,9 @@ class VacancySerializer(serializers.ModelSerializer):
             'institution_name',
             'title', 
             'faculty', 
+            'faculty_name',
             'department', 
+            'department_name',
             'quantity', 
             'deadline', 
             'description', 
