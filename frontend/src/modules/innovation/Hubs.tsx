@@ -1,38 +1,42 @@
-
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, Maximize, Clock, Zap } from "lucide-react";
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
-} from "@/components/ui/table";
+import { Building2, Users, Maximize, Zap, Loader2, FolderOpen } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { getHubStats } from "@/services/analysis.services"; // Or innovation.services depending on where you put it
 
-// --- MOCK DATA ---
-const HUB_STATS = {
-    totalHubs: 22,
-    totalCapacity: 180,
-    occupancyRate: "85%",
-    activePrograms: 14,
-};
-
-const HUB_DATA = [
-    { name: "Tech Launchpad", institution: "Harare Poly", capacity: 20, occupied: 18, services: 5, status: "High" },
-    { name: "Rural Innovation Center", institution: "Mutare Poly", capacity: 15, occupied: 12, services: 3, status: "Medium" },
-    { name: "Skills Accelerator", institution: "Mkoba TC", capacity: 10, occupied: 10, services: 4, status: "Full" },
-    { name: "Agri-Tech Lab", institution: "Chinhoyi Poly", capacity: 25, occupied: 15, services: 6, status: "Medium" },
-    { name: "Digital Workshop", institution: "Bulawayo ITC", capacity: 30, occupied: 28, services: 5, status: "High" },
-];
-
-// --- COMPONENT ---
 export default function Hubs() {
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getHubStats()
+            .then(setData)
+            .catch((err) => console.error("Failed to load hubs:", err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    // 1. Loading State
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="flex justify-center h-[80vh] items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // 2. Safe Data Access
+    const stats = data?.stats || {};
+    const hubData = data?.hub_data || [];
+    const hasData = hubData.length > 0;
+
     return (
         <DashboardLayout>
             <div className="space-y-6">
+                
                 {/* Header */}
                 <div className="pb-2 border-b">
                     <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -40,81 +44,95 @@ export default function Hubs() {
                         Incubation Hubs Management
                     </h1>
                     <p className="text-muted-foreground">
-                        Detailed statistics and occupancy tracking for all TESC Incubation Hubs.
+                        Statistics and occupancy tracking for TESC Incubation Hubs.
                     </p>
                 </div>
 
-                {/* Key Metrics */}
+                {/* Key Metrics - defaults to 0 if null */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatsCard
-                        title="Total Hubs"
-                        value={HUB_STATS.totalHubs}
-                        description="Physical and virtual centers"
-                        icon={Building2}
-                        variant="default"
+                    <StatsCard 
+                        title="Total Hubs" 
+                        value={stats.totalHubs || 0} 
+                        description="Physical centers" 
+                        icon={Building2} 
                     />
-                    <StatsCard
-                        title="Total Capacity"
-                        value={HUB_STATS.totalCapacity}
-                        description="Seats/spaces available"
-                        icon={Maximize}
-                        variant="info"
+                    <StatsCard 
+                        title="Total Capacity" 
+                        value={stats.totalCapacity || 0} 
+                        description="Seats available" 
+                        icon={Maximize} 
+                        variant="info" 
                     />
-                    <StatsCard
-                        title="Occupancy Rate"
-                        value={HUB_STATS.occupancyRate}
-                        description="Average utilization across network"
-                        icon={Users}
-                        variant="accent"
+                    <StatsCard 
+                        title="Occupancy Rate" 
+                        value={stats.occupancyRate || "0%"} 
+                        description="Utilization" 
+                        icon={Users} 
+                        variant="accent" 
                     />
-                    <StatsCard
-                        title="Active Programs"
-                        value={HUB_STATS.activePrograms}
-                        description="Events/workshops running now"
-                        icon={Zap}
-                        variant="success"
+                    <StatsCard 
+                        title="Active Programs" 
+                        value={stats.activePrograms || 0} 
+                        description="High activity hubs" 
+                        icon={Zap} 
+                        variant="success" 
                     />
                 </div>
 
-                {/* Hubs Detail Table */}
+                {/* Hubs Table with Empty State */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Hub Occupancy and Services</CardTitle>
-                        <p className="text-sm text-muted-foreground">View real-time status and activity of each incubation center.</p>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Hub Name</TableHead>
-                                    <TableHead>Institution</TableHead>
-                                    <TableHead className="text-center">Capacity</TableHead>
-                                    <TableHead className="text-center">Occupied</TableHead>
-                                    <TableHead className="text-center">Services</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {HUB_DATA.map((hub) => (
-                                    <TableRow key={hub.name}>
-                                        <TableCell className="font-medium">{hub.name}</TableCell>
-                                        <TableCell>{hub.institution}</TableCell>
-                                        <TableCell className="text-center">{hub.capacity}</TableCell>
-                                        <TableCell className="text-center">{hub.occupied}</TableCell>
-                                        <TableCell className="text-center">{hub.services}</TableCell>
-                                        <TableCell className="text-right">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full 
-                                                ${hub.status === 'Full' ? 'bg-red-100 text-red-700' :
-                                                  hub.status === 'High' ? 'bg-yellow-100 text-yellow-700' :
-                                                  'bg-green-100 text-green-700'
-                                                }`}>
-                                                {hub.status}
-                                            </span>
-                                        </TableCell>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Hub Name</TableHead>
+                                        <TableHead>Institution</TableHead>
+                                        <TableHead className="text-center">Capacity</TableHead>
+                                        <TableHead className="text-center">Occupied</TableHead>
+                                        <TableHead className="text-center">Services</TableHead>
+                                        <TableHead className="text-right">Status</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {hasData ? (
+                                        hubData.map((hub: any, i: number) => (
+                                            <TableRow key={i}>
+                                                <TableCell className="font-medium">{hub.name}</TableCell>
+                                                <TableCell>{hub.institution}</TableCell>
+                                                <TableCell className="text-center">{hub.capacity}</TableCell>
+                                                <TableCell className="text-center">{hub.occupied}</TableCell>
+                                                <TableCell className="text-center">{hub.services}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full 
+                                                        ${hub.status === 'Full' ? 'bg-red-100 text-red-700' : 
+                                                          hub.status === 'High' ? 'bg-green-100 text-green-700' : 
+                                                          'bg-yellow-100 text-yellow-700'}`}>
+                                                        {hub.status}
+                                                    </span>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        // EMPTY STATE ROW
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-48 text-center">
+                                                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                                    <FolderOpen className="h-10 w-10 mb-2 opacity-20" />
+                                                    <p className="font-medium">No innovation hubs found</p>
+                                                    <p className="text-xs">
+                                                        No hubs have been registered in the system yet.
+                                                    </p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

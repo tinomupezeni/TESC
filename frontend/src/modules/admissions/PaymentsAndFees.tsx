@@ -1,36 +1,60 @@
-
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Wallet, Percent, AlertTriangle, CheckCircle, TrendingDown } from "lucide-react";
+import { DollarSign, Wallet, Percent, AlertTriangle, TrendingDown, Loader2, FolderOpen } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { getFinancialStats, FinancialStats } from "@/services/analysis.services";
 
-// --- MOCK DATA ---
-const FINANCIAL_STATS = {
-    totalPending: "ZWL 4.5M",
-    complianceRate: "78.2%",
-    studentsWithPending: 1850,
-    totalCollectedYTD: "ZWL 12.8M",
-};
-
-const FEE_STRUCTURE = [
-    { program: 'Education (3 Yrs)', fees: 45000, deadline: '2025-08-30' },
-    { program: 'Engineering (4 Yrs)', fees: 58000, deadline: '2025-08-30' },
-    { program: 'Industrial Arts (2 Yrs)', fees: 35000, deadline: '2025-08-30' },
-];
-
-const PAYMENT_COMPLIANCE_DATA = [
-    { month: 'Jul', Target: 1.5, Collected: 1.2 },
-    { month: 'Aug', Target: 2.1, Collected: 1.8 },
-    { month: 'Sep', Target: 2.5, Collected: 2.2 },
-    { month: 'Oct', Target: 2.8, Collected: 2.7 },
-    { month: 'Nov', Target: 3.2, Collected: 2.9 },
-];
-
-// --- COMPONENT ---
 export default function PaymentsAndFees() {
+    const [data, setData] = useState<FinancialStats | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const response = await getFinancialStats();
+                setData(response);
+            } catch (error) {
+                console.error("Failed to load financial stats", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Helper to format money
+    const formatCurrency = (amount: number | undefined) => {
+        if (amount === undefined || amount === null) return "$0";
+        return new Intl.NumberFormat('en-ZW', {
+            style: 'currency',
+            currency: 'ZWL', // Or USD
+            notation: "compact",
+            maximumFractionDigits: 1
+        }).format(amount);
+    };
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="flex justify-center items-center h-[80vh]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // Safe Data Access
+    const stats = data?.stats || {};
+    const fee_structure = data?.fee_structure || [];
+    const payment_data = data?.payment_data || [];
+    // If no payment data exists, show empty chart state
+    const hasPaymentData = payment_data.some(d => d.Collected > 0 || d.Target > 0);
+
     return (
         <DashboardLayout>
             <div className="space-y-6">
@@ -50,30 +74,29 @@ export default function PaymentsAndFees() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard
                         title="Total Pending Fees"
-                        value={FINANCIAL_STATS.totalPending}
+                        value={formatCurrency(stats.totalPending)}
                         description="Outstanding student debt"
                         icon={AlertTriangle}
                         variant="destructive"
                     />
                     <StatsCard
                         title="Fees Compliance Rate"
-                        value={FINANCIAL_STATS.complianceRate}
-                        description="Percentage of required payment collected"
+                        value={`${stats.complianceRate || 0}%`}
+                        description="Percentage of expected revenue collected"
                         icon={Percent}
-                        trend={{ value: 1.5, label: "increase this month" }}
                         variant="success"
                     />
                     <StatsCard
-                        title="Students with Pending Fees"
-                        value={FINANCIAL_STATS.studentsWithPending}
+                        title="Students with Pending"
+                        value={stats.studentsWithPending || 0}
                         description="Students with outstanding balances"
                         icon={TrendingDown}
                         variant="warning"
                     />
                     <StatsCard
                         title="Total Collected (YTD)"
-                        value={FINANCIAL_STATS.totalCollectedYTD}
-                        description="Cumulative revenue collected so far"
+                        value={formatCurrency(stats.totalCollectedYTD)}
+                        description="Cumulative revenue collected this year"
                         icon={DollarSign}
                         variant="info"
                     />
@@ -84,18 +107,43 @@ export default function PaymentsAndFees() {
                     
                     {/* Monthly Collection Chart */}
                     <Card className="lg:col-span-3">
-                        <CardHeader><CardTitle>Monthly Fees Collection (ZWL Millions)</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Monthly Fees Collection</CardTitle></CardHeader>
                         <CardContent>
-                            <div className="h-80">
+                            <div className="h-80 relative">
+                                {!hasPaymentData && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 text-muted-foreground bg-background/50">
+                                        <FolderOpen className="h-10 w-10 mb-2 opacity-20" />
+                                        <p className="text-sm">No payment data recorded for this year.</p>
+                                    </div>
+                                )}
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={PAYMENT_COMPLIANCE_DATA}>
+                                    <BarChart data={hasPaymentData ? payment_data : [{ month: 'Jan', Target: 0, Collected: 0 }]}>
                                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                         <XAxis dataKey="month" fontSize={12} stroke="hsl(var(--muted-foreground))" />
-                                        <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
-                                        <Tooltip />
+                                        <YAxis 
+                                            fontSize={12} 
+                                            stroke="hsl(var(--muted-foreground))" 
+                                            tickFormatter={(val) => formatCurrency(val)}
+                                        />
+                                        {hasPaymentData && (
+                                            <Tooltip 
+                                                formatter={(val: number) => formatCurrency(val)}
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                            />
+                                        )}
                                         <Legend />
-                                        <Bar dataKey="Target" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                                        <Bar dataKey="Collected" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                                        <Bar 
+                                            dataKey="Target" 
+                                            fill={hasPaymentData ? "hsl(var(--accent))" : "#e2e8f0"} 
+                                            radius={[4, 4, 0, 0]} 
+                                            name="Target" 
+                                        />
+                                        <Bar 
+                                            dataKey="Collected" 
+                                            fill={hasPaymentData ? "hsl(var(--success))" : "#e2e8f0"} 
+                                            radius={[4, 4, 0, 0]} 
+                                            name="Actual" 
+                                        />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -105,71 +153,55 @@ export default function PaymentsAndFees() {
                     {/* Fee Structure Table */}
                     <Card className="lg:col-span-2">
                         <CardHeader>
-                            <CardTitle>Current Fee Structure</CardTitle>
-                            <p className="text-sm text-muted-foreground">Standard fees by major program category.</p>
+                            <CardTitle>Program Fee Structure</CardTitle>
+                            <p className="text-sm text-muted-foreground">Top programs by annual fee cost.</p>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Program</TableHead>
-                                        <TableHead className="text-right">Fees (ZWL)</TableHead>
+                                        <TableHead className="text-right">Annual Fee</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {FEE_STRUCTURE.map((item) => (
-                                        <TableRow key={item.program}>
-                                            <TableCell className="font-medium">{item.program}</TableCell>
-                                            <TableCell className="text-right font-bold">{item.fees.toLocaleString()}</TableCell>
+                                    {fee_structure.length > 0 ? (
+                                        fee_structure.map((item: any, i: number) => (
+                                            <TableRow key={i}>
+                                                <TableCell className="font-medium">{item.name}</TableCell>
+                                                <TableCell className="text-right font-bold text-primary">
+                                                    {formatCurrency(item.annual_fee)}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="h-32 text-center text-muted-foreground">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <p>No fee structures defined.</p>
+                                                </div>
+                                            </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
                             </Table>
-                            <Button variant="outline" className="mt-4 w-full">View Detailed Invoices</Button>
+                            <Button variant="outline" className="mt-4 w-full">View All Programs</Button>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Pending Payments Table (High-level data) */}
+                {/* Pending Payments Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Top 10 Pending Balances</CardTitle>
-                        <p className="text-sm text-muted-foreground">List of students with the largest outstanding debt.</p>
+                        <CardTitle>Top Outstanding Balances</CardTitle>
+                        <p className="text-sm text-muted-foreground">Students with significant pending payments.</p>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Student ID</TableHead>
-                                    <TableHead>Student Name</TableHead>
-                                    <TableHead>Program</TableHead>
-                                    <TableHead className="text-right">Amount Due (ZWL)</TableHead>
-                                    <TableHead className="text-center">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {/* Mock Data for Top Pending Balances */}
-                                {[
-                                    { id: 'S001', name: 'Nkomo, S.', program: 'Engineering', amount: 15500, status: 'Overdue' },
-                                    { id: 'S002', name: 'Moyo, T.', program: 'Education', amount: 12000, status: 'Due Soon' },
-                                    { id: 'S003', name: 'Chari, B.', program: 'Industrial Arts', amount: 9800, status: 'Overdue' },
-                                    { id: 'S004', name: 'Zuma, K.', program: 'Engineering', amount: 8700, status: 'Due Soon' },
-                                ].map((student) => (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium">{student.id}</TableCell>
-                                        <TableCell>{student.name}</TableCell>
-                                        <TableCell>{student.program}</TableCell>
-                                        <TableCell className="text-right font-bold text-red-600">{student.amount.toLocaleString()}</TableCell>
-                                        <TableCell className="text-center">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full 
-                                                ${student.status === 'Overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {student.status}
-                                            </span>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        {/* Placeholder until per-student balance logic is finalized on backend */}
+                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-md border border-dashed flex flex-col items-center justify-center gap-2">
+                            <TrendingDown className="h-8 w-8 opacity-20" />
+                            <p>Detailed individual debt analysis is calculating...</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

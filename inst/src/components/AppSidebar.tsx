@@ -10,6 +10,9 @@ import {
   Lightbulb,
   Settings,
   LogOut,
+  School, // New icon for Faculties
+  ChevronRight,
+  MoreHorizontal
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,26 +23,54 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader, // Ensure you have this or use a div
+  SidebarFooter, // Ensure you have this
+  SidebarRail,   // Optional: for resizing
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Assuming you have shadcn Avatar
 import { useAuth } from "@/context/AuthContext";
 
-const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Students", url: "/dashboard/students", icon: Users },
-  { title: "Staff", url: "/dashboard/staff", icon: UserCog },
-  { title: "Programs", url: "/dashboard/programs", icon: BookOpen },
-  { title: "Faculties", url: "/dashboard/faculties", icon: BookOpen },
-  { title: "Graduates", url: "/dashboard/graduates", icon: GraduationCap },
-  { title: "Facilities", url: "/dashboard/facilities", icon: Building2 },
-  { title: "Innovation", url: "/dashboard/innovation", icon: Lightbulb },
-  { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
+// Grouped Menu Items for better organization
+const menuGroups = [
+  {
+    label: "Overview",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    ]
+  },
+  {
+    label: "Academic Management",
+    items: [
+      { title: "Students", url: "/dashboard/students", icon: Users },
+      { title: "Staff", url: "/dashboard/staff", icon: UserCog },
+      { title: "Faculties", url: "/dashboard/faculties", icon: School }, // Changed icon to distinguish
+      { title: "Programs", url: "/dashboard/programs", icon: BookOpen },
+      { title: "Graduates", url: "/dashboard/graduates", icon: GraduationCap },
+    ]
+  },
+  {
+    label: "Operations & Analytics",
+    items: [
+      { title: "Facilities", url: "/dashboard/facilities", icon: Building2 },
+      { title: "Innovation", url: "/dashboard/innovation", icon: Lightbulb },
+      { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
+    ]
+  }
 ];
 
 export default function AppSidebar() {
   const { user, logout } = useAuth();
 
-  console.log(user);
-  
+  // Get initials for avatar fallback
+  const initials = user 
+    ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() 
+    : "U";
 
   const handleLogout = async () => {
     try {
@@ -51,74 +82,100 @@ export default function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent>
-        {/* Header */}
-        <div className="p-4 border-b border-sidebar-border flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
+      
+      {/* --- HEADER: Institution Branding --- */}
+      <SidebarHeader>
+        <div className="flex items-center gap-3 p-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <GraduationCap className="size-5" />
           </div>
-          <div className="overflow-hidden">
-            <h2 className="font-bold text-sidebar-foreground truncate">
-              {user?.institution?.name || "Loading..."}
-            </h2>
-            {/* <p className="text-xs text-sidebar-foreground/70 truncate">
-              {user ? `${user.first_name || ""} ${user.last_name || ""} (${user.role || "Admin"})` : "Loading..."}
-            </p> */}
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold text-white">
+              {user?.institution?.name || "Institution"}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              Admin Portal
+            </span>
           </div>
         </div>
+      </SidebarHeader>
 
-        {/* Main Menu */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/dashboard"}
-                      className={({ isActive }) =>
-                        isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Footer Menu */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/dashboard/settings"
-                    className={({ isActive }) =>
-                      isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50"
-                    }
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/* --- CONTENT: Navigation Groups --- */}
+      <SidebarContent>
+        {menuGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/dashboard"}
+                        className={({ isActive }) =>
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                            : "text-muted-foreground hover:text-foreground"
+                        }
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
+
+      {/* --- FOOTER: User Profile & Settings --- */}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={user?.avatar_url} alt={user?.first_name} />
+                    <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {user?.first_name} {user?.last_name}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {user?.email}
+                    </span>
+                  </div>
+                  <MoreHorizontal className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side="bottom"
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

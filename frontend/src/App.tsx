@@ -27,6 +27,7 @@ import AdmissionsDashboard from "./modules/admissions/AdmissionDashboard";
 import DropoutAnalysis from "./modules/admissions/DropOut";
 import SpecialEnrollment from "./modules/admissions/SpecialEnrollment";
 import PaymentsAndFees from "./modules/admissions/PaymentsAndFees";
+import Admissions from "./pages/Admissions";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Startups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admissions"
+              element={
+                <ProtectedRoute>
+                  <Admissions />
                 </ProtectedRoute>
               }
             />

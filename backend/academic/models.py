@@ -75,6 +75,22 @@ INNOVATION_STATUSES = [
 # --- MODELS ---
 
 class Institution(models.Model):
+    PROVINCES = [
+        ('Harare', 'Harare'),
+        ('Bulawayo', 'Bulawayo'),
+        ('Midlands', 'Midlands'),
+        ('Manicaland', 'Manicaland'),
+        ('Masvingo', 'Masvingo'),
+        ('Mashonaland East', 'Mashonaland East'),
+        ('Mashonaland West', 'Mashonaland West'),
+        ('Mashonaland Central', 'Mashonaland Central'),
+        ('Matabeleland North', 'Matabeleland North'),
+        ('Matabeleland South', 'Matabeleland South'),
+    ]
+
+    province = models.CharField(max_length=50, choices=PROVINCES, default='Harare')
+   
+    has_innovation_hub = models.BooleanField(default=False)
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=50, choices=INSTITUTION_TYPES)
     location = models.CharField(max_length=100, help_text="e.g., Harare Province")
@@ -124,6 +140,14 @@ class Facility(models.Model):
         return f"{self.name} ({self.institution.name})"
 
 class Student(models.Model):
+    DROPOUT_REASONS = [
+        ('Financial', 'Financial Hardship'),
+        ('Academic', 'Academic Failure'),
+        ('Medical', 'Health/Medical'),
+        ('Personal', 'Personal/Family Issues'),
+        ('Transfer', 'Transfer to other Institution'),
+        ('Other', 'Other'),
+    ]
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -143,6 +167,14 @@ class Student(models.Model):
     
     enrollment_year = models.PositiveIntegerField()
     status = models.CharField(max_length=20, choices=STUDENT_STATUSES, default='Active')
+    
+    dropout_reason = models.CharField(
+        max_length=50, 
+        choices=DROPOUT_REASONS, 
+        null=True, 
+        blank=True,
+        help_text="Reason for dropout (only if status is Dropout)"
+    )
 
     # Academic Links
     institution = models.ForeignKey(
@@ -176,39 +208,12 @@ class Student(models.Model):
         return f"{self.full_name} ({self.student_id})"
     
 
-class Innovation(models.Model):
-    """
-    Represents an innovation project registered by an institution.
-    """
-    institution = models.ForeignKey(
-        'academic.Institution', 
-        on_delete=models.CASCADE, 
-        related_name='innovations'
-    )
-    
-    # Core Details
-    title = models.CharField(max_length=255)
-    category = models.CharField(max_length=50, choices=INNOVATION_CATEGORIES)
-    team_name = models.CharField(max_length=255)
-    department = models.CharField(max_length=100, help_text="Department backing this innovation")
-    
-    # Project Description
-    problem_statement = models.TextField()
-    proposed_solution = models.TextField()
-    
-    # Metrics
-    team_size = models.PositiveIntegerField(default=1)
-    timeline_months = models.PositiveIntegerField(help_text="Estimated timeline in months")
-    stage = models.CharField(max_length=50, choices=INNOVATION_STAGES, default='idea')
-    
-    # Administrative
-    status = models.CharField(max_length=20, choices=INNOVATION_STATUSES, default='pending')
+class Payment(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    date_paid = models.DateField()
+    reference = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} ({self.team_name})"
-    
+        return f"{self.student.student_id} - {self.amount}"

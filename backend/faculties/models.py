@@ -77,6 +77,8 @@ class Program(models.Model):
     coordinator = models.CharField(max_length=100, blank=True, help_text="Program Coordinator Name")
     student_capacity = models.PositiveIntegerField(default=0)
     
+    annual_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Standard annual fee for this program")
+    
     modules = models.TextField(blank=True, help_text="Comma-separated list of core modules")
     entry_requirements = models.TextField(blank=True)
 

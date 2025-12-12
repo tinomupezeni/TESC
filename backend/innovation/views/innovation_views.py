@@ -1,7 +1,7 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
-from ..models import Innovation
+from ..models import Project
 from ..serializers.innovation_serializers import InnovationSerializer
 from ..services.innovation_services import InnovationService
 
@@ -9,7 +9,7 @@ class InnovationViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing Innovations.
     """
-    queryset = Innovation.objects.all()
+    queryset = Project.objects.all()
     serializer_class = InnovationSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'team_name', 'department', 'category']
@@ -18,7 +18,7 @@ class InnovationViewSet(viewsets.ModelViewSet):
         """
         Filter innovations by Institution, Category, or Stage.
         """
-        queryset = Innovation.objects.select_related('institution')
+        queryset = Project.objects.select_related('institution')
         
         # Filter by Institution
         institution_id = self.request.query_params.get('institution_id')

@@ -1,7 +1,8 @@
-import { DashboardLayout } from "../components/layout/DashboardLayout"; // Fixed Import
+import { useState, useEffect } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lightbulb, FileText, Beaker, Zap, Users, Factory, Globe } from "lucide-react";
-import { StatsCard } from "../components/dashboard/StatsCard"; // Fixed Import
+import { Lightbulb, FileText, Factory, Globe, Zap, Loader2, FolderOpen } from "lucide-react";
+import { StatsCard } from "@/components/dashboard/StatsCard";
 import { 
     Table, 
     TableBody, 
@@ -20,33 +21,7 @@ import {
     Tooltip,
     Legend,
 } from "recharts";
-
-// --- MOCK DATA ---
-const patentData = [
-    { year: "2019", Patents: 5 },
-    { year: "2020", Patents: 8 },
-    { year: "2021", Patents: 14 },
-    { year: "2022", Patents: 22 },
-    { year: "2023", Patents: 35 },
-    { year: "2024", Patents: 45 },
-];
-
-const innovationData = [
-    { id: "IN001", name: "Solar-Powered Water Purifier", institution: "Harare Poly", stage: "Prototyping", status: "Active" },
-    { id: "IN002", name: "Low-Cost Ventilator", institution: "Mutare Poly", stage: "Commercialized", status: "Complete" },
-    { id: "IN003", name: "EdTech Learning Platform", institution: "Mkoba TC", stage: "Ideation", status: "Review" },
-    { id: "IN004", name: "Drought-Resistant Maize AI", institution: "Chinhoyi Poly", stage: "Research", status: "Active" },
-    { id: "IN005", name: "Artisan Skills Portal", institution: "Bulawayo ITC", stage: "Industrialisation", status: "Launched" },
-    { id: "IN006", name: "Digital Records System", institution: "Gweru TC", stage: "Prototyping", status: "Active" },
-];
-
-const STAGE_FLOW_DATA = [
-    { stage: 'Ideation', count: 55, color: 'hsl(var(--warning))' },
-    { stage: 'Research', count: 35, color: 'hsl(var(--info))' },
-    { stage: 'Prototype', count: 25, color: 'hsl(var(--accent))' },
-    { stage: 'Industrialization', count: 15, color: 'hsl(var(--success))' },
-    { stage: 'Commercialized', count: 8, color: 'hsl(var(--primary))' },
-];
+import { getInnovationOverview } from "@/services/analysis.services";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -62,38 +37,75 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-// --- Component to show the visual stage flow (simple list/status bar) ---
-function InnovationStageFlow() {
+// Sub-component for Pipeline
+function InnovationStageFlow({ data, total }: { data: any[], total: number }) {
+    const order = ['Ideation', 'Research', 'Prototype', 'Incubation', 'Industrialization', 'Commercialized'];
+    const sortedData = data ? data.sort((a, b) => order.indexOf(a.stage) - order.indexOf(b.stage)) : [];
+    const hasData = sortedData.length > 0;
+
     return (
         <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Innovation Project Pipeline</CardTitle></CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {STAGE_FLOW_DATA.map((item, index) => (
-                        <div key={item.stage} className="flex items-center space-x-4">
-                            <span className="w-24 text-sm font-medium text-muted-foreground">{item.stage}</span>
-                            <div className="flex-grow bg-muted rounded-full h-3 relative">
-                                {/* Use an imaginary total of 150 projects for percentage calculation */}
-                                <div 
-                                    className="h-full rounded-full transition-all duration-500" 
-                                    style={{ 
-                                        width: `${(item.count / 150) * 100}%`, 
-                                        backgroundColor: item.color 
-                                    }} 
-                                />
+                    {hasData ? (
+                        sortedData.map((item) => (
+                            <div key={item.stage} className="flex items-center space-x-4">
+                                <span className="w-32 text-sm font-medium text-muted-foreground">{item.stage}</span>
+                                <div className="flex-grow bg-muted rounded-full h-3 relative overflow-hidden">
+                                    <div 
+                                        className="h-full rounded-full transition-all duration-500" 
+                                        style={{ 
+                                            width: `${(item.count / (total || 1)) * 100}%`, 
+                                            backgroundColor: item.color 
+                                        }} 
+                                    />
+                                </div>
+                                <span className="w-10 text-right font-bold" style={{ color: item.color }}>{item.count}</span>
                             </div>
-                            <span className="w-10 text-right font-bold" style={{ color: item.color }}>{item.count}</span>
+                        ))
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                            <FolderOpen className="h-8 w-8 mb-2 opacity-20" />
+                            <p className="text-sm">No active projects in the pipeline.</p>
                         </div>
-                    ))}
+                    )}
                 </div>
             </CardContent>
         </Card>
     );
 }
 
-
-// --- MAIN COMPONENT ---
 export default function InnovationOverview() {
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getInnovationOverview()
+            .then(setData)
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="flex justify-center items-center h-[80vh]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // Safe Data Access
+    const stats = data?.stats || {};
+    const pipeline = data?.pipeline || [];
+    const projects = data?.projects || [];
+    const patentTrend = data?.patent_trend || [];
+    
+    // Check if trends actually have data (non-zero)
+    const hasTrendData = patentTrend.some((p: any) => p.Patents > 0);
+
     return (
         <DashboardLayout>
             <div className="space-y-6">
@@ -112,61 +124,68 @@ export default function InnovationOverview() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard
                         title="Projects in Pipeline"
-                        value="138" // Sum of STAGE_FLOW_DATA counts
+                        value={stats.total_projects || 0}
                         description="Total active projects"
                         icon={Zap}
                         variant="accent"
                     />
                     <StatsCard
-                        title="Patents Filed (2024)"
-                        value="45"
-                        description="+10 from 2023"
+                        title="Patents Filed"
+                        value={stats.patents_filed || 0}
+                        description="Cumulative total"
                         icon={FileText}
                         variant="success"
                     />
                     <StatsCard
                         title="Industrialised Projects"
-                        value="15"
+                        value={stats.industrial_projects || 0}
                         description="Moved past prototype stage"
                         icon={Factory}
                         variant="info"
                     />
                     <StatsCard
                         title="Innovation Hubs"
-                        value="22"
+                        value={stats.hubs || 0}
                         description="Across all institutions"
                         icon={Globe}
                     />
                 </div>
 
-                {/* Charts and Tables */}
+                {/* Charts Area */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
-                    {/* Innovation Project Pipeline Visualization */}
-                    <InnovationStageFlow />
+                    {/* Pipeline Visualization */}
+                    <InnovationStageFlow data={pipeline} total={stats.total_projects} />
                     
                     {/* Patents Filed Chart */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Patents Filed Per Year</CardTitle>
+                            <CardTitle>Patents Filed Trend</CardTitle>
                         </CardHeader>
                         <CardContent className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={patentData}>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                    <XAxis dataKey="year" fontSize={12} stroke="hsl(var(--muted-foreground))" />
-                                    <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="Patents"
-                                        stroke="hsl(var(--success))"
-                                        strokeWidth={2}
-                                        dot={{ fill: "hsl(var(--success))" }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
+                            {hasTrendData ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={patentTrend}>
+                                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                        <XAxis dataKey="year" fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                                        <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="Patents"
+                                            stroke="hsl(var(--success))"
+                                            strokeWidth={2}
+                                            dot={{ fill: "hsl(var(--success))" }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                                    <FolderOpen className="h-10 w-10 mb-2 opacity-20" />
+                                    <p className="text-sm">No patent data recorded yet.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -174,42 +193,51 @@ export default function InnovationOverview() {
                 {/* Detailed Active Innovations Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Detailed Project Tracking</CardTitle>
-                        <p className="text-sm text-muted-foreground">List of all active projects across the TESC ecosystem.</p>
+                        <CardTitle>Recent Project Activity</CardTitle>
+                        <p className="text-sm text-muted-foreground">List of recently updated projects across the ecosystem.</p>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>ID</TableHead>
-                                    <TableHead>Project</TableHead>
-                                    <TableHead>Institution</TableHead>
-                                    <TableHead>Stage</TableHead>
-                                    <TableHead>Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {innovationData.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.id}</TableCell>
-                                        <TableCell>{item.name}</TableCell>
-                                        <TableCell>{item.institution}</TableCell>
-                                        <TableCell>
-                                            {/* Highlight status based on stage */}
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full 
-                                                ${item.stage === 'Commercialized' ? 'bg-green-100 text-green-700' :
-                                                  item.stage === 'Industrialisation' ? 'bg-blue-100 text-blue-700' :
-                                                  item.stage === 'Prototyping' ? 'bg-yellow-100 text-yellow-700' :
-                                                  'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                {item.stage}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>{item.status}</TableCell>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Project Name</TableHead>
+                                        <TableHead>Institution</TableHead>
+                                        <TableHead>Stage</TableHead>
+                                        <TableHead>Status</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {projects.length > 0 ? (
+                                        projects.map((item: any) => (
+                                            <TableRow key={item.id}>
+                                                <TableCell className="font-medium">{item.name}</TableCell>
+                                                <TableCell>{item.institution}</TableCell>
+                                                <TableCell>
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full 
+                                                        ${['Commercialized', 'Industrialised'].includes(item.stage) ? 'bg-green-100 text-green-700' :
+                                                          ['Industrialization', 'Scaling / Startup'].includes(item.stage) ? 'bg-blue-100 text-blue-700' :
+                                                          item.stage === 'Prototyping' ? 'bg-yellow-100 text-yellow-700' :
+                                                          'bg-gray-100 text-gray-700'
+                                                        }`}>
+                                                        {item.stage}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>{item.status}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-32 text-center">
+                                                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                                    <p>No projects found.</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

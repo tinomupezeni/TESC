@@ -1,13 +1,13 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from ..models import Innovation
+from ..models import Project
 
 class InnovationService:
     @staticmethod
     def create_innovation(validated_data):
         try:
             with transaction.atomic():
-                innovation = Innovation.objects.create(**validated_data)
+                innovation = Project.objects.create(**validated_data)
                 return innovation
         except Exception as e:
             raise ValidationError(f"Error creating innovation: {str(e)}")

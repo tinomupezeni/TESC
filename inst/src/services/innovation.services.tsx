@@ -46,7 +46,7 @@ export interface InnovationFilters {
   search?: string; // Search by title, team_name, department
 }
 
-const END_POINT = '/academic/innovations/';
+const END_POINT = '/innovation/innovations/';
 
 // --- Service Functions ---
 

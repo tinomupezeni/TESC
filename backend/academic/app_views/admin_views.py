@@ -107,7 +107,7 @@ class InstitutionOverviewView(views.APIView):
         # Annotate counts in DB to avoid N+1 queries
         institutions = Institution.objects.annotate(
             student_count=Count('students', filter=Q(students__status='Active')),
-            program_count=Count('programs', distinct=True)
+            program_count=Count('faculties__departments__programs', distinct=True)
         ).order_by('-student_count')[:10] # Top 10 for dashboard
 
         serializer = InstitutionOverviewSerializer(institutions, many=True)

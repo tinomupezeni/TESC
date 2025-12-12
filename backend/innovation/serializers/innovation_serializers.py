@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Innovation
+from ..models import Project
 
 class InnovationSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.name', read_only=True)
@@ -7,7 +7,7 @@ class InnovationSerializer(serializers.ModelSerializer):
     stage_display = serializers.CharField(source='get_stage_display', read_only=True)
 
     class Meta:
-        model = Innovation
+        model = Project
         fields = [
             'id',
             'institution',

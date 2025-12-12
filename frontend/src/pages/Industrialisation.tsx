@@ -1,159 +1,190 @@
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Factory, Handshake, Rocket, DollarSign } from "lucide-react";
+import { Factory, Handshake, Rocket, DollarSign, Loader2, FolderOpen } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-} from "recharts";
-
-// --- MOCK DATA ---
-const startupData = [
-  { name: "AgriTech", value: 25 },
-  { name: "EdTech", value: 15 },
-  { name: "FinTech", value: 10 },
-  { name: "Manufacturing", value: 8 },
-  { name: "Other", value: 7 },
-];
-
-const partnershipData = [
-  { id: "P001", name: "Econet Wireless", focus: "FinTech & Telecoms", status: "Active" },
-  { id: "P002", name: "Zimplats", focus: "Engineering & Mining", status: "Active" },
-  { id: "P003", name: "Delta Corporation", focus: "Food Science", status: "Active" },
-  { id: "P004", name: "CBZ Holdings", focus: "FinTech Incubation", status: "New" },
-  { id: "P005", name: "SeedCo", focus: "AgriTech Research", status: "Active" },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import { getIndustrialStats } from "@/services/analysis.services";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent-foreground))", "hsl(var(--success))", "hsl(var(--info))", "hsl(var(--muted-foreground))"];
 
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border bg-card p-2 shadow-sm text-card-foreground">
-        <p className="font-bold">{`${payload[0].name}: ${payload[0].value}`}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// --- COMPONENT ---
 export default function Industrialisation() {
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Factory className="h-7 w-7" />
-            Industrialisation
-          </h1>
-          <p className="text-muted-foreground">
-            Monitor industry linkages, startups, and commercialization
-          </p>
-        </div>
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Commercialized Products"
-            value="85"
-            description="Innovations now on the market"
-            icon={DollarSign}
-            variant="success"
-          />
-          <StatsCard
-            title="Industry Partnerships"
-            value="210"
-            description="MOUs and active projects"
-            icon={Handshake}
-            variant="info"
-          />
-          <StatsCard
-            title="Student Startups"
-            value="65"
-            description="Launched from innovation hubs"
-            icon={Rocket}
-            variant="accent"
-          />
-          <StatsCard
-            title="Revenue Generated"
-            value="$4.5M"
-            description="From licenses & products"
-            icon={DollarSign}
-          />
-        </div>
+    useEffect(() => {
+        getIndustrialStats()
+            .then(setData)
+            .catch((err) => console.error(err))
+            .finally(() => setLoading(false));
+    }, []);
 
-        {/* Charts and Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Startup Sectors Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Student Startup Sectors</CardTitle>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Pie
-                    data={startupData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                  >
-                    {startupData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+    // 1. Loading State
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="flex justify-center h-[80vh] items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </DashboardLayout>
+        );
+    }
 
-          {/* Key Industry Partners Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Key Industry Partners</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Partner</TableHead>
-                    <TableHead>Focus Area</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {partnershipData.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.focus}</TableCell>
-                      <TableCell>{item.status}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
+    // 2. Format Currency
+    const formatMoney = (amount: number | undefined) => {
+        if (amount === undefined || amount === null) return "$0";
+        return new Intl.NumberFormat('en-US', { 
+            style: 'currency', 
+            currency: 'USD', 
+            notation: "compact" 
+        }).format(amount);
+    };
+
+    // 3. Safe Data Access
+    const stats = data?.stats || {};
+    const sectors = data?.sectors || [];
+    const partnerships = data?.partnerships || [];
+    
+    // Check if we have sector data for the chart
+    const hasSectorData = sectors.length > 0;
+    // If no data, use a gray placeholder for the chart
+    const displaySectors = hasSectorData ? sectors : [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
+
+    return (
+        <DashboardLayout>
+            <div className="space-y-6">
+                
+                {/* Header */}
+                <div className="pb-2 border-b">
+                    <h1 className="text-3xl font-bold flex items-center gap-2">
+                        <Factory className="h-7 w-7 text-primary" /> 
+                        Industrialisation
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Monitor industry linkages, startups, and commercialization.
+                    </p>
+                </div>
+
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatsCard 
+                        title="Commercialized Products" 
+                        value={stats.commercialized || 0} 
+                        description="Market ready" 
+                        icon={DollarSign} 
+                        variant="success" 
+                    />
+                    <StatsCard 
+                        title="Industry Partnerships" 
+                        value={stats.partnerships || 0} 
+                        description="Active Projects" 
+                        icon={Handshake} 
+                        variant="info" 
+                    />
+                    <StatsCard 
+                        title="Student Startups" 
+                        value={stats.startups || 0} 
+                        description="Incubated" 
+                        icon={Rocket} 
+                        variant="accent" 
+                    />
+                    <StatsCard 
+                        title="Revenue Generated" 
+                        value={formatMoney(stats.revenue)} 
+                        description="Total Income" 
+                        icon={DollarSign} 
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    {/* Sector Chart */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Project Sectors</CardTitle>
+                        </CardHeader>
+                        <CardContent className="h-80 relative">
+                            {!hasSectorData && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                    <span className="text-muted-foreground font-medium bg-background/80 px-2 py-1 rounded">
+                                        No Sector Data
+                                    </span>
+                                </div>
+                            )}
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    {hasSectorData && <Tooltip />}
+                                    {hasSectorData && <Legend verticalAlign="bottom" height={36} />}
+                                    <Pie 
+                                        data={displaySectors} 
+                                        dataKey="value" 
+                                        nameKey="name" 
+                                        cx="50%" 
+                                        cy="50%" 
+                                        outerRadius={100} 
+                                        innerRadius={hasSectorData ? 0 : 60} // Donut for empty state
+                                        stroke="none"
+                                    >
+                                        {displaySectors.map((entry: any, index: number) => (
+                                            <Cell 
+                                                key={`cell-${index}`} 
+                                                fill={hasSectorData ? COLORS[index % COLORS.length] : entry.color} 
+                                                opacity={hasSectorData ? 1 : 0.3}
+                                            />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+
+                    {/* Partnership Table */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Key Industry Partners</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="rounded-md border max-h-[320px] overflow-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Partner</TableHead>
+                                            <TableHead>Focus Area</TableHead>
+                                            <TableHead>Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {partnerships.length > 0 ? (
+                                            partnerships.map((item: any, i: number) => (
+                                                <TableRow key={i}>
+                                                    <TableCell className="font-medium">{item.partner_name}</TableCell>
+                                                    <TableCell>{item.focus_area}</TableCell>
+                                                    <TableCell>
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                            {item.status}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            // Empty State Row
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="h-48 text-center">
+                                                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                                        <FolderOpen className="h-8 w-8 mb-2 opacity-20" />
+                                                        <p>No partnerships recorded.</p>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </DashboardLayout>
+    );
 }
