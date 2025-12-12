@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { DashboardService, EnrollmentTrendItem } from "@/services/admin.dashboard.service";
+import { DashboardService } from "@/services/admin.dashboard.service";
+import { EnrollmentTrendItem } from "@/lib/types/dashboard.types";
 
 export function EnrollmentChart() {
   const [data, setData] = useState<EnrollmentTrendItem[]>([]);
