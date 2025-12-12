@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.exceptions import ValidationError
 from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser, FormParser
+# 1. Ensure JSONParser is imported
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser 
 from ..models import Staff
 from ..serializers.staff_serializers import StaffSerializer
 from ..services.staff_services import StaffService
@@ -12,8 +13,10 @@ class StaffViewSet(viewsets.ModelViewSet):
     queryset = Staff.objects.all()
     serializer_class = StaffSerializer
     filter_backends = [filters.SearchFilter]
-    # Allow searching by name or ID in that Dean dropdown
     search_fields = ['first_name', 'last_name', 'employee_id', 'email'] 
+    
+    # 2. Add JSONParser here to allow normal JSON requests + File Uploads
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_queryset(self):
         """
@@ -22,27 +25,25 @@ class StaffViewSet(viewsets.ModelViewSet):
         # Optimize query joins
         queryset = Staff.objects.select_related('institution', 'faculty', 'department')
         
-        # 1. Filter by Institution (Critical)
-        # Your frontend sends 'institution_id', so we check for that.
+        # 1. Filter by Institution
         institution_id = self.request.query_params.get('institution_id')
         if not institution_id:
-             # Fallback check for 'institution' just in case
              institution_id = self.request.query_params.get('institution')
 
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
             
-        # 2. Filter by Faculty (Optional)
+        # 2. Filter by Faculty
         faculty_id = self.request.query_params.get('faculty_id')
         if faculty_id:
             queryset = queryset.filter(faculty_id=faculty_id)
 
-        # 3. Filter by Status (e.g., Active only for Dean selection)
-        status = self.request.query_params.get('status')
-        if status:
-            if status.lower() == 'active':
+        # 3. Filter by Status
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            if status_param.lower() == 'active':
                 queryset = queryset.filter(is_active=True)
-            elif status.lower() == 'inactive':
+            elif status_param.lower() == 'inactive':
                 queryset = queryset.filter(is_active=False)
             
         return queryset
@@ -72,8 +73,6 @@ class StaffViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-    parser_classes = (MultiPartParser, FormParser)
-    
     @action(detail=False, methods=['post'], url_path='bulk_upload')
     def bulk_upload(self, request):
         """
@@ -86,7 +85,6 @@ class StaffViewSet(viewsets.ModelViewSet):
             return Response({"detail": "File is required."}, status=status.HTTP_400_BAD_REQUEST)
         
         if not institution_id:
-            # Fallback to user's institution if not explicitly sent
             if hasattr(request.user, 'institution'):
                 institution_id = request.user.institution.id
             else:
@@ -99,7 +97,6 @@ class StaffViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         except ValidationError as e:
-            # Return specific error messages (e.g. missing faculties)
             return Response(e.message_dict if hasattr(e, 'message_dict') else {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

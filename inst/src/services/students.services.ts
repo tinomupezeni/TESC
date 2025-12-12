@@ -83,6 +83,15 @@ export const createStudent = async (data: CreateStudentData): Promise<Student> =
     throw error;
   }
 };
+export const updateStudent = async (data: CreateStudentData): Promise<Student> => {
+  try {
+    const response = await apiClient.patch<Student>(END_POINT, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating student:", error);
+    throw error;
+  }
+};
 
 export const bulkUploadStudents = async (formData: FormData): Promise<any> => {
   try {
@@ -113,6 +122,7 @@ const studentService = {
   createStudent,
   bulkUploadStudents,
   getGraduationStats,
+  updateStudent,
   // ...
 };
 

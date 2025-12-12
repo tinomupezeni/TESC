@@ -5,6 +5,8 @@ export interface DashboardStats {
   active_institutions: number;
   graduates_year: number;
   completion_rate: number;
+  total_staff:number;
+  total_programs:number;
   breakdown: {
     teachers_colleges: number;
     polytechnics: number;
@@ -14,8 +16,9 @@ export interface DashboardStats {
 
 export interface EnrollmentTrendItem {
   year: string;
-  [key: string]: string | number; // Allows dynamic keys like "Polytechnic": 1200
+  [institutionType: string]: string | number; 
 }
+
 
 export interface InstitutionOverviewItem {
   id: number;
@@ -27,4 +30,13 @@ export interface InstitutionOverviewItem {
   programs: number; // mapped from program_count
   status: 'Active' | 'Renovation' | 'Closed';
   utilization: number;
+}
+
+export interface StudentDistribution {
+  [institutionType: string]: number; // e.g. { "Polytechnic": 27100, "Teachers College": 18200 }
+}
+
+export interface StudentTeacherRatioItem {
+  name: string;   // Institution name
+  ratio: number;  // Student-to-teacher ratio
 }

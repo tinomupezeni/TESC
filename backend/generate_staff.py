@@ -8,7 +8,7 @@ fake = Faker()
 
 # Configuration
 NUM_RECORDS = 100
-FILENAME = "zim_staff_bulk_upload.xlsx"
+FILENAME = "zim_staff_bulk_upload3.xlsx"
 
 # --- ZIMBABWEAN NAMES DATABASE ---
 ZIM_FIRST_NAMES = [
@@ -74,9 +74,9 @@ def generate_data(num):
         phone = f"+263 7{random.choice(['1','3','7','8'])} {random.randint(100,999)} {random.randint(1000,9999)}"
         
         # Ensure unique ID
-        employee_id = f"STF-{random.randint(2020, 2025)}-{random.randint(1000, 9999)}"
+        employee_id = f"STFKW-{random.randint(2020, 2025)}-{random.randint(1000, 9999)}"
         while employee_id in generated_ids:
-            employee_id = f"STF-{random.randint(2020, 2025)}-{random.randint(1000, 9999)}"
+            employee_id = f"STFKW-{random.randint(2020, 2025)}-{random.randint(1000, 9999)}"
         generated_ids.add(employee_id)
 
         # 2. Academic Structure

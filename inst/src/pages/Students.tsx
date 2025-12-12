@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-// 1. Import useAuth
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, MoreVertical, Filter, Loader2 } from "lucide-react";
+import { 
+  Search, 
+  MoreVertical, 
+  Filter, 
+  Loader2, 
+  ChevronLeft, 
+  ChevronRight,
+  Pencil // Imported Pencil icon for the Edit action
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,28 +50,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
-import { getStudents, Student } from "@/services/students.services"; // Ensure correct import path
+import { getStudents, Student } from "@/services/students.services";
 import { UploadStudentsDialog } from "@/components/helpers/UploadStudentsDialog";
+// 1. IMPORT THE NEW EDIT DIALOG
+import { EditStudentDialog } from "@/components/EditStudentDialog"; 
 
 const Students = () => {
-  // 2. Get the user from AuthContext
   const { user } = useAuth();
   
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgram, setFilterProgram] = useState("all");
+  
+  // State for View Details
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  
+  // 2. STATE FOR EDITING
+  const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
 
-  // 3. Update fetch function to use user.institution.id
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
   const fetchStudents = useCallback(async () => {
-    // Safety check: Don't fetch if user or institution is missing
     if (!user?.institution?.id) return;
 
     try {
       setLoading(true);
-      
-      // PASS THE ID HERE
       const data = await getStudents({ 
         institution: user.institution.id 
       });
@@ -80,11 +93,17 @@ const Students = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]); // Re-create function if user changes
+  }, [user]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  // 3. HANDLE EDIT SUCCESS
+  const handleEditSuccess = () => {
+    setStudentToEdit(null); // Close dialog
+    fetchStudents(); // Refresh data to show changes
+  };
 
   // --- Client-Side Filtering ---
   const filteredStudents = students.filter((student) => {
@@ -100,6 +119,23 @@ const Students = () => {
 
     return matchesSearch && matchesProgram;
   });
+
+  // --- Pagination Logic ---
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterProgram]);
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(prev => prev - 1);
+  };
 
   return (
     <div className="space-y-6">
@@ -123,7 +159,6 @@ const Students = () => {
             </div>
             <div className="flex gap-2">
               <UploadStudentsDialog onSuccess={fetchStudents} />
-              {/* Pass the ID to the Add Dialog too if needed */}
               <AddStudentDialog 
                 onStudentAdded={fetchStudents} 
                 institutionId={user?.institution?.id} 
@@ -189,7 +224,7 @@ const Students = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredStudents.map((student) => (
+                  paginatedStudents.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">
                         {student.student_id}
@@ -203,6 +238,8 @@ const Students = () => {
                           variant={
                             student.status === "Active"
                               ? "default"
+                              : student.status === "Graduated"
+                              ? "outline" // Different style for graduated
                               : "destructive"
                           }
                           className={
@@ -227,7 +264,13 @@ const Students = () => {
                             >
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Edit Student</DropdownMenuItem>
+                            {/* 4. UPDATE EDIT ACTION */}
+                            <DropdownMenuItem 
+                                onClick={() => setStudentToEdit(student)}
+                            >
+                                <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                                Edit Student
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -238,11 +281,39 @@ const Students = () => {
             </Table>
           </div>
           
-           <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredStudents.length} of {students.length} students
-            </p>
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredStudents.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredStudents.length)} of {filteredStudents.length} entries
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+              
+              <span className="text-sm font-medium">
+                 Page {currentPage} of {totalPages || 1}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages || loading}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           </div>
+
         </CardContent>
       </Card>
 
@@ -312,6 +383,18 @@ const Students = () => {
                       <p className="text-sm text-muted-foreground">Enrollment Year</p>
                       <p className="font-medium">{selectedStudent.enrollment_year}</p>
                     </div>
+                    {selectedStudent.status === 'Graduated' && (
+                        <>
+                             <div>
+                                <p className="text-sm text-muted-foreground">Graduation Year</p>
+                                <p className="font-medium">{(selectedStudent as any).graduation_year}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Final Grade</p>
+                                <p className="font-medium">{(selectedStudent as any).final_grade}</p>
+                            </div>
+                        </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -319,6 +402,13 @@ const Students = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* 5. RENDER THE EDIT DIALOG */}
+      <EditStudentDialog 
+        student={studentToEdit} 
+        onClose={() => setStudentToEdit(null)} 
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 };

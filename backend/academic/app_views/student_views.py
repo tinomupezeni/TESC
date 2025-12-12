@@ -7,7 +7,7 @@ from ..serializers.student_serializers import StudentSerializer
 from ..services.student_services import StudentService
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Count, Q
 
 
@@ -19,6 +19,8 @@ class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'student_id', 'national_id']
+    
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_queryset(self):
         """
