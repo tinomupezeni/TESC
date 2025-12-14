@@ -9,6 +9,8 @@ from .app_views.admin_views import (
 from .app_views.student_views import StudentViewSet
 from .app_views.facility_views import FacilityViewSet
 from .app_views.innovation_views import InnovationViewSet
+from .app_views.facility_views import dashboard_facilities
+
 
 router = DefaultRouter()
 router.register(r'students', StudentViewSet, basename='student')
@@ -24,4 +26,7 @@ urlpatterns = [
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('dashboard/enrollment-trends/', EnrollmentTrendsView.as_view(), name='enrollment-trends'),
     path('dashboard/institutions/', InstitutionOverviewView.as_view(), name='dashboard-institutions'),
+    path("facilities/", dashboard_facilities, name="dashboard-facilities")
+   
+
 ]

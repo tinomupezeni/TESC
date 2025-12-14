@@ -29,3 +29,6 @@ class FacilityService:
             instance.delete()
         except Exception as e:
             raise ValidationError(f"Error deleting facility: {str(e)}")
+
+
+

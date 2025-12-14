@@ -4,6 +4,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from ..models import Facility
 from ..serializers.facility_serializers import FacilitySerializer
 from ..services.facility_services import FacilityService
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from academic.models import Facility
 
 class FacilityViewSet(viewsets.ModelViewSet):
     """
@@ -59,3 +62,17 @@ class FacilityViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def dashboard_facilities(request):
+    facilities = Facility.objects.all()
+    data = [
+        {
+            "id": f.id,
+            "name": f.name,
+            "type": f.type,
+            "capacity": f.capacity,
+            "status": f.status
+        } for f in facilities
+    ]
+    return Response(data)

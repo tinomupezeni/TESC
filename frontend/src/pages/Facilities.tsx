@@ -2,42 +2,14 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { School, Building, Bed, Users } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { useStatistics } from "@/hooks/useStatistics";
+import { useFacilities, Facility } from "@/hooks/useFacilities";
+
 import { Progress } from "@/components/ui/progress";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  Rectangle
-} from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
-// --- MOCK DATA ---
-const capacityData = [
-  { name: "Polytechnics", Capacity: 35000, Enrolled: 27100 },
-  { name: "Teachers Colleges", Capacity: 25000, Enrolled: 18200 },
-  { name: "Industrial Training", Capacity: 15000, Enrolled: 14200 },
-];
-
-const facilityData = [
-  { id: 1, name: "Harare Poly Hostels", type: "Hostel", capacity: 2500, status: "Active" },
-  { id: 2, name: "Mkoba TC Library", type: "Library", capacity: 500, status: "Active" },
-  { id: 3, name: "Bulawayo ITC Workshop", type: "Workshop", capacity: 150, status: "Active" },
-  { id: 4, name: "Mutare Poly Lab", type: "Laboratory", capacity: 60, status: "Renovation" },
-  { id: 5, name: "Kwekwe Poly Hostels", type: "Hostel", capacity: 1800, status: "Active" },
-];
-
+// Custom tooltip for chart
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -54,11 +26,33 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// --- COMPONENT ---
 export default function Facilities() {
-  const totalCapacity = 75000;
-  const totalEnrolled = 59500;
-  const utilization = (totalEnrolled / totalCapacity) * 100;
+  const { data: statsData, loading: statsLoading } = useStatistics();
+  const { data: facilities, loading: facilitiesLoading, error } = useFacilities();
+
+  if (error) return <div>Error loading facilities: {error}</div>;
+
+  // Calculate total capacity and enrollment for utilization
+  const totalCapacity = facilities.reduce((sum, f) => sum + f.capacity, 0);
+  const totalEnrolled = statsData?.total_students ?? 0;
+  const utilization = totalCapacity > 0 ? (totalEnrolled / totalCapacity) * 100 : 0;
+
+  // Prepare data for chart: group by facility type
+  const chartData = facilities.reduce<{ [key: string]: { name: string; capacity: number; enrolled: number } }>(
+    (acc, f) => {
+      const key = f.facility_type;
+      if (!acc[key]) {
+        acc[key] = { name: key, capacity: 0, enrolled: 0 };
+      }
+      acc[key].capacity += f.capacity;
+      // Approximate enrollment proportionally (or use actual if available)
+      acc[key].enrolled += (f.capacity / totalCapacity) * totalEnrolled;
+      return acc;
+    },
+    {}
+  );
+
+  const capacityData = Object.values(chartData);
 
   return (
     <DashboardLayout>
@@ -69,44 +63,20 @@ export default function Facilities() {
             <School className="h-7 w-7" />
             Facilities & Capacity
           </h1>
-          <p className="text-muted-foreground">
-            Manage infrastructure, capacity, and resource utilization
-          </p>
+          <p className="text-muted-foreground">Manage infrastructure, capacity, and resource utilization</p>
         </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Total Capacity"
-            value={totalCapacity.toLocaleString()}
-            description="Student accommodation & learning"
-            icon={Building}
-          />
-          <StatsCard
-            title="Current Enrollment"
-            value={totalEnrolled.toLocaleString()}
-            description="Across all institutions"
-            icon={Users}
-            variant="accent"
-          />
-          <StatsCard
-            title="Total Hostel Beds"
-            value="32,800"
-            description="Available student beds"
-            icon={Bed}
-            variant="info"
-          />
-          {/* Special Card for Utilization */}
+          <StatsCard title="Total Capacity" value={totalCapacity.toLocaleString()} description="Student accommodation & learning" icon={Building} />
+          <StatsCard title="Current Enrollment" value={statsLoading ? "—" : totalEnrolled.toLocaleString()} description="Across all institutions" icon={Users} variant="accent" />
+          <StatsCard title="Total Hostel Beds" value="32,800" description="Available student beds" icon={Bed} variant="info" />
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Capacity Utilization
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Capacity Utilization</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-2">
-                {utilization.toFixed(1)}%
-              </div>
+              <div className="text-3xl font-bold mb-2">{utilization.toFixed(1)}%</div>
               <Progress value={utilization} className="h-2" />
               <p className="text-xs text-muted-foreground mt-2">
                 {totalEnrolled.toLocaleString()} / {totalCapacity.toLocaleString()}
@@ -117,10 +87,10 @@ export default function Facilities() {
 
         {/* Charts and Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Capacity Utilization Chart */}
+          {/* Enrollment vs Capacity Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Enrollment vs. Capacity by Type</CardTitle>
+              <CardTitle>Enrollment vs. Capacity by Facility Type</CardTitle>
             </CardHeader>
             <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -130,16 +100,8 @@ export default function Facilities() {
                   <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar 
-                    dataKey="Capacity" 
-                    fill="hsl(var(--muted))" 
-                    activeBar={<Rectangle fill="hsl(var(--muted-foreground))" />} 
-                  />
-                  <Bar 
-                    dataKey="Enrolled" 
-                    fill="hsl(var(--primary))" 
-                    activeBar={<Rectangle fill="hsl(var(--primary-foreground))" />} 
-                  />
+                  <Bar dataKey="capacity" fill="hsl(var(--accent))" />
+                  <Bar dataKey="enrolled" fill="hsl(var(--primary))" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -161,14 +123,24 @@ export default function Facilities() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {facilityData.map((facility) => (
-                    <TableRow key={facility.id}>
-                      <TableCell className="font-medium">{facility.name}</TableCell>
-                      <TableCell>{facility.type}</TableCell>
-                      <TableCell>{facility.capacity.toLocaleString()}</TableCell>
-                      <TableCell>{facility.status}</TableCell>
+                  {facilitiesLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                     </TableRow>
-                  ))}
+                  ) : facilities.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">No facilities found.</TableCell>
+                    </TableRow>
+                  ) : (
+                    facilities.map((f: Facility) => (
+                      <TableRow key={f.id}>
+                        <TableCell className="font-medium">{f.name}</TableCell>
+                        <TableCell>{f.facility_type}</TableCell>
+                        <TableCell>{f.capacity.toLocaleString()}</TableCell>
+                        <TableCell>{f.status}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
