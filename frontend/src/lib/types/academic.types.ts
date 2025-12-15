@@ -1,5 +1,13 @@
 // lib/types/academic.types.ts
-
+export interface DashboardInnovationStats {
+  total_innovations: number;
+  innovation_hubs: number;
+  active_institutions: number;
+  industrialization: number;
+  Ideation:number;
+  Research:number;
+  Prototype:number;
+}
 // From FacilitySerializer
 export interface Facility {
   id: number;
@@ -80,4 +88,11 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+}
+export interface DetailedInnovation {
+  id: string;
+  name: string;
+  institution: string;
+  stage: string;
+  status: string;
 }

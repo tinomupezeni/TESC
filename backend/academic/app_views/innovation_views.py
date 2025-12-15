@@ -3,8 +3,14 @@ from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
 from ..models import Innovation
 from ..serializers.innovation_serializers import InnovationSerializer
-from ..services.innovation_services import InnovationService
+from ..services.innovation_services import InnovationService,InnovationAnalyticsService
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.db.models import Count
 
+from academic.models import Institution
+from ..models import Facility
+from ..models import Innovation
 class InnovationViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing Innovations.
@@ -64,3 +70,36 @@ class InnovationViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+@api_view(['GET'])
+def dashboard_innovation_stats(request):
+    """
+    Returns dashboard stats: total innovations, innovation hubs, active institutions.
+    """
+    
+
+    total_innovations = Innovation.objects.count()
+    innovation_hubs = Facility.objects.filter(facility_type='Innovation').count()  # matches FACILITY_TYPES
+    active_institutions = Institution.objects.filter(status='Active').count()
+    
+
+    data = {
+        "total_innovations": total_innovations,
+        "innovation_hubs": innovation_hubs,
+        "active_institutions": active_institutions,
+        "idea": Innovation.objects.filter(stage='idea').count(),
+        "research": Innovation.objects.filter(stage='incubation').count(),
+        "prototype": Innovation.objects.filter(stage='prototype').count(),  # fixed
+        "industrialization": Innovation.objects.filter(stage='market').count(),
+        "commercialized": Innovation.objects.filter(stage='0').count(), 
+    }
+    return Response(data)
+
+@api_view(["GET"])
+def detailed_project_tracking(request):
+    """
+    Returns detailed innovation project tracking for dashboard tables.
+    """
+    data = InnovationAnalyticsService.get_detailed_projects()
+    return Response(data)
+

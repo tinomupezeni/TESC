@@ -8,7 +8,7 @@ from .app_views.admin_views import (
 )
 from .app_views.student_views import StudentViewSet
 from .app_views.facility_views import FacilityViewSet
-from .app_views.innovation_views import InnovationViewSet
+from .app_views.innovation_views import InnovationViewSet, dashboard_innovation_stats,detailed_project_tracking
 from .app_views.facility_views import dashboard_facilities
 
 
@@ -26,7 +26,9 @@ urlpatterns = [
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('dashboard/enrollment-trends/', EnrollmentTrendsView.as_view(), name='enrollment-trends'),
     path('dashboard/institutions/', InstitutionOverviewView.as_view(), name='dashboard-institutions'),
-    path("facilities/", dashboard_facilities, name="dashboard-facilities")
-   
-
+    path("facilities/", dashboard_facilities, name="dashboard-facilities"),
+    path('innovation/dashboard/stats/', dashboard_innovation_stats, name='dashboard-innovation-stats'),
+    path("dashboard/detailed-projects/", detailed_project_tracking),
 ]
+
+
