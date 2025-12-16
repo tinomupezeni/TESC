@@ -87,7 +87,7 @@ def dashboard_innovation_stats(request):
         "total_innovations": total_innovations,
         "innovation_hubs": innovation_hubs,
         "active_institutions": active_institutions,
-        "idea": Innovation.objects.filter(stage='idea').count(),
+        "ideation": Innovation.objects.filter(stage='idea').count(),
         "research": Innovation.objects.filter(stage='incubation').count(),
         "prototype": Innovation.objects.filter(stage='prototype').count(),  # fixed
         "industrialization": Innovation.objects.filter(stage='market').count(),
