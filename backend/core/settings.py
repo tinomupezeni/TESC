@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     # Third-party
     "rest_framework",
+    'django_filters',
     "users",
     "academic",
     'instauth',
@@ -89,7 +90,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": "tesc_db",              # Your Postgres database name
         "USER": "tesc_user",          # Your Postgres user (change if different)
         "PASSWORD": "tesc@1234", # Replace with your actual password

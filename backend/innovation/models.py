@@ -30,7 +30,7 @@ class InnovationHub(models.Model):
     name = models.CharField(max_length=255)
     capacity = models.IntegerField(default=0)
     occupied = models.IntegerField(default=0)
-    services = models.IntegerField(help_text="Number of services offered", default=0)
+    # services = models.IntegerField(help_text="Number of services offered", default=0)
     status = models.CharField(
         max_length=50, 
         choices=[('High', 'High Activity'), ('Medium', 'Medium Activity'), ('Full', 'Full Capacity')],

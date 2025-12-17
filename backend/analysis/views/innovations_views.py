@@ -21,7 +21,6 @@ class HubAnalysisView(APIView):
                 "institution": h.institution.name,
                 "capacity": h.capacity,
                 "occupied": h.occupied,
-                "services": h.services,
                 "status": h.status
             })
 

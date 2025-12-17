@@ -58,7 +58,7 @@ const menuGroups = [
     label: "Operations & Analytics",
     items: [
       { title: "Facilities", url: "/dashboard/facilities", icon: Building2 },
-      { title: "Innovation", url: "/dashboard/innovation", icon: Lightbulb },
+      { title: "Innovation & Industry", url: "/dashboard/innovation", icon: Lightbulb },
       { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
     ]
   }
