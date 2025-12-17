@@ -148,6 +148,12 @@ class Student(models.Model):
         ('Transfer', 'Transfer to other Institution'),
         ('Other', 'Other'),
     ]
+    FEES_PAYMENT_STATUS = [
+        ('Fully','Fully paid fees'),
+        ('Partially','Partially paid fees'),
+        ('Special','Special Fees Payment'),
+        ('Waiver','Disable'),
+    ]
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -192,6 +198,7 @@ class Student(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    fees_payment_status = models.CharField(max_length=10, choices=FEES_PAYMENT_STATUS, null=True)
     
     graduation_year = models.IntegerField(null=True, blank=True)
     final_grade = models.CharField(

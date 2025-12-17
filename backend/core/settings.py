@@ -31,7 +31,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'corsheaders', # Add this
+    'corsheaders',
+    'special_enrollment',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -89,7 +90,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django.db.backends.sqlite3",
         "NAME": "tesc_db",              # Your Postgres database name
         "USER": "tesc_user",          # Your Postgres user (change if different)
         "PASSWORD": "tesc@1234", # Replace with your actual password
@@ -152,9 +153,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = 'users.CustomUser'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080", # The default port for React's dev server
-    "http://127.0.0.1:8000",
-    'http://localhost:8081',
+    "http://localhost:3000",  # React (Create React App)
+    "http://localhost:5173",  # React (Vite)
+    "http://localhost:8080",  # Alternative Dev Port
+    "http://localhost:8081",  # Mobile/Expo Port
+    "http://127.0.0.1:8000",  # Local Loopback
 ]
 
 ALLOWED_HOSTS = ['tesc.zchpc.ac.zw', '127.0.0.1', 'localhost']
