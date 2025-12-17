@@ -46,11 +46,11 @@ export const DashboardService = {
         name: item.name,
         type: item.type,
         location: item.location,
-        students: item.student_count,
-        capacity: item.capacity,
-        programs: item.program_count,
+        students: Number(item.student_count),
+        capacity: Number(item.capacity),
+        programs: Number(item.program_count),
         status: item.status,
-        utilization: item.utilization,
+        utilization: Number(item.utilization),
       }));
     } catch (error) {
       console.error("Institution Overview Error:", error);
@@ -58,3 +58,5 @@ export const DashboardService = {
     }
   },
 };
+
+export type { InstitutionOverviewItem };

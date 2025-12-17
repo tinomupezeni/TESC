@@ -1,10 +1,16 @@
 from rest_framework import viewsets, filters, status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
-from ..models import Project
-from ..serializers.innovation_serializers import InnovationSerializer
-from ..services.innovation_services import InnovationService
 
+from innovation.models import Project, InnovationHub
+from academic.models import Institution,Facility
+
+from ..serializers.innovation_serializers import InnovationSerializer
+from ..services.innovation_services import (
+    InnovationService,
+    InnovationAnalyticsService,
+)
 class InnovationViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing Innovations.
@@ -12,7 +18,7 @@ class InnovationViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = InnovationSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'team_name', 'department', 'category']
+    search_fields = ['name', 'team_name', 'sector']
 
     def get_queryset(self):
         """
@@ -25,12 +31,10 @@ class InnovationViewSet(viewsets.ModelViewSet):
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
 
-        # Filter by Category
-        category = self.request.query_params.get('category')
-        if category:
-            queryset = queryset.filter(category=category)
+        sector = self.request.query_params.get('sector')
+        if sector:
+            queryset = queryset.filter(sector=sector)
 
-        # Filter by Stage
         stage = self.request.query_params.get('stage')
         if stage:
             queryset = queryset.filter(stage=stage)
@@ -64,3 +68,31 @@ class InnovationViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def dashboard_innovation_stats(request):
+    data = {
+        "total_projects": Project.objects.count(),
+        "innovation_hubs":Facility.objects.filter(facility_type='Innovation').count(),  # matches FACILITY_TYPES
+        "active_institutions": Institution.objects.filter(
+            projects__isnull=False
+        ).distinct().count(),
+
+        "ideation": Project.objects.filter(stage='ideation').count(),
+        "prototype": Project.objects.filter(stage='prototype').count(),
+        "incubation": Project.objects.filter(stage='incubation').count(),
+        "market_ready": Project.objects.filter(stage='market_ready').count(),
+        "scaling": Project.objects.filter(stage='scaling').count(),
+        "industrial": Project.objects.filter(stage='industrial').count(),
+    }
+    return Response(data)
+
+
+@api_view(["GET"])
+def detailed_project_tracking(request):
+    """
+    Returns detailed innovation project tracking for dashboard tables.
+    """
+    data = InnovationAnalyticsService.get_detailed_projects()
+    return Response(data)
+
