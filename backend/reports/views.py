@@ -1,26 +1,147 @@
-from rest_framework.views import APIView
+from django.utils import timezone
+from rest_framework import viewsets, status, filters
+
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from django.http import FileResponse
+
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from django.http import FileResponse, Http404
+from django_filters.rest_framework import DjangoFilterBackend
 
-from .services import ReportService
-from .models import GeneratedReport
-from .serializers import GeneratedReportSerializer
+from .models import ReportTemplate, GeneratedReport
+from .serializers import (
+    ReportTemplateSerializer,
+    GeneratedReportSerializer,
+    ReportGenerationRequestSerializer
+)
 
-class GenerateReportView(APIView):
-    def post(self, request):
-        report = ReportService.generate_report(request.data)
-        serializer = GeneratedReportSerializer(report)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+# --- Report Templates View ---
+class ReportTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ReportTemplate.objects.filter(is_active=True)
+    serializer_class = ReportTemplateSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ['name', 'description', 'category']
+    filterset_fields = ['category']
 
-class DownloadReportView(APIView):
-    def get(self, request, report_id):
-        try:
-            report = GeneratedReport.objects.get(id=report_id)
-        except GeneratedReport.DoesNotExist:
-            raise Http404("Report not found")
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        categories = ReportTemplate.objects.filter(is_active=True)\
+            .values_list('category', flat=True)\
+            .distinct()
+        return Response(list(categories))
 
-        if not report.file:
-            raise Http404("File missing")
 
-        return FileResponse(open(report.file.path, "rb"), content_type='application/pdf')
+# --- Generated Reports View ---
+class GeneratedReportViewSet(viewsets.ModelViewSet):
+    serializer_class = GeneratedReportSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = ['requested_at']
+    ordering = ['-requested_at']
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return GeneratedReport.objects.all()
+        return GeneratedReport.objects.filter(generated_by=user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    # --- Generate Report ---
+    @action(detail=False, methods=['post'])
+    def generate(self, request):
+        serializer = ReportGenerationRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        template = ReportTemplate.objects.get(id=data['template_id'], is_active=True)
+
+        # Build report title
+        report_title = f"{template.name} - {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+
+        report = GeneratedReport.objects.create(
+            title=report_title,
+            template=template,
+            generated_by=request.user,
+            format=data.get('format', template.default_format),
+            status='completed',  # immediately mark as completed for now
+            requested_at=timezone.now()
+        )
+
+        # Here you can add PDF/Excel generation logic
+        # For now, file=None
+        report.file = None
+        report.save()
+
+        return Response(
+            GeneratedReportSerializer(report, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    # --- Stats Endpoint ---
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        queryset = self.get_queryset()
+
+        # By category
+        by_category = {}
+        for report in queryset:
+            if report.template:
+                cat = report.template.category
+                by_category[cat] = by_category.get(cat, 0) + 1
+
+        # By status
+        by_status = {}
+        for status_choice in GeneratedReport.STATUS_CHOICES:
+            code = status_choice[0]
+            by_status[code] = queryset.filter(status=code).count()
+
+        # Recent reports
+        recent_reports = queryset.order_by('-requested_at')[:5]
+
+        return Response({
+            'total_reports': queryset.count(),
+            'by_category': by_category,
+            'by_status': by_status,
+            'recent_reports': GeneratedReportSerializer(
+                recent_reports, many=True, context={'request': request}
+            ).data
+        })
+
+    # --- Download Report File ---
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Generate PDF on-the-fly and send as download"""
+        report = self.get_object()
+
+        # Optional: Check permissions
+        if report.generated_by != request.user and not request.user.is_superuser:
+            return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Create PDF in memory
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer)
+        p.setTitle(report.title)
+        
+        # Write some info
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, 800, report.title)
+        p.setFont("Helvetica", 12)
+        p.drawString(100, 780, f"Generated by: {report.generated_by.get_full_name() if report.generated_by else 'N/A'}")
+        p.drawString(100, 760, f"Date: {report.requested_at.strftime('%Y-%m-%d %H:%M')}")
+        
+        # Add dummy content (you can replace with real report data)
+        p.drawString(100, 720, "Report Content Goes Here...")
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"{report.title.replace(' ', '_')}.pdf")
