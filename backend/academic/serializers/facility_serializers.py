@@ -14,6 +14,7 @@ class FacilitySerializer(serializers.ModelSerializer):
             'facility_type',
             'building',
             'capacity',
+            'current_usage',
             'status',
             'description',
             'equipment',

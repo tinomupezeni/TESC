@@ -9,6 +9,7 @@ export interface Facility {
   facility_type: string;
   building: string;
   capacity: number;
+  current_usage:number;
   status: string;
   description?: string;
   equipment?: string;

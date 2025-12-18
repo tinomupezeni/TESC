@@ -121,6 +121,7 @@ class Facility(models.Model):
     facility_type = models.CharField(max_length=50, choices=FACILITY_TYPES, default='Other')
     building = models.CharField(max_length=100, default="Main Building", help_text="Building name or number")
     capacity = models.PositiveIntegerField(default=0)
+    current_usage = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=FACILITY_STATUSES, default='Active')
     
     description = models.TextField(blank=True)

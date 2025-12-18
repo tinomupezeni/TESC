@@ -34,19 +34,22 @@ export default function Facilities() {
 
   // Calculate total capacity and enrollment for utilization
   const totalCapacity = facilities.reduce((sum, f) => sum + f.capacity, 0);
-  const totalEnrolled = statsData?.total_students ?? 0;
-  const utilization = totalCapacity > 0 ? (totalEnrolled / totalCapacity) * 100 : 0;
+  const totalCurrentUsage = facilities.reduce(
+  (sum, f) => sum + (f.current_usage || 0),
+  0);
+  const utilization = totalCapacity > 0 ? (totalCurrentUsage / totalCapacity) * 100 : 0;
+
 
   // Prepare data for chart: group by facility type
-  const chartData = facilities.reduce<{ [key: string]: { name: string; capacity: number; enrolled: number } }>(
+  const chartData = facilities.reduce<{ [key: string]: { name: string; capacity: number; usage: number } }>(
     (acc, f) => {
       const key = f.facility_type;
       if (!acc[key]) {
-        acc[key] = { name: key, capacity: 0, enrolled: 0 };
+        acc[key] = { name: key, capacity: 0, usage: 0 };
       }
       acc[key].capacity += f.capacity;
-      // Approximate enrollment proportionally (or use actual if available)
-      acc[key].enrolled += (f.capacity / totalCapacity) * totalEnrolled;
+      
+      acc[key].usage += f.current_usage || 0;
       return acc;
     },
     {}
@@ -69,7 +72,14 @@ export default function Facilities() {
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard title="Total Capacity" value={totalCapacity.toLocaleString()} description="Student accommodation & learning" icon={Building} />
-          <StatsCard title="Current Enrollment" value={statsLoading ? "—" : totalEnrolled.toLocaleString()} description="Across all institutions" icon={Users} variant="accent" />
+          <StatsCard
+  title="Current Usage"
+  value={totalCurrentUsage.toLocaleString()}
+  description="Students currently using facilities"
+  icon={Users}
+  variant="accent"
+/>
+
           <StatsCard title="Total Hostel Beds" value="32,800" description="Available student beds" icon={Bed} variant="info" />
           <Card>
             <CardHeader>
@@ -79,8 +89,9 @@ export default function Facilities() {
               <div className="text-3xl font-bold mb-2">{utilization.toFixed(1)}%</div>
               <Progress value={utilization} className="h-2" />
               <p className="text-xs text-muted-foreground mt-2">
-                {totalEnrolled.toLocaleString()} / {totalCapacity.toLocaleString()}
-              </p>
+  {totalCurrentUsage.toLocaleString()} / {totalCapacity.toLocaleString()}
+</p>
+
             </CardContent>
           </Card>
         </div>
@@ -90,7 +101,7 @@ export default function Facilities() {
           {/* Enrollment vs Capacity Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Enrollment vs. Capacity by Facility Type</CardTitle>
+              <CardTitle>Capacity vs. Current Usage by Facility Type</CardTitle>
             </CardHeader>
             <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -101,7 +112,8 @@ export default function Facilities() {
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
                   <Bar dataKey="capacity" fill="hsl(var(--accent))" />
-                  <Bar dataKey="enrolled" fill="hsl(var(--primary))" />
+                  <Bar dataKey="usage" fill="hsl(var(--primary))" name="Current Usage" />
+
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -119,7 +131,9 @@ export default function Facilities() {
                     <TableHead>Facility</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Capacity</TableHead>
+                    <TableHead>Current Usage</TableHead>
                     <TableHead>Status</TableHead>
+                    
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -137,6 +151,7 @@ export default function Facilities() {
                         <TableCell className="font-medium">{f.name}</TableCell>
                         <TableCell>{f.facility_type}</TableCell>
                         <TableCell>{f.capacity.toLocaleString()}</TableCell>
+                        <TableCell>{f.current_usage.toLocaleString()}</TableCell>
                         <TableCell>{f.status}</TableCell>
                       </TableRow>
                     ))

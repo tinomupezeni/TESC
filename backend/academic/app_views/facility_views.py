@@ -43,7 +43,7 @@ class FacilityViewSet(viewsets.ModelViewSet):
              return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        FacilityService.create_facility(serializer.validated_data)
+        serializer.save()
 
     def perform_update(self, serializer):
         try:

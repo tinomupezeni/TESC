@@ -36,7 +36,9 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
   const [formData, setFormData] = useState<Partial<CreateFacilityData>>({
     status: 'Active',
     facility_type: '',
-    institution: institutionId // Set initial value if user is already loaded
+    institution: institutionId,// Set initial value if user is already loaded
+    capacity: 0,
+    current_usage: 0,
   });
 
   // Watch for user data to load and update state
@@ -46,12 +48,17 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
     }
   }, [institutionId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    // Handle number conversion for capacity
-    const val = id === 'capacity' ? parseInt(value) || 0 : value;
-    setFormData(prev => ({ ...prev, [id]: val }));
-  };
+  const handleInputChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => {
+  const { id, value } = e.target;
+
+  const numericFields = ['capacity', 'current_usage'];
+  const val = numericFields.includes(id) ? parseInt(value) || 0 : value;
+
+  setFormData(prev => ({ ...prev, [id]: val }));
+};
+
 
   const handleSelectChange = (field: keyof CreateFacilityData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -150,6 +157,19 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
               <Label htmlFor="capacity">Capacity *</Label>
               <Input id="capacity" type="number" placeholder="50" required onChange={handleInputChange} />
             </div>
+
+          <div className="space-y-2">
+    <Label htmlFor="current_usage">Current Usage</Label>
+    <Input
+      id="current_usage"
+      type="number"
+      min={0}
+      placeholder="e.g. 35"
+      onChange={handleInputChange}
+    />
+  </div>
+
+
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select onValueChange={(val) => handleSelectChange('status', val)} defaultValue="Active">
