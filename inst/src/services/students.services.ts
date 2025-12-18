@@ -8,10 +8,10 @@ export interface Student {
   first_name: string;
   last_name: string;
   full_name: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: "Male" | "Female" | "Other";
   date_of_birth?: string;
   enrollment_year: number;
-  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred';
+  status: "Active" | "Attachment" | "Graduated" | "Suspended" | "Deferred";
   institution: number;
   institution_name?: string;
   program: number;
@@ -44,19 +44,35 @@ export interface GraduationStat {
 }
 
 export interface StudentFilters {
-  institution?: number; 
+  institution?: number;
   program?: number;
   search?: string;
 }
 
-const END_POINT = '/academic/students/';
+export type UpdateStudentData = Partial<CreateStudentData> & {
+  graduation_year?: number | null;
+  final_grade?: string | null;
+  dropout_reason?: string | null;
+};
+
+export interface SupportUpdateData {
+    is_iseop: boolean;
+    is_work_for_fees: boolean;
+    work_area?: 'Library' | 'Grounds' | 'Labs' | 'Admin' | null;
+    hours_pledged?: number;
+    disability_type: 'None' | 'Physical' | 'Albino' | 'Hearing' | 'Visual';
+}
+
+const END_POINT = "/academic/students/";
 
 // --- Service Functions ---
 
 export const getStudents = async (filters?: StudentFilters) => {
   try {
     // We simply pass the filters provided by the component
-    const response = await apiClient.get<Student[]>(END_POINT, { params: filters });
+    const response = await apiClient.get<Student[]>(END_POINT, {
+      params: filters,
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching students:", error);
@@ -74,7 +90,9 @@ export const getStudentById = async (id: number) => {
   }
 };
 
-export const createStudent = async (data: CreateStudentData): Promise<Student> => {
+export const createStudent = async (
+  data: CreateStudentData
+): Promise<Student> => {
   try {
     const response = await apiClient.post<Student>(END_POINT, data);
     return response.data;
@@ -83,22 +101,36 @@ export const createStudent = async (data: CreateStudentData): Promise<Student> =
     throw error;
   }
 };
-export const updateStudent = async (data: CreateStudentData): Promise<Student> => {
+
+export const updateStudent = async (
+  id: number,
+  data: UpdateStudentData
+): Promise<Student> => {
   try {
-    const response = await apiClient.patch<Student>(END_POINT, data);
+    // FIX: Append the ID to the endpoint
+    const response = await apiClient.patch<Student>(`${END_POINT}${id}/`, data);
     return response.data;
   } catch (error) {
-    console.error("Error creating student:", error);
+    console.error(`Error updating student ${id}:`, error);
     throw error;
   }
+};
+
+export const updateStudentSupport = async (id: number, data: Partial<SupportUpdateData>) => {
+    const response = await apiClient.patch(`/academic/students/${id}/`, data);
+    return response.data;
 };
 
 export const bulkUploadStudents = async (formData: FormData): Promise<any> => {
   try {
     // Post to /academic/students/bulk_upload/
-    const response = await apiClient.post(`${END_POINT}bulk_upload/`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await apiClient.post(
+      `${END_POINT}bulk_upload/`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     return response.data;
   } catch (error) {
     console.error("Error uploading students:", error);
@@ -108,7 +140,7 @@ export const bulkUploadStudents = async (formData: FormData): Promise<any> => {
 
 export const getGraduationStats = async (institutionId: number) => {
   const response = await apiClient.get<GraduationStat[]>(
-    `${END_POINT}graduation-stats/`, 
+    `${END_POINT}graduation-stats/`,
     { params: { institution_id: institutionId } }
   );
   return response.data;

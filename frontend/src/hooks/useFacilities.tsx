@@ -1,5 +1,6 @@
 // src/hooks/useFacilitiesStats.ts
 import { useState, useEffect } from "react";
+import { getAllFacilities } from "@/services/academic.service";
 
 export interface Facility {
   id: number;
@@ -9,6 +10,7 @@ export interface Facility {
   facility_type: string;
   building: string;
   capacity: number;
+  current_usage:number;
   status: string;
   description?: string;
   equipment?: string;
@@ -26,11 +28,8 @@ export function useFacilities() {
 
     async function loadFacilities() {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/academic/facilities/");
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const json = await res.json();
-        if (!mounted) return;
-        setData(json);
+        const res = await getAllFacilities()
+        setData(res);
       } catch (err: any) {
         if (!mounted) return;
         console.error("Error fetching facilities:", err);

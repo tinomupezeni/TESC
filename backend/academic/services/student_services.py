@@ -21,14 +21,26 @@ class StudentService:
     @staticmethod
     def update_student(instance, validated_data):
         """
-        Updates an existing Student instance.
+        Updates an existing Student instance. 
+        Only updates fields provided in validated_data.
         """
         try:
             with transaction.atomic():
+                # Fields that should never be changed via this update method
+                protected_fields = ['id', 'institution'] 
+                
                 for attr, value in validated_data.items():
-                    setattr(instance, attr, value)
+                    if attr not in protected_fields:
+                        setattr(instance, attr, value)
+                
+                # Full clean ensures that even with setattr, 
+                # Model-level validation is checked before saving.
+                instance.full_clean() 
                 instance.save()
                 return instance
+        except ValidationError as e:
+            # Re-raise Django Validation errors directly
+            raise e
         except Exception as e:
             raise ValidationError(f"Error updating student: {str(e)}")
 

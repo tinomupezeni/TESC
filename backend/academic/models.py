@@ -32,6 +32,7 @@ STUDENT_STATUSES = [
     ('Graduated', 'Graduated'),
     ('Suspended', 'Suspended'),
     ('Deferred', 'Deferred'),
+    ('Dropout', 'Dropout'),
 ]
 
 FACILITY_TYPES = [
@@ -121,6 +122,7 @@ class Facility(models.Model):
     facility_type = models.CharField(max_length=50, choices=FACILITY_TYPES, default='Other')
     building = models.CharField(max_length=100, default="Main Building", help_text="Building name or number")
     capacity = models.PositiveIntegerField(default=0)
+    current_usage = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=FACILITY_STATUSES, default='Active')
     
     description = models.TextField(blank=True)
@@ -190,6 +192,29 @@ class Student(models.Model):
         related_name='students'
     )
     
+    is_iseop = models.BooleanField(default=False, help_text="Is enrolled in ISEOP program")
+    is_work_for_fees = models.BooleanField(default=False)
+    
+    # Work for Fees specific
+    WORK_AREAS = [
+        ('Library', 'Library Assistant'),
+        ('Grounds', 'Grounds Maintenance'),
+        ('Labs', 'Labs Assistant'),
+        ('Admin', 'Admin Support'),
+    ]
+    work_area = models.CharField(max_length=50, choices=WORK_AREAS, null=True, blank=True)
+    hours_pledged = models.PositiveIntegerField(default=0)
+
+    # Disability Tracking
+    DISABILITY_TYPES = [
+        ('None', 'None'),
+        ('Physical', 'Physically Disabled'),
+        ('Albino', 'Albino'),
+        ('Hearing', 'Hearing Impaired'),
+        ('Visual', 'Visually Impaired'),
+    ]
+    disability_type = models.CharField(max_length=50, choices=DISABILITY_TYPES, default='None')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -207,6 +232,13 @@ class Student(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.student_id})"
     
+
+class FeeStructure(models.Model):
+    program = models.OneToOneField('faculties.Program', on_delete=models.CASCADE, related_name='fees')
+    semester_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    def __str__(self):
+        return f"{self.program.name} - {self.annual_fee}"
 
 class Payment(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='payments')

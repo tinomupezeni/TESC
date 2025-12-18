@@ -6,8 +6,24 @@ import { useStatistics } from "@/hooks/useStatistics";
 import { useFacilities, Facility } from "@/hooks/useFacilities";
 
 import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 // Custom tooltip for chart
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -28,29 +44,36 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function Facilities() {
   const { data: statsData, loading: statsLoading } = useStatistics();
-  const { data: facilities, loading: facilitiesLoading, error } = useFacilities();
+  const {
+    data: facilities,
+    loading: facilitiesLoading,
+    error,
+  } = useFacilities();
 
   if (error) return <div>Error loading facilities: {error}</div>;
 
   // Calculate total capacity and enrollment for utilization
   const totalCapacity = facilities.reduce((sum, f) => sum + f.capacity, 0);
-  const totalEnrolled = statsData?.total_students ?? 0;
-  const utilization = totalCapacity > 0 ? (totalEnrolled / totalCapacity) * 100 : 0;
+  const totalCurrentUsage = facilities.reduce(
+    (sum, f) => sum + (f.current_usage || 0),
+    0
+  );
+  const utilization =
+    totalCapacity > 0 ? (totalCurrentUsage / totalCapacity) * 100 : 0;
 
   // Prepare data for chart: group by facility type
-  const chartData = facilities.reduce<{ [key: string]: { name: string; capacity: number; enrolled: number } }>(
-    (acc, f) => {
-      const key = f.facility_type;
-      if (!acc[key]) {
-        acc[key] = { name: key, capacity: 0, enrolled: 0 };
-      }
-      acc[key].capacity += f.capacity;
-      // Approximate enrollment proportionally (or use actual if available)
-      acc[key].enrolled += (f.capacity / totalCapacity) * totalEnrolled;
-      return acc;
-    },
-    {}
-  );
+  const chartData = facilities.reduce<{
+    [key: string]: { name: string; capacity: number; usage: number };
+  }>((acc, f) => {
+    const key = f.facility_type;
+    if (!acc[key]) {
+      acc[key] = { name: key, capacity: 0, usage: 0 };
+    }
+    acc[key].capacity += f.capacity;
+
+    acc[key].usage += f.current_usage || 0;
+    return acc;
+  }, {});
 
   const capacityData = Object.values(chartData);
 
@@ -63,23 +86,42 @@ export default function Facilities() {
             <School className="h-7 w-7" />
             Facilities & Capacity
           </h1>
-          <p className="text-muted-foreground">Manage infrastructure, capacity, and resource utilization</p>
+          <p className="text-muted-foreground">
+            Manage infrastructure, capacity, and resource utilization
+          </p>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard title="Total Capacity" value={totalCapacity.toLocaleString()} description="Student accommodation & learning" icon={Building} />
-          <StatsCard title="Current Enrollment" value={statsLoading ? "—" : totalEnrolled.toLocaleString()} description="Across all institutions" icon={Users} variant="accent" />
-          <StatsCard title="Total Hostel Beds" value="32,800" description="Available student beds" icon={Bed} variant="info" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatsCard
+            title="Total Capacity"
+            value={totalCapacity.toLocaleString()}
+            description="Student accommodation & learning"
+            icon={Building}
+          />
+          <StatsCard
+            title="Current Usage"
+            value={totalCurrentUsage.toLocaleString()}
+            description="Students currently using facilities"
+            icon={Users}
+            variant="accent"
+          />
+
+        
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">Capacity Utilization</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Capacity Utilization
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-2">{utilization.toFixed(1)}%</div>
+              <div className="text-3xl font-bold mb-2">
+                {utilization.toFixed(1)}%
+              </div>
               <Progress value={utilization} className="h-2" />
               <p className="text-xs text-muted-foreground mt-2">
-                {totalEnrolled.toLocaleString()} / {totalCapacity.toLocaleString()}
+                {totalCurrentUsage.toLocaleString()} /{" "}
+                {totalCapacity.toLocaleString()}
               </p>
             </CardContent>
           </Card>
@@ -90,18 +132,29 @@ export default function Facilities() {
           {/* Enrollment vs Capacity Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Enrollment vs. Capacity by Facility Type</CardTitle>
+              <CardTitle>Capacity vs. Current Usage by Facility Type</CardTitle>
             </CardHeader>
             <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={capacityData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    fontSize={12}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
                   <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
                   <Bar dataKey="capacity" fill="hsl(var(--accent))" />
-                  <Bar dataKey="enrolled" fill="hsl(var(--primary))" />
+                  <Bar
+                    dataKey="usage"
+                    fill="hsl(var(--primary))"
+                    name="Current Usage"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -119,17 +172,22 @@ export default function Facilities() {
                     <TableHead>Facility</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Capacity</TableHead>
+                    <TableHead>Current Usage</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {facilitiesLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                      <TableCell colSpan={4} className="text-center">
+                        Loading...
+                      </TableCell>
                     </TableRow>
                   ) : facilities.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">No facilities found.</TableCell>
+                      <TableCell colSpan={4} className="text-center">
+                        No facilities found.
+                      </TableCell>
                     </TableRow>
                   ) : (
                     facilities.map((f: Facility) => (
@@ -137,6 +195,9 @@ export default function Facilities() {
                         <TableCell className="font-medium">{f.name}</TableCell>
                         <TableCell>{f.facility_type}</TableCell>
                         <TableCell>{f.capacity.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {f.current_usage.toLocaleString()}
+                        </TableCell>
                         <TableCell>{f.status}</TableCell>
                       </TableRow>
                     ))

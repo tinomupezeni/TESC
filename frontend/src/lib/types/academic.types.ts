@@ -14,6 +14,7 @@ export interface DashboardInnovationStats {
 export interface Facility {
   id: number;
   name: string;
+  current_usage:number;
 }
 
 // From InstitutionSerializer (Read)

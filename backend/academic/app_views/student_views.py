@@ -2,6 +2,8 @@ from jsonschema import ValidationError
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
+
+from ..services.analysis_services import AnalysisService
 from ..models import Student
 from ..serializers.student_serializers import StudentSerializer
 from ..services.student_services import StudentService
@@ -9,7 +11,8 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Count, Q
-
+from django.db.models import Sum, F, DecimalField
+from django.db.models.functions import Coalesce
 
 class StudentViewSet(viewsets.ModelViewSet):
     """
@@ -24,25 +27,34 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Optimize queries and allow filtering by institution or program.
+        Optimize queries and calculate financial balances in ONE database call.
         """
-        # Use select_related to fetch ForeignKeys in one query
+        # Start with select_related for performance
         queryset = Student.objects.select_related('institution', 'program')
         
         institution_param = self.request.query_params.get('institution') 
         if institution_param:
             queryset = queryset.filter(institution_id=institution_param)
 
-        # Filter by Program
-        program_id = self.request.query_params.get('program_id')
-        # Check for just 'program' too just in case
-        if not program_id:
-             program_id = self.request.query_params.get('program')
-             
+        program_id = self.request.query_params.get('program_id') or self.request.query_params.get('program')
         if program_id:
             queryset = queryset.filter(program_id=program_id)
-            
-        return queryset
+
+        # FINANCIAL ANNOTATION:
+        # We calculate the total paid and the expected fee right here.
+        # This prevents the $NaN issue by ensuring every student record has a number.
+        return queryset.annotate(
+            semester_fee=Coalesce(
+                F('program__semester_fee'), 
+                0, 
+                output_field=DecimalField()
+            ),
+            total_paid=Coalesce(
+                Sum('payments__amount'), 
+                0, 
+                output_field=DecimalField()
+            )
+        )
     
     
     def create(self, request, *args, **kwargs):
@@ -62,8 +74,8 @@ class StudentViewSet(viewsets.ModelViewSet):
         try:
             StudentService.update_student(serializer.instance, serializer.validated_data)
         except DjangoValidationError as e:
-            # We catch this here in case the service throws a validation error during update
-            raise serializers.ValidationError({"detail": str(e)})
+            # Convert Django error to DRF error for proper 400 response
+            raise serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else str(e))
 
     def destroy(self, _request, *args, **kwargs):
         instance = self.get_object()
@@ -74,7 +86,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
     
-    parser_classes = (MultiPartParser, FormParser)
 
     @action(detail=False, methods=['post'], url_path='bulk_upload')
     def bulk_upload(self, request):
@@ -129,3 +140,16 @@ class StudentViewSet(viewsets.ModelViewSet):
          ).order_by('-graduation_year')
 
         return Response(queryset)
+    
+    
+    @action(detail=False, methods=['get'], url_path='special-stats')
+    def special_stats(self, request):
+        institution_id = request.query_params.get('institution_id')
+        data = AnalysisService.get_special_enrollment_stats(institution_id)
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='financial-stats')
+    def financial_stats(self, request):
+        institution_id = request.query_params.get('institution_id')
+        data = AnalysisService.get_financial_stats(institution_id)
+        return Response(data)

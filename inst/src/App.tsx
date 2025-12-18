@@ -21,6 +21,8 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
 import Faculties from "./pages/Faculties";
+import EnrolmentSupport from "./pages/EnrolmentSupport";
+import InstitutionalFinance from "./pages/InstitutionalFinance";
 
 const queryClient = new QueryClient();
 
@@ -42,8 +44,10 @@ const App = () => {
           <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
           <Route path="/dashboard/students" element={<DashboardLayout><Students /></DashboardLayout>} />
           <Route path="/dashboard/staff" element={<DashboardLayout><Staff /></DashboardLayout>} />
+          <Route path="/dashboard/fees" element={<DashboardLayout><InstitutionalFinance /></DashboardLayout>} />
           <Route path="/dashboard/programs" element={<DashboardLayout><Programs /></DashboardLayout>} />
           <Route path="/dashboard/graduates" element={<DashboardLayout><Graduates /></DashboardLayout>} />
+          <Route path="/dashboard/special-enrollment" element={<DashboardLayout><EnrolmentSupport /></DashboardLayout>} />
           <Route path="/dashboard/facilities" element={<DashboardLayout><Facilities /></DashboardLayout>} />
           <Route path="/dashboard/faculties" element={<DashboardLayout><Faculties /></DashboardLayout>} />
           <Route path="/dashboard/reports" element={<DashboardLayout><Reports /></DashboardLayout>} />

@@ -68,7 +68,7 @@ export interface FinancialStats {
 }
 
 export const getFinancialStats = async () => {
-  const response = await apiClient.get<FinancialStats>(`${END_POINT}financial-stats/`);
+  const response = await apiClient.get<FinancialStats>(`${END_POINT}finance/`);
   return response.data;
 };
 
@@ -119,4 +119,18 @@ export const getAdmissionStats = async () => {
   return res.data;
 };
 
+export interface SpecialStats {
+  special_students: { disability_type: string; value: number }[];
+  work_for_fees: { work_area: string; students: number; hours: number }[];
+  counts: {
+    iseop: number;
+    work_for_fees: number;
+    disabled: number;
+  };
+}
 
+export const getSpecialEnrollmentStats = async (): Promise<SpecialStats> => {
+  // Call the endpoint without institution_id params
+  const response = await apiClient.get<SpecialStats>(`/academic/students/special-stats/`);
+  return response.data;
+};
