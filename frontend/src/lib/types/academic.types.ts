@@ -60,6 +60,8 @@ export interface Student {
   id: number;
   student_id: string;
   national_id: string | null;
+  program_name: string;
+  institution_name: string;
   full_name: string;
   first_name: string;
   last_name: string;

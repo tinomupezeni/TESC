@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -125,6 +126,13 @@ export default function Students() {
   const femalePercentage =
     totalStudents > 0 ? ((femaleStudents / totalStudents) * 100).toFixed(1) : 0;
 
+     const maleStudents = useMemo(
+    () => allStudents?.filter((s) => s.gender === "Male").length || 0,
+    [allStudents]
+  );
+  const malePercentage =
+    totalStudents > 0 ? ((maleStudents / totalStudents) * 100).toFixed(1) : 0;
+
   return (
     <>
       <DashboardLayout>
@@ -147,7 +155,7 @@ export default function Students() {
           </div>
 
           {/* Student Statistics (Dynamic) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <StatsCard
               title="Total Students"
               value={isLoading ? "..." : totalStudents.toLocaleString()}
@@ -162,9 +170,17 @@ export default function Students() {
               icon={UserCheck}
               variant="success"
             />
+              <StatsCard
+              title="Male Students"
+              value={isLoading ? "..." : maleStudents.toLocaleString()}
+              description={isLoading ? "..." : `${malePercentage}% of total`}
+              icon={UserCheck}
+              variant="success"
+            />
+          
             <StatsCard
               title="Students with Disabilities"
-              value={1247} // This data is not in the model, left as static
+              value={0} // This data is not in the model, left as static
               description="2.1% receiving support"
               icon={Users}
               variant="warning"
@@ -207,11 +223,15 @@ export default function Students() {
           </Card>
 
           {/* Student Records Table (Dynamic) */}
-          <Card>
-            <CardHeader>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <div className="flex items-center gap-2">
               <CardTitle>Student Records</CardTitle>
-            </CardHeader>
-            <CardContent>
+              <span className="text-lg font-medium text-muted-foreground">
+                </span>
+                </div>
+                </CardHeader>
+                <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -266,8 +286,8 @@ export default function Students() {
                           {student.student_id}
                         </TableCell>
                         <TableCell>{student.full_name}</TableCell>
-                        <TableCell>{student.institution}</TableCell>
-                        <TableCell>{student.program}</TableCell>
+                        <TableCell>{student.institution_name}</TableCell>
+                        <TableCell>{student.program_name}</TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell>
                           <Badge
