@@ -25,7 +25,7 @@ export interface Institution {
   location: string;
   address: string;
   capacity: number;
-  staff: number;
+  staff_count: number;
   status: 'Active' | 'Renovation' | 'Closed';
   established: number;
   facilities: Facility[];

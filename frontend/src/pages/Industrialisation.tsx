@@ -7,7 +7,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { getIndustrialStats } from "@/services/analysis.services";
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--accent-foreground))", "hsl(var(--success))", "hsl(var(--info))", "hsl(var(--muted-foreground))"];
+const COLORS = [
+  "hsl(var(--primary))", 
+  "hsl(var(--accent-foreground))", 
+  "hsl(var(--success))", 
+  "hsl(var(--info))", 
+  "hsl(var(--muted-foreground))",
+  "#FACC15",  // yellow fallback
+  "#3B82F6",  // blue fallback
+  "#F59E0B",  // amber fallback
+  "#8B5CF6",  // purple fallback
+  "#EF4444",  // red fallback
+  "#10B981",  // green fallback
+  "#6B7280",  // gray fallback
+];
+const SECTOR_COLORS: Record<string, string> = {
+  edtech: "#FACC15",        // yellow
+  energy: "#3B82F6",        // blue
+  healthtech: "#F59E0B",    // amber
+  manufacturing: "#8B5CF6", // purple
+  mining: "#EF4444",        // red
+  fintech: "#10B981",       // green
+  agritech: "#6B7280",      // gray
+  other: "#A855F7",          // custom purple
+};
 
 export default function Industrialisation() {
     const [data, setData] = useState<any>(null);
@@ -20,7 +43,6 @@ export default function Industrialisation() {
             .finally(() => setLoading(false));
     }, []);
 
-    // 1. Loading State
     if (loading) {
         return (
             <DashboardLayout>
@@ -31,7 +53,6 @@ export default function Industrialisation() {
         );
     }
 
-    // 2. Format Currency
     const formatMoney = (amount: number | undefined) => {
         if (amount === undefined || amount === null) return "$0";
         return new Intl.NumberFormat('en-US', { 
@@ -41,15 +62,21 @@ export default function Industrialisation() {
         }).format(amount);
     };
 
-    // 3. Safe Data Access
     const stats = data?.stats || {};
     const sectors = data?.sectors || [];
     const partnerships = data?.partnerships || [];
-    
-    // Check if we have sector data for the chart
+
     const hasSectorData = sectors.length > 0;
-    // If no data, use a gray placeholder for the chart
     const displaySectors = hasSectorData ? sectors : [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
+
+    // Map each sector to a unique color **outside JSX**
+    const sectorColorsMap: Record<string, string> = displaySectors.reduce(
+        (acc, sector, i) => {
+            acc[sector.name] = COLORS[i % COLORS.length];
+            return acc;
+        },
+        {} as Record<string, string>
+    );
 
     return (
         <DashboardLayout>
@@ -85,7 +112,7 @@ export default function Industrialisation() {
                     <StatsCard 
                         title="Student Startups" 
                         value={stats.startups || 0} 
-                        description="Incubated" 
+                        description="Across All Institutions" 
                         icon={Rocket} 
                         variant="accent" 
                     />
@@ -116,21 +143,21 @@ export default function Industrialisation() {
                                 <PieChart>
                                     {hasSectorData && <Tooltip />}
                                     {hasSectorData && <Legend verticalAlign="bottom" height={36} />}
-                                    <Pie 
-                                        data={displaySectors} 
-                                        dataKey="value" 
-                                        nameKey="name" 
-                                        cx="50%" 
-                                        cy="50%" 
-                                        outerRadius={100} 
-                                        innerRadius={hasSectorData ? 0 : 60} // Donut for empty state
+                                    <Pie
+                                        data={displaySectors}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={100}
+                                        innerRadius={0}
                                         stroke="none"
                                     >
-                                        {displaySectors.map((entry: any, index: number) => (
-                                            <Cell 
-                                                key={`cell-${index}`} 
-                                                fill={hasSectorData ? COLORS[index % COLORS.length] : entry.color} 
-                                                opacity={hasSectorData ? 1 : 0.3}
+                                        {displaySectors.map((entry) => (
+                                            <Cell
+                                                key={entry.name}
+                                                fill={SECTOR_COLORS[entry.name]}
+                                                opacity={1}
                                             />
                                         ))}
                                     </Pie>
@@ -168,7 +195,6 @@ export default function Industrialisation() {
                                                 </TableRow>
                                             ))
                                         ) : (
-                                            // Empty State Row
                                             <TableRow>
                                                 <TableCell colSpan={3} className="h-48 text-center">
                                                     <div className="flex flex-col items-center justify-center text-muted-foreground">

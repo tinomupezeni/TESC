@@ -31,6 +31,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'date_of_birth',
             'enrollment_year',
             'status',
+            "dropout_reason",
             'institution',
             'institution_name',
             'program',

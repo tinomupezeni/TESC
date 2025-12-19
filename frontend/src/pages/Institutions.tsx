@@ -176,7 +176,7 @@ export default function Institutions() {
                           Staff
                         </div>
                         <div className="font-bold text-lg">
-                          {institution.staff.toLocaleString()}
+                          {institution.staff_count.toLocaleString()}
                         </div>
                       </div>
                       <div className="text-center">

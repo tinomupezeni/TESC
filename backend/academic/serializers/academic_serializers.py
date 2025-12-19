@@ -18,16 +18,19 @@ class InstitutionSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), write_only=True, required=False
     )
     # Add these two lines
-    student_count = serializers.IntegerField(source='students.count', read_only=True)
-    program_count = serializers.IntegerField(source='programs.count', read_only=True)
+    program_count = serializers.IntegerField(read_only=True)
+    student_count = serializers.IntegerField(read_only=True)
+    staff_count = serializers.SerializerMethodField(read_only=True)
+
 
     class Meta:
         model = Institution
         fields = [
             'id', 'name', 'type', 'location', 'address', 'capacity', 
-            'staff', 'status', 'established', 'facilities', 'facility_ids','student_count', 'program_count'
+            'staff', 'status', 'established', 'facilities', 'facility_ids','student_count', 'program_count','staff_count', 
         ]
-    
+    def get_staff_count(self, obj):
+        return obj.staff_members.count()  # Related name from Staff model
     def create(self, validated_data):
         facility_ids = validated_data.pop('facility_ids', [])
         institution = Institution.objects.create(**validated_data)
