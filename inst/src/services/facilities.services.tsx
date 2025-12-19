@@ -13,6 +13,7 @@ export interface Facility {
   facility_type: FacilityType;
   building: string;
   capacity: number;
+  current_usage:number;
   status: FacilityStatus;
   description: string;
   equipment: string; // Comma-separated string
@@ -28,6 +29,7 @@ export interface CreateFacilityData {
   facility_type: string; // Passed as string from select
   building: string;
   capacity: number;
+  current_usage:number;
   status: string;
   description: string;
   equipment?: string;

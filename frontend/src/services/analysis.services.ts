@@ -39,6 +39,8 @@ export interface ProvinceStat {
 
 export interface ChartDataItem {
   province: string;
+  location: string;
+  institution_name: string;
   students: number;
   institutions: number;
   hubs: number;
@@ -50,9 +52,9 @@ export interface RegionalStats {
     top_enrollment: string;
     total_enrollment: number;
     total_institutions: number;
-    provinces: ProvinceStat[]; 
+    provinces: any[]; 
   };
-  chart_data: ChartDataItem[]; // This is crucial for your Bar Chart and Table
+  chart_data: ChartDataItem[];
 }
 
 // --- Service Object ---
@@ -91,30 +93,14 @@ export const analysisService = {
     return response.data;
   },
 
-  // Added Regional Stats to the main service object for consistency
+  /**
+   * Fetches regional data including specific locations and institution names.
+   */
   getRegionalStats: async (): Promise<RegionalStats> => {
-    /** * NOTE: To see both Harare and Mutare, your backend API must return both.
-     * If your API is not ready, you can use the mock data below.
-     * To switch to live data, use: 
-     * const response = await apiClient.get<RegionalStats>(`${END_POINT}regional-stats/`);
-     * return response.data;
-     */
-    return {
-      stats: {
-        provinces_covered: 2,
-        top_enrollment: "Harare",
-        total_enrollment: 25,
-        total_institutions: 3,
-        provinces: [
-          { province_name: "Harare", total_enrollment: 13, total_institutions: 2 },
-          { province_name: "Mutare", total_enrollment: 12, total_institutions: 1 }
-        ]
-      },
-      chart_data: [
-        { province: "Harare", students: 13, institutions: 2, hubs: 1 },
-        { province: "Mutare", students: 12, institutions: 1, hubs: 0 }
-      ]
-    };
+    const response: AxiosResponse<RegionalStats> = await apiClient.get(
+      `${END_POINT}regional-stats/`
+    );
+    return response.data;
   },
 };
 
@@ -130,8 +116,7 @@ export const getFinancialStats = async () => {
   return response.data;
 };
 
-// Exported alias to match your component's import: 
-// import { getRegionalStats } from "@/services/analysis.services";
+// Linking the standalone export to the service method
 export const getRegionalStats = analysisService.getRegionalStats;
 
 export const getHubStats = async () => {

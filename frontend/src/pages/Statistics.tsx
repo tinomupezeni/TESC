@@ -4,7 +4,6 @@ import { BarChart3, Users, Building, GraduationCap, UserCheck } from "lucide-rea
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { useStatistics } from "@/hooks/useStatistics";
 import { useStudentDistribution } from "@/hooks/useStudentDistribution";
-import { useEnrollmentTrends } from "@/hooks/useEnrollmentTrends";
 import { useStudentTeacherRatio } from "@/hooks/useRatios";
 import { EnrollmentChart } from "@/components/dashboard/EnrollmentChart";
 import { InstitutionOverview } from "@/components/dashboard/InstitutionOverview";

@@ -1,63 +1,50 @@
 # analysis/views.py
-from django.db.models import Count
+from django.db.models import Count, F
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from academic.models import Institution, Student
 from django.db import models
 
 class RegionalAnalysisView(APIView):
-    """
-    Endpoint: /api/analysis/regional-stats/
-    """
     def get(self, request):
-        # 1. Get stats grouped by Province from Institutions
-        # This gives us: Province Name, Count of Institutions, Count of Hubs
-        inst_stats = Institution.objects.values('province').annotate(
-            institutions_count=Count('id'),
+        # 1. Get ALL institutions and their specific locations
+        # We group by ID to ensure every single institution is a unique row
+        institutions = Institution.objects.annotate(
+            student_count=Count('students'), # Assumes 'students' is the related_name in Student model
             hubs_count=Count('id', filter=models.Q(has_innovation_hub=True))
-        ).order_by('province')
+        ).values(
+            'name', 
+            'province', 
+            'location', 
+            'student_count', 
+            'has_innovation_hub'
+        ).order_by('-student_count')
 
-        # 2. Get Student counts grouped by Province
-        # We query Student -> Institution -> Province
-        student_stats = Student.objects.values('institution__province').annotate(
-            student_count=Count('id')
-        )
-        
-        # Convert student stats to a dictionary for easy lookup: {'Harare': 1500, ...}
-        student_map = {item['institution__province']: item['student_count'] for item in student_stats}
-
-        # 3. Merge Data for Frontend
-        formatted_data = []
+        chart_data = []
         total_students = 0
-        total_institutions = 0
-        
-        # Define provinces list to ensure we show 0 for empty ones or just iterate results
-        # Iterating results is safer for now
-        for entry in inst_stats:
-            prov_name = entry['province']
-            s_count = student_map.get(prov_name, 0)
-            i_count = entry['institutions_count']
-            h_count = entry['hubs_count']
+        provinces_set = set()
 
-            formatted_data.append({
-                "province": prov_name,
-                "institutions": i_count,
-                "students": s_count,
-                "hubs": h_count
+        for inst in institutions:
+            chart_data.append({
+                "province": inst['province'],
+                "location": inst['location'] or "Unknown",
+                "institution_name": inst['name'],
+                "students": inst['student_count'],
+                "institutions": 1,
+                "hubs": 1 if inst['has_innovation_hub'] else 0
             })
-            
-            total_students += s_count
-            total_institutions += i_count
+            total_students += inst['student_count']
+            provinces_set.add(inst['province'])
 
-        # Sort by student count for the chart (optional)
-        formatted_data.sort(key=lambda x: x['students'], reverse=True)
+        # 2. Calculate Top Enrollment Location
+        top_loc = chart_data[0]['location'] if chart_data else "N/A"
 
         return Response({
             "stats": {
-                "provinces_covered": len(formatted_data),
-                "top_enrollment": formatted_data[0]['province'] if formatted_data else "N/A",
+                "provinces_covered": len(provinces_set),
+                "top_enrollment": top_loc,
                 "total_enrollment": total_students,
-                "total_institutions": total_institutions
+                "total_institutions": institutions.count(),
             },
-            "chart_data": formatted_data
+            "chart_data": chart_data
         })

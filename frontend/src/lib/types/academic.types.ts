@@ -46,6 +46,8 @@ export interface Program {
 
 // From StudentReadSerializer
 export interface Student {
+  program_name: string;
+  institution_name: string;
   id: number;
   student_id: string;
   national_id: string | null;

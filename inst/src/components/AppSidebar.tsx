@@ -12,7 +12,9 @@ import {
   LogOut,
   School, // New icon for Faculties
   ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
+  HeartHandshake,
+  Wallet2
 } from "lucide-react";
 import {
   Sidebar,
@@ -48,6 +50,8 @@ const menuGroups = [
     label: "Academic Management",
     items: [
       { title: "Students", url: "/dashboard/students", icon: Users },
+      { title: "Special Enrolment", url: "/dashboard/special-enrollment", icon: HeartHandshake },
+      { title: "Fees & Payments", url: "/dashboard/fees", icon: Wallet2 },
       { title: "Staff", url: "/dashboard/staff", icon: UserCog },
       { title: "Faculties", url: "/dashboard/faculties", icon: School }, // Changed icon to distinguish
       { title: "Programs", url: "/dashboard/programs", icon: BookOpen },
@@ -58,7 +62,7 @@ const menuGroups = [
     label: "Operations & Analytics",
     items: [
       { title: "Facilities", url: "/dashboard/facilities", icon: Building2 },
-      { title: "Innovation", url: "/dashboard/innovation", icon: Lightbulb },
+      { title: "Innovation & Industry", url: "/dashboard/innovation", icon: Lightbulb },
       { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
     ]
   }
