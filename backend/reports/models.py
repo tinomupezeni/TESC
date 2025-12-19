@@ -25,7 +25,7 @@ class ReportTemplate(models.Model):
     default_format = models.CharField(max_length=10, choices=FORMAT_CHOICES, default='pdf')
     is_active = models.BooleanField(default=True)
     
-    # Remove auto_now_add for now to avoid migration issues
+    # Removing  auto_now_add for now to avoid migration issues
     created_at = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     
     class Meta:
@@ -71,7 +71,7 @@ class GeneratedReport(models.Model):
     
     # NEW: Store report data as JSON
     report_data = models.JSONField(null=True, blank=True)
-    # NEW: add this field
+    
     #file = models.FileField(upload_to='reports/', null=True, blank=True)
 
     requested_at = models.DateTimeField(auto_now_add=False, null=True, blank=True)
