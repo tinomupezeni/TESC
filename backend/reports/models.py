@@ -69,8 +69,10 @@ class GeneratedReport(models.Model):
     format = models.CharField(max_length=10, choices=ReportTemplate.FORMAT_CHOICES, default='pdf')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
+    # NEW: Store report data as JSON
+    report_data = models.JSONField(null=True, blank=True)
     # NEW: add this field
-    file = models.FileField(upload_to='reports/', null=True, blank=True)
+    #file = models.FileField(upload_to='reports/', null=True, blank=True)
 
     requested_at = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     

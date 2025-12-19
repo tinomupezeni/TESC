@@ -15,16 +15,17 @@ class GeneratedReportSerializer(serializers.ModelSerializer):
     template_category = serializers.CharField(source='template.category', read_only=True)
     generated_by = serializers.CharField(source='generated_by.get_full_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-
-    # This field is needed by frontend
     date_generated = serializers.DateTimeField(source='requested_at', read_only=True)
 
     class Meta:
         model = GeneratedReport
         fields = [
             'id', 'title', 'template', 'template_name', 'template_category',
-            'generated_by', 'date_generated', 'format', 'status', 'status_display', 'file'
+            'generated_by', 'date_generated', 'format', 'status', 'status_display'
+            , 'report_data'  # Added report_data
         ]
+        read_only_fields = ['report_data']
+
 
 class ReportGenerationRequestSerializer(serializers.Serializer):
     template_id = serializers.IntegerField()

@@ -90,16 +90,10 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "tesc_db",              # Your Postgres database name
-        "USER": "tesc_user",          # Your Postgres user (change if different)
-        "PASSWORD": "tesc@1234", # Replace with your actual password
-        "HOST": "localhost",         # Or the server IP
-        "PORT": "5432",              # Default Postgres port
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
