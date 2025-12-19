@@ -19,11 +19,17 @@ export default function PaymentsAndFees() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-ZW', {
       style: 'currency',
-      currency: 'USD', // Adjust to your preferred default
+      currency: 'USD',
       notation: "compact",
       maximumFractionDigits: 1
     }).format(amount || 0);
   };
+
+  console.log("Stats:", stats);
+  console.log("Payment Data:", paymentData);
+  console.log("Fee Structure:", feeStructure);
+
+  const hasPaymentData = paymentData && paymentData.length > 0 && paymentData.some(d => d.Collected > 0 || d.Target > 0);
 
   if (loading) {
     return (
@@ -36,7 +42,16 @@ export default function PaymentsAndFees() {
     );
   }
 
-  const hasPaymentData = paymentData.length > 0 && paymentData.some(d => d.Collected > 0 || d.Target > 0);
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col justify-center items-center h-[80vh] gap-4 text-red-600">
+          <p>{error}</p>
+          <Button onClick={refresh}>Retry</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -57,34 +72,10 @@ export default function PaymentsAndFees() {
 
         {/* Key Financial Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Total Pending Fees"
-            value={formatCurrency(stats.totalPending)}
-            description="Global outstanding student debt"
-            icon={AlertTriangle}
-            variant="destructive"
-          />
-          <StatsCard
-            title="Collection Rate"
-            value={`${stats.complianceRate || 0}%`}
-            description="National revenue compliance"
-            icon={Percent}
-            variant="success"
-          />
-          <StatsCard
-            title="Debtors Count"
-            value={stats.studentsWithPending || 0}
-            description="Students with balances"
-            icon={TrendingDown}
-            variant="warning"
-          />
-          <StatsCard
-            title="Total Revenue (YTD)"
-            value={formatCurrency(stats.totalCollectedYTD)}
-            description="Collected across all institutions"
-            icon={DollarSign}
-            variant="info"
-          />
+          <StatsCard title="Total Pending Fees" value={formatCurrency(stats.totalPending)} description="Global outstanding student debt" icon={AlertTriangle} variant="destructive"/>
+          <StatsCard title="Collection Rate" value={`${stats.complianceRate?.toFixed(1) || 0}%`} description="National revenue compliance" icon={Percent} variant="success"/>
+          <StatsCard title="Debtors Count" value={stats.studentsWithPending || 0} description="Students with balances" icon={TrendingDown} variant="warning"/>
+          <StatsCard title="Total Revenue (YTD)" value={formatCurrency(stats.totalCollectedYTD)} description="Collected across all institutions" icon={DollarSign} variant="info"/>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -127,16 +118,12 @@ export default function PaymentsAndFees() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {feeStructure.length > 0 ? (
-                    feeStructure.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm">{item.name}</TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          {formatCurrency(item.annual_fee)}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
+                  {feeStructure.length > 0 ? feeStructure.map((item, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm">{item.name}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{formatCurrency(item.annual_fee)}</TableCell>
+                    </TableRow>
+                  )) : (
                     <TableRow>
                       <TableCell colSpan={2} className="h-32 text-center text-muted-foreground">
                         No fee structures defined in the system.

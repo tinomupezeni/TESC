@@ -10,6 +10,7 @@ from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'finance', FinancialAnalysisViewSet, basename='finance-analysis')
 
+
 urlpatterns = [
     # This results in: /api/analysis/dropout-analysis/
     path('dropout-analysis/', DropoutAnalysisView.as_view(), name='dropout-analysis'),

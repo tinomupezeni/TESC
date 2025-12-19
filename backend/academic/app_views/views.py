@@ -4,7 +4,7 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-
+from django.db.models import Count
 from ..models import Institution, Facility
 from faculties.models import Program
 from ..serializers.academic_serializers import (
@@ -98,6 +98,15 @@ class InstitutionViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError(
                 {"detail": "Failed to register institution. Please check the data and try again."}
             )
+    def get_queryset(self):
+        """
+        Annotate institutions with staff count and program count.
+        """
+        return Institution.objects.annotate(
+            program_count=Count('faculties__departments__programs', distinct=True),   
+            student_count=Count('students', distinct=True),
+            staff_count=Count('staff_members', distinct=True)
+        )
 
 class ProgramViewSet(viewsets.ModelViewSet):
     queryset = Program.objects.all()

@@ -49,10 +49,9 @@ const END_POINT = '/analysis/';
 
 // Updated: No arguments required
 export const getDropoutAnalysis = async () => {
-  const response = await apiClient.get<DropoutStats>(`${END_POINT}dropout-analysis/`);
+  const response = await apiClient.get<DropoutStats>(`/academic/students/dropout-stats/`);
   return response.data;
 };
-
 // services/analysis.services.ts
 
 export interface FinancialStats {
@@ -68,7 +67,7 @@ export interface FinancialStats {
 }
 
 export const getFinancialStats = async () => {
-  const response = await apiClient.get<FinancialStats>(`${END_POINT}finance/`);
+  const response = await apiClient.get<FinancialStats>(`academic/payments/finance/`);
   return response.data;
 };
 
