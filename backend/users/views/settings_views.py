@@ -31,9 +31,14 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     CRUD for CustomUser objects.
     Endpoint: /users/
+    Excludes users assigned as Institution Admins.
     """
-    queryset = CustomUser.objects.all().order_by('username')
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # We filter where 'inst_admin' is null to exclude institutional accounts
+        # from the general system settings user list.
+        return CustomUser.objects.filter(inst_admin__isnull=True).order_by('username')
     
     

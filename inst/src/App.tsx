@@ -27,8 +27,6 @@ import InstitutionalFinance from "./pages/InstitutionalFinance";
 const queryClient = new QueryClient();
 
 const App = () => {
-  
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -38,21 +36,108 @@ const App = () => {
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/force-password-change" element={<ForcePasswordChange />} />
+          <Route
+            path="/force-password-change"
+            element={<ForcePasswordChange />}
+          />
 
           {/* Dashboard routes wrapped with DashboardLayout */}
-          <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
-          <Route path="/dashboard/students" element={<DashboardLayout><Students /></DashboardLayout>} />
-          <Route path="/dashboard/staff" element={<DashboardLayout><Staff /></DashboardLayout>} />
-          <Route path="/dashboard/fees" element={<DashboardLayout><InstitutionalFinance /></DashboardLayout>} />
-          <Route path="/dashboard/programs" element={<DashboardLayout><Programs /></DashboardLayout>} />
-          <Route path="/dashboard/graduates" element={<DashboardLayout><Graduates /></DashboardLayout>} />
-          <Route path="/dashboard/special-enrollment" element={<DashboardLayout><EnrolmentSupport /></DashboardLayout>} />
-          <Route path="/dashboard/facilities" element={<DashboardLayout><Facilities /></DashboardLayout>} />
-          <Route path="/dashboard/faculties" element={<DashboardLayout><Faculties /></DashboardLayout>} />
-          <Route path="/dashboard/reports" element={<DashboardLayout><Reports /></DashboardLayout>} />
-          <Route path="/dashboard/innovation" element={<DashboardLayout><Innovation /></DashboardLayout>} />
-          <Route path="/dashboard/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
+          <Route
+            path="/dashboard"
+            element={
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/students"
+            element={
+              <DashboardLayout>
+                <Students />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/staff"
+            element={
+              <DashboardLayout>
+                <Staff />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/fees"
+            element={
+              <DashboardLayout>
+                <InstitutionalFinance />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/programs"
+            element={
+              <DashboardLayout>
+                <Programs />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/graduates"
+            element={
+              <DashboardLayout>
+                <Graduates />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/special-enrollment"
+            element={
+              <DashboardLayout>
+                <EnrolmentSupport />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/facilities"
+            element={
+              <DashboardLayout>
+                <Facilities />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/faculties"
+            element={
+              <DashboardLayout>
+                <Faculties />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/reports"
+            element={
+              <DashboardLayout>
+                <Reports />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/innovation"
+            element={
+              <DashboardLayout>
+                <Innovation />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/settings"
+            element={
+              <DashboardLayout>
+                <Settings />
+              </DashboardLayout>
+            }
+          />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

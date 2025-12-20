@@ -1,13 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Table } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"; // Fix: Use Table from UI components, not Lucide
 import React from "react";
 
-
-export default function Users({setEditingItem, setNewUser, setOpenUserModal, users, editUserHandler, deleteUserHandler}) {
-    console.log(users);
-    
+// Using a single object for props destructuring
+export default function Users({
+  setEditingItem,
+  setNewUser,
+  setOpenUserModal,
+  users = [], // Default to empty array
+  editUserHandler,
+  deleteUserHandler,
+}) {
   return (
     <div>
       <Card>
@@ -15,15 +26,18 @@ export default function Users({setEditingItem, setNewUser, setOpenUserModal, use
           <CardTitle>Users</CardTitle>
           <Button
             onClick={() => {
-              setEditingItem(null);
-              setNewUser({
-                name: "",
-                email: "",
-                role: "",
-                department: "",
-                level: "",
-              });
-              setOpenUserModal(true);
+              // Now these will work if passed correctly from SettingsPage
+              if (setEditingItem) setEditingItem(null);
+              if (setNewUser)
+                setNewUser({
+                  firstName: "",
+                  lastName: "",
+                  email: "",
+                  role: "",
+                  department: "",
+                  level: "4",
+                });
+              if (setOpenUserModal) setOpenUserModal(true);
             }}
           >
             Add User
@@ -44,33 +58,40 @@ export default function Users({setEditingItem, setNewUser, setOpenUserModal, use
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-gray-500 py-8"
+                  >
                     No users found.
                   </TableCell>
                 </TableRow>
               ) : (
-                users?.map((user) => (
+                users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell>{user.username}</TableCell>
+                    <TableCell className="font-medium">
+                      {user.first_name} {user.last_name}
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role?.name}</TableCell>
-                    <TableCell>{user.department?.name}</TableCell>
-                    <TableCell>{user.level}</TableCell>
-                    <TableCell className="flex gap-2 justify-end">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => editUserHandler(user)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteUserHandler(user.id)}
-                      >
-                        Delete
-                      </Button>
+                    <TableCell>{user.role?.name || "N/A"}</TableCell>
+                    <TableCell>{user.department?.name || "N/A"}</TableCell>
+                    <TableCell>Level {user.level}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => editUserHandler(user)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteUserHandler(user.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

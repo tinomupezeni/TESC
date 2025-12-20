@@ -14,7 +14,8 @@ import {
   ChevronRight,
   MoreHorizontal,
   HeartHandshake,
-  Wallet2
+  Wallet2,
+  Settings2
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +65,14 @@ const menuGroups = [
       { title: "Facilities", url: "/dashboard/facilities", icon: Building2 },
       { title: "Innovation & Industry", url: "/dashboard/innovation", icon: Lightbulb },
       { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
+    ]
+  },
+  {
+    label: "System",
+    items: [
+      { title: "Settings", url: "/dashboard/settings", icon: Settings2 },
+      { title: "Help", url: "#", icon: Lightbulb },
+      
     ]
   }
 ];

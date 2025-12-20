@@ -11,11 +11,17 @@ class RoleSerializer(serializers.ModelSerializer):
 
 # --- 2. Department Serializer ---
 class DepartmentSerializer(serializers.ModelSerializer):
-    """Serializes the Department model."""
+    """Serializes the Department model, including the new permissions field."""
     class Meta:
         model = Department
-        fields = ['id', 'name', 'description', 'created_at']
+        fields = ['id', 'name', 'description', 'permissions', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    def validate_permissions(self, value):
+        """Ensure permissions is always a list of strings."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Permissions must be a list of strings.")
+        return value
 
 # --- 3. CustomUser Serializer ---
 class UserSerializer(serializers.ModelSerializer):
@@ -77,6 +83,8 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password("tesc@123") 
             
         user.save()
+        
+        user.password = password
         return user
 
     def update(self, instance, validated_data):

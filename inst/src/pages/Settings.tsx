@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -29,7 +35,9 @@ const Settings = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage institution profile and preferences</p>
+        <p className="text-muted-foreground mt-1">
+          Manage institution profile and preferences
+        </p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
@@ -52,23 +60,36 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Institution Information</CardTitle>
-              <CardDescription>Update your institution's public profile</CardDescription>
+              <CardDescription>
+                Update your institution's public profile
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="institution-name">Institution Name</Label>
-                  <Input id="institution-name" defaultValue="Mutare Polytechnic" />
+                  <Input
+                    id="institution-name"
+                    defaultValue="Mutare Polytechnic"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="institution-type">Type</Label>
-                  <Input id="institution-type" defaultValue="Polytechnic" disabled />
+                  <Input
+                    id="institution-type"
+                    defaultValue="Polytechnic"
+                    disabled
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Official Email</Label>
-                <Input id="email" type="email" defaultValue="admin@mutarepoly.ac.zw" />
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue="admin@mutarepoly.ac.zw"
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -84,8 +105,8 @@ const Settings = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="address">Physical Address</Label>
-                <Textarea 
-                  id="address" 
+                <Textarea
+                  id="address"
                   defaultValue="123 Education Drive, Mutare, Zimbabwe"
                   rows={3}
                 />
@@ -113,7 +134,9 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
-              <CardDescription>Update your account password regularly for security</CardDescription>
+              <CardDescription>
+                Update your account password regularly for security
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -160,58 +183,89 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Manage how you receive updates and alerts</CardDescription>
+              <CardDescription>
+                Manage how you receive updates and alerts
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                  <Label htmlFor="email-notifications">
+                    Email Notifications
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications via email
+                  </p>
                 </div>
-                <Switch 
+                <Switch
                   id="email-notifications"
                   checked={notifications.email}
-                  onCheckedChange={(checked) => setNotifications({...notifications, email: checked})}
+                  onCheckedChange={(checked) =>
+                    setNotifications({ ...notifications, email: checked })
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="student-reg">Student Registrations</Label>
-                  <p className="text-sm text-muted-foreground">Alert when new students register</p>
+                  <p className="text-sm text-muted-foreground">
+                    Alert when new students register
+                  </p>
                 </div>
-                <Switch 
+                <Switch
                   id="student-reg"
                   checked={notifications.studentRegistration}
-                  onCheckedChange={(checked) => setNotifications({...notifications, studentRegistration: checked})}
+                  onCheckedChange={(checked) =>
+                    setNotifications({
+                      ...notifications,
+                      studentRegistration: checked,
+                    })
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="result-uploads">Result Uploads</Label>
-                  <p className="text-sm text-muted-foreground">Notify on result submission</p>
+                  <p className="text-sm text-muted-foreground">
+                    Notify on result submission
+                  </p>
                 </div>
-                <Switch 
+                <Switch
                   id="result-uploads"
                   checked={notifications.resultUploads}
-                  onCheckedChange={(checked) => setNotifications({...notifications, resultUploads: checked})}
+                  onCheckedChange={(checked) =>
+                    setNotifications({
+                      ...notifications,
+                      resultUploads: checked,
+                    })
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="ministry-updates">Ministry Updates</Label>
-                  <p className="text-sm text-muted-foreground">Important announcements from Ministry</p>
+                  <p className="text-sm text-muted-foreground">
+                    Important announcements from Ministry
+                  </p>
                 </div>
-                <Switch 
+                <Switch
                   id="ministry-updates"
                   checked={notifications.ministryUpdates}
-                  onCheckedChange={(checked) => setNotifications({...notifications, ministryUpdates: checked})}
+                  onCheckedChange={(checked) =>
+                    setNotifications({
+                      ...notifications,
+                      ministryUpdates: checked,
+                    })
+                  }
                 />
               </div>
 
-              <Button onClick={() => toast.success("Notification preferences saved")}>
+              <Button
+                onClick={() => toast.success("Notification preferences saved")}
+              >
                 Save Preferences
               </Button>
             </CardContent>

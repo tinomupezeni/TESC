@@ -28,6 +28,7 @@ import DropoutAnalysis from "./modules/admissions/DropOut";
 import SpecialEnrollment from "./modules/admissions/SpecialEnrollment";
 import PaymentsAndFees from "./modules/admissions/PaymentsAndFees";
 import Admissions from "./pages/Admissions";
+import { PermissionGuard } from "./components/layout/PermissionGuard";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +58,9 @@ const App = () => (
               path="/dashboard/innovation"
               element={
                 <ProtectedRoute>
-                  <InnovationDashboard />
+                  <PermissionGuard>
+                    <InnovationDashboard />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -65,7 +68,9 @@ const App = () => (
               path="/dashboard/admissions"
               element={
                 <ProtectedRoute>
-                  <AdmissionsDashboard />
+                  <PermissionGuard>
+                    <AdmissionsDashboard />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -74,7 +79,9 @@ const App = () => (
               path="/hubs"
               element={
                 <ProtectedRoute>
-                  <Hubs />
+                  <PermissionGuard>
+                    <Hubs />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -82,7 +89,9 @@ const App = () => (
               path="/startups"
               element={
                 <ProtectedRoute>
-                  <Startups />
+                  <PermissionGuard>
+                    <Startups />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -90,7 +99,9 @@ const App = () => (
               path="/admissions"
               element={
                 <ProtectedRoute>
-                  <Admissions />
+                  <PermissionGuard>
+                    <Admissions />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -98,7 +109,9 @@ const App = () => (
               path="/students"
               element={
                 <ProtectedRoute>
-                  <Students />
+                  <PermissionGuard>
+                    <Students />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -106,7 +119,9 @@ const App = () => (
               path="/institutions"
               element={
                 <ProtectedRoute>
-                  <Institutions />
+                  <PermissionGuard>
+                    <Institutions />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -114,7 +129,9 @@ const App = () => (
               path="/admissions/dropouts"
               element={
                 <ProtectedRoute>
-                  <DropoutAnalysis />
+                  <PermissionGuard>
+                    <DropoutAnalysis />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -122,7 +139,9 @@ const App = () => (
               path="/admissions/special"
               element={
                 <ProtectedRoute>
-                  <SpecialEnrollment />
+                  <PermissionGuard>
+                    <SpecialEnrollment />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -130,7 +149,9 @@ const App = () => (
               path="/admissions/fees"
               element={
                 <ProtectedRoute>
-                  <PaymentsAndFees />
+                  <PermissionGuard>
+                    <PaymentsAndFees />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -146,7 +167,9 @@ const App = () => (
               path="/statistics"
               element={
                 <ProtectedRoute>
-                  <Statistics />
+                  <PermissionGuard>
+                    <Statistics />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -154,7 +177,9 @@ const App = () => (
               path="/facilities"
               element={
                 <ProtectedRoute>
-                  <Facilities />
+                  <PermissionGuard>
+                    <Facilities />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -162,7 +187,9 @@ const App = () => (
               path="/innovation"
               element={
                 <ProtectedRoute>
-                  <Innovation />
+                  <PermissionGuard>
+                    <Innovation />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -170,7 +197,9 @@ const App = () => (
               path="/industrialisation"
               element={
                 <ProtectedRoute>
-                  <Industrialisation />
+                  <PermissionGuard>
+                    <Industrialisation />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -178,7 +207,9 @@ const App = () => (
               path="/regional"
               element={
                 <ProtectedRoute>
-                  <Regional />
+                  <PermissionGuard>
+                    <Regional />
+                  </PermissionGuard>
                 </ProtectedRoute>
               }
             />
@@ -186,6 +217,7 @@ const App = () => (
               path="/settings"
               element={
                 <ProtectedRoute>
+                  
                   <Setting />
                 </ProtectedRoute>
               }

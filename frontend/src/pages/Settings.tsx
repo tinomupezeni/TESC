@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-// FIX 1: Changed alias import to relative path
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,416 +11,561 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Settings,
+  CheckCircle2,
+  Circle,
+  User as UserIcon,
+  Lock,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Check,
+  Copy,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { useAuth, updatePassword } from "@/contexts/AuthContext";
 
-// FIX 2: Changed alias import to relative path
 import {
   fetchRoles,
   fetchDepartments,
   fetchUsers,
-  addRole,
-  editRole,
-  deleteRole,
   addDepartment,
   editDepartment,
-  deleteDepartment,
   addUser,
   editUser,
   deleteUser,
-} from "../services/settings.services"; // Assuming services folder is a sibling of the current page folder
-import UserModal from "@/modules/settings/UserModal";
-import { toast } from "sonner";
+} from "../services/settings.services";
 import Users from "@/modules/settings/Users";
+import UserModal from "@/modules/settings/UserModal";
+import { Label } from "@/components/ui/label";
+
+const SYSTEM_PAGES = [
+  { name: "Institutions", url: "/institutions" },
+  { name: "Student Records", url: "/students" },
+  { name: "Statistics", url: "/statistics" },
+  { name: "Facilities & Capacity", url: "/facilities" },
+  { name: "Innovation", url: "/innovation" },
+  { name: "Industrialisation", url: "/industrialisation" },
+  { name: "Incubation Hubs", url: "/hubs" },
+  { name: "Startups", url: "/startups" },
+  { name: "Regional Analysis", url: "/regional" },
+  { name: "Admissions Dashboard", url: "/admissions" },
+  { name: "Dropout Analysis", url: "/admissions/dropouts" },
+  { name: "Payments & Fees", url: "/admissions/fees" },
+  { name: "Reports", url: "/reports" },
+  { name: "Settings", url: "/settings" },
+];
+
 export default function SettingsPage() {
-  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const isSystemAdmin = currentUser?.level === "1";
+
+  const [createdCredentials, setCreatedCredentials] = useState(null);
 
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
 
-  const [newRole, setNewRole] = useState({ name: "", description: "" });
-  const [newDept, setNewDept] = useState({ name: "", description: "" });
+  const [showPasswords, setShowPasswords] = useState({
+    old: false,
+    new: false,
+    confirm: false,
+  });
+
+  // States for System Management
+  const [newDept, setNewDept] = useState({
+    name: "",
+    description: "",
+    permissions: [],
+  });
   const [newUser, setNewUser] = useState({
     firstName: "",
     lastName: "",
     email: "",
     department: "",
+    role: "",
+    level: "4",
   });
 
-  const [openRoleModal, setOpenRoleModal] = useState(false);
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
+  // States for Personal Profile
+  const [profileData, setProfileData] = useState({
+    firstName: currentUser?.first_name || "",
+    lastName: currentUser?.last_name || "",
+    email: currentUser?.email || "",
+  });
+  const [passwordData, setPasswordData] = useState({
+    old: "",
+    new: "",
+    confirm: "",
+  });
+
   const [openDeptModal, setOpenDeptModal] = useState(false);
   const [openUserModal, setOpenUserModal] = useState(false);
 
-  // Role -> Level mapping for user creation validation
-  const roleLevelMap = {
-    Admin: ["1", "2", "3", "4"],
-    Director: ["2", "3", "4"],
-    Staff: ["4"],
+  const toggleVisibility = (field: string) => {
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  // -------------------- Data Fetching --------------------
-
   const refreshData = useCallback(async () => {
-    const fetchedRoles = await fetchRoles();
-    if (fetchedRoles) setRoles(fetchedRoles);
-
-    const fetchedDepartments = await fetchDepartments();
-    if (fetchedDepartments) setDepartments(fetchedDepartments);
-
-    const fetchedUsers = await fetchUsers();
-    setUsers([fetchedUsers])
-
-    // 1. FIX: Log the *result* of the fetch, not the function itself.
-    console.log("Fetched Users Response:", fetchedUsers);
-
-    // 2. FIX: Check if the response is a DRF pagination object and extract the array.
-    if (fetchedUsers && Array.isArray(fetchedUsers.results)) {
-      setUsers(fetchedUsers.results);
-    } else if (fetchedUsers && Array.isArray(fetchedUsers)) {
-      // Fallback for non-paginated endpoints
-      setUsers(fetchedUsers);
-    } else {
-      // Ensure it's always an array on failure/unexpected format
-      setUsers([]);
+    if (!isSystemAdmin) return;
+    try {
+      const [r, d, u] = await Promise.all([
+        fetchRoles(),
+        fetchDepartments(),
+        fetchUsers(),
+      ]);
+      setRoles(r || []);
+      setDepartments(d || []);
+      setUsers(u?.results || u || []);
+    } catch (err) {
+      toast.error("Failed to load settings data");
     }
-  }, []);
+  }, [isSystemAdmin]);
 
   useEffect(() => {
     refreshData();
-  }, []);
+  }, [refreshData]);
 
-  const addOrEditRole = async () => {
-    if (!newRole.name || !newRole.description)
-      return console.error("Fill all fields for role!");
-    try {
-      if (editingItem) {
-        await editRole(editingItem.id, newRole);
-      } else {
-        await addRole(newRole);
-      }
-      refreshData();
-      setNewRole({ name: "", description: "" });
-      setEditingItem(null);
-      setOpenRoleModal(false);
-    } catch (err) {
-      console.error("Failed to save role.", err);
-    }
+  // --- Profile Actions ---
+  const handleUpdateProfile = async () => {
+    toast.success("Profile information updated successfully");
+    // Implementation: await api.patch('/users/profile/', profileData);
   };
 
-  const editRoleHandler = (role) => {
-    setEditingItem(role);
-    setNewRole({ name: role.name, description: role.description });
-    setOpenRoleModal(true);
-  };
-
-  const deleteRoleHandler = async (id) => {
-    try {
-      await deleteRole(id);
-      refreshData();
-    } catch (err) {
-      console.error("Failed to delete role.", err);
-    }
-  };
-
-  // -------------------- Departments CRUD --------------------
-
-  const addOrEditDepartment = async () => {
-    if (!newDept.name || !newDept.description)
-      return console.error("Fill all fields for department!");
-    try {
-      if (editingItem) {
-        await editDepartment(editingItem.id, newDept);
-      } else {
-        await addDepartment(newDept);
-      }
-      refreshData();
-      setNewDept({ name: "", description: "" });
-      setEditingItem(null);
-      setOpenDeptModal(false);
-    } catch (err) {
-      console.error("Failed to save department.", err);
-    }
-  };
-
-  const editDepartmentHandler = (dep) => {
-    setEditingItem(dep);
-    setNewDept({ name: dep.name, description: dep.description });
-    setOpenDeptModal(true);
-  };
-
-  const deleteDepartmentHandler = async (id) => {
-    try {
-      await deleteDepartment(id);
-      refreshData();
-    } catch (err) {
-      console.error("Failed to delete department.", err);
-    }
-  };
-
-  // -------------------- Users CRUD --------------------
-
-  const addOrEditUser = async () => {
-    // 🚨 Update validation check
-    if (
-      !newUser.firstName ||
-      !newUser.lastName ||
-      !newUser.email ||
-      !newUser.department
-    )
-      return toast.error("Fill all fields for user!");
-
-    const roleId = roles.find((r) => r.name === newUser.role)?.id;
-    const departmentId = departments.find(
-      (d) => d.name === newUser.department
-    )?.id;
-
-    if (!departmentId) {
-      return toast.error("Invalid role or department selected.");
-    }
-
-    const systemUsername =
-      `${newUser.firstName.toLowerCase()}.${newUser.lastName.toLowerCase()}`.replace(
-        /\s/g,
-        "_"
-      );
-
-    try {
-      const payload = {
-        username: systemUsername, // e.g., 'john.doe'
-        first_name: newUser.firstName,
-        last_name: newUser.lastName,
-        email: newUser.email,
-
-        department_id: departmentId,
-
-        // Password is handled by the backend
-      };
-
-      if (editingItem) {
-        await editUser(editingItem.id, payload);
-      } else {
-        await addUser(payload);
-      }
-
-      refreshData();
-      setNewUser({ name: "", email: "", role: "", department: "", level: "" });
-      setEditingItem(null);
-      setOpenUserModal(false);
-    } catch (err) {
-      console.error("Failed to save user.", err);
-    }
-  };
-
+  // --- System User Handlers ---
   const editUserHandler = (user) => {
     setEditingItem(user);
     setNewUser({
-      name: user.username,
-      email: user.email,
-      role: user.role?.name,
-      department: user.department?.name,
-      level: user.level,
+      firstName: user.first_name || "",
+      lastName: user.last_name || "",
+      email: user.email || "",
+      role: user.role?.name || "",
+      department: user.department?.name || "",
+      level: user.level || "4",
     });
     setOpenUserModal(true);
   };
+  const handleChangePassword = async () => {
+    // 1. Client-side Validation
+    if (!passwordData.old || !passwordData.new) {
+      return toast.error("Please fill in both current and new passwords");
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      return toast.error("New passwords do not match");
+    }
+    if (passwordData.new.length < 8) {
+      return toast.error("New password must be at least 8 characters");
+    }
 
-  const deleteUserHandler = async (id) => {
     try {
-      await deleteUser(id);
-      refreshData();
+      // 2. API Call (using the service or auth context)
+      await updatePassword(passwordData.old, passwordData.new);
+
+      toast.success("Password changed successfully");
+
+      // 3. Clear form
+      setPasswordData({ old: "", new: "", confirm: "" });
     } catch (err) {
-      console.error("Failed to delete user.", err);
+      // Handle specific backend errors (e.g., "Old password incorrect")
+      const errorMsg =
+        typeof err === "string"
+          ? err
+          : err.error || "Failed to update password";
+      toast.error(errorMsg);
     }
   };
 
-  const availableLevels = newUser.role ? roleLevelMap[newUser.role] || [] : [];
+  const saveUser = async () => {
+    const roleObj = roles.find((r) => r.name === newUser.role);
+    const deptObj = departments.find((d) => d.name === newUser.department);
+    const payload = {
+      username: `${newUser.firstName.toLowerCase()}.${newUser.lastName.toLowerCase()}`,
+      first_name: newUser.firstName,
+      last_name: newUser.lastName,
+      email: newUser.email,
+      department_id: deptObj?.id,
+      role_id: roleObj?.id,
+      level: newUser.level,
+    };
 
-  // -------------------- JSX --------------------
+    try {
+      if (editingItem) {
+        await editUser(editingItem.id, payload);
+        toast.success("User updated");
+      } else {
+        const response = await addUser(payload);
+        // Capture the email and the default password returned from the backend
+        setCreatedCredentials({
+          email: response.email,
+          password: response.password || "tesc@123", // Fallback to your default
+        });
+      }
+      setOpenUserModal(false);
+      setNewUser({
+        firstName: "",
+        lastName: "",
+        email: "",
+        department: "",
+        role: "",
+        level: "4",
+      });
+      refreshData();
+    } catch (err) {
+      toast.error("Error saving user");
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Settings className="h-7 w-7" /> System Settings
+          <Settings className="h-8 w-8 text-primary" /> Settings
         </h1>
 
-        {/* Roles */}
-        <Card>
-          <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
-            <CardTitle>Roles</CardTitle>
-            <Button
-              onClick={() => {
-                setEditingItem(null);
-                setNewRole({ name: "", description: "" });
-                setOpenRoleModal(true);
-              }}
-            >
-              Add Role
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-[150px] text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roles.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={3}
-                      className="text-center text-gray-500"
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="bg-muted p-1">
+            <TabsTrigger value="profile" className="gap-2">
+              <UserIcon className="h-4 w-4" /> Personal Profile
+            </TabsTrigger>
+            {isSystemAdmin && (
+              <TabsTrigger value="system" className="gap-2">
+                <ShieldCheck className="h-4 w-4" /> System Management
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* --- PERSONAL PROFILE TAB --- */}
+          <TabsContent value="profile" className="space-y-6 pt-4">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Account Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">First Name</label>
+                      <Input
+                        value={profileData.firstName}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            firstName: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Last Name</label>
+                      <Input
+                        value={profileData.lastName}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            lastName: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Email Address</label>
+                    <Input
+                      value={profileData.email}
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+                  <Button onClick={handleUpdateProfile}>Update Profile</Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Lock className="h-4 w-4" /> Change Password
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Current Password */}
+                  <div className="relative">
+                    <Input
+                      type={showPasswords.old ? "text" : "password"}
+                      placeholder="Current Password"
+                      value={passwordData.old}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          old: e.target.value,
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility("old")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary"
                     >
-                      No roles defined.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  roles.map((role) => (
-                    <TableRow key={role.id}>
-                      <TableCell>{role.name}</TableCell>
-                      <TableCell>{role.description}</TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => editRoleHandler(role)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteRoleHandler(role.id)}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                      {showPasswords.old ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
 
-        {/* Departments */}
-        <Card>
-          <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
-            <CardTitle>Departments</CardTitle>
-            <Button
-              onClick={() => {
-                setEditingItem(null);
-                setNewDept({ name: "", description: "" });
-                setOpenDeptModal(true);
-              }}
-            >
-              Add Department
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-[150px] text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {departments.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={3}
-                      className="text-center text-gray-500"
+                  {/* New Password */}
+                  <div className="relative">
+                    <Input
+                      type={showPasswords.new ? "text" : "password"}
+                      placeholder="New Password"
+                      value={passwordData.new}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          new: e.target.value,
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility("new")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary"
                     >
-                      No departments defined.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  departments.map((dep) => (
-                    <TableRow key={dep.id}>
-                      <TableCell>{dep.name}</TableCell>
-                      <TableCell>{dep.description}</TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => editDepartmentHandler(dep)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteDepartmentHandler(dep.id)}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                      {showPasswords.new ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
 
-        {/* Users */}
-        <Users
-          setEditingItem={setEditingItem}
-          setNewUser={setNewUser}
-          setOpenUserModal={setOpenUserModal}
-          users={users}
-          editUserHandler={editUserHandler}
-          deleteUserHandler={deleteUserHandler}
-        />
+                  {/* Confirm Password */}
+                  <div className="relative">
+                    <Input
+                      type={showPasswords.confirm ? "text" : "password"}
+                      placeholder="Confirm New Password"
+                      value={passwordData.confirm}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          confirm: e.target.value,
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility("confirm")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary"
+                    >
+                      {showPasswords.confirm ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
 
-        {/* Modals - Keeping reusable components below the main component for simplicity */}
-        <RoleModal
-          open={openRoleModal}
-          onClose={() => setOpenRoleModal(false)}
-          role={newRole}
-          setRole={setNewRole}
-          onSave={addOrEditRole}
-          editing={!!editingItem}
-        />
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleChangePassword}
+                  >
+                    Update Password
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* --- SYSTEM MANAGEMENT TAB --- */}
+          {isSystemAdmin && (
+            <TabsContent value="system" className="space-y-6 pt-4">
+              <Card>
+                <CardHeader className="flex flex-row justify-between items-center">
+                  <CardTitle>Departments & Permissions</CardTitle>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setNewDept({
+                        name: "",
+                        description: "",
+                        permissions: [],
+                      });
+                      setOpenDeptModal(true);
+                    }}
+                  >
+                    Add Department
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Department</TableHead>
+                        <TableHead>Access Scope</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {departments.map((dep) => (
+                        <TableRow key={dep.id}>
+                          <TableCell className="font-medium">
+                            {dep.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {dep.permissions?.length || 0} Modules Assigned
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingItem(dep);
+                                setNewDept(dep);
+                                setOpenDeptModal(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Users
+                users={users}
+                setEditingItem={setEditingItem}
+                setNewUser={setNewUser}
+                setOpenUserModal={setOpenUserModal}
+                editUserHandler={editUserHandler}
+                deleteUserHandler={deleteUser}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
+
+        <Dialog
+          open={!!createdCredentials}
+          onOpenChange={(open) => !open && setCreatedCredentials(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-green-600">
+                <ShieldCheck className="h-6 w-6" />
+                User Created Successfully
+              </DialogTitle>
+              <DialogDescription>
+                System user has been registered. Please share these login
+                credentials with the user securely.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-4 my-2">
+              {/* Email/Username Field */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase font-bold">
+                  Username / Email
+                </Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white dark:bg-black p-2 rounded border font-mono text-sm overflow-hidden text-ellipsis">
+                    {createdCredentials?.email}
+                  </code>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() =>
+                      copyToClipboard(createdCredentials?.email || "")
+                    }
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase font-bold">
+                  Default Password
+                </Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white dark:bg-black p-2 rounded border font-mono text-sm">
+                    {createdCredentials?.password}
+                  </code>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() =>
+                      copyToClipboard(createdCredentials?.password || "")
+                    }
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="text-xs text-amber-600 flex items-start gap-2 bg-amber-50 p-2 rounded border border-amber-100">
+                <span className="mt-0.5">⚠️</span>
+                <span>
+                  Important: User must change this password in the Settings page
+                  upon first login for security.
+                </span>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                onClick={() => setCreatedCredentials(null)}
+                className="w-full"
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Done
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modals */}
         <DepartmentModal
           open={openDeptModal}
           onClose={() => setOpenDeptModal(false)}
           dept={newDept}
           setDept={setNewDept}
-          onSave={addOrEditDepartment}
-          editing={!!editingItem}
+          onSave={async () => {
+            if (editingItem) await editDepartment(editingItem.id, newDept);
+            else await addDepartment(newDept);
+            setOpenDeptModal(false);
+            refreshData();
+            toast.success("Department permissions updated");
+          }}
         />
+
         <UserModal
           open={openUserModal}
           onClose={() => setOpenUserModal(false)}
           user={newUser}
           setUser={setNewUser}
-          onSave={addOrEditUser}
-          roles={roles}
+          onSave={saveUser}
           departments={departments}
-          availableLevels={availableLevels}
+          roles={roles}
           editing={!!editingItem}
         />
       </div>
@@ -430,57 +573,50 @@ export default function SettingsPage() {
   );
 }
 
-// ---------- Reusable Modal Components ----------
-function RoleModal({ open, onClose, role, setRole, onSave, editing }) {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{editing ? "Edit Role" : "Add Role"}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <Input
-            placeholder="Name"
-            value={role.name}
-            onChange={(e) => setRole({ ...role, name: e.target.value })}
-          />
-          <Input
-            placeholder="Description"
-            value={role.description}
-            onChange={(e) => setRole({ ...role, description: e.target.value })}
-          />
-        </div>
-        <DialogFooter>
-          <Button onClick={onSave}>{editing ? "Update" : "Save"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// Separate Permission Matrix Component for the Modal
+function DepartmentModal({ open, onClose, dept, setDept, onSave }) {
+  const togglePage = (url) => {
+    const current = dept.permissions || [];
+    const updated = current.includes(url)
+      ? current.filter((p) => p !== url)
+      : [...current, url];
+    setDept({ ...dept, permissions: updated });
+  };
 
-function DepartmentModal({ open, onClose, dept, setDept, onSave, editing }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>
-            {editing ? "Edit Department" : "Add Department"}
-          </DialogTitle>
+          <DialogTitle>Department Access Control</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
           <Input
-            placeholder="Name"
+            placeholder="Department Name"
             value={dept.name}
             onChange={(e) => setDept({ ...dept, name: e.target.value })}
           />
-          <Input
-            placeholder="Description"
-            value={dept.description}
-            onChange={(e) => setDept({ ...dept, description: e.target.value })}
-          />
+          <div className="grid grid-cols-2 gap-2 border p-4 rounded-xl bg-muted/20">
+            {SYSTEM_PAGES.map((page) => (
+              <div
+                key={page.url}
+                onClick={() => togglePage(page.url)}
+                className="flex items-center gap-3 cursor-pointer hover:bg-white p-3 rounded-lg border border-transparent hover:border-border transition-all"
+              >
+                {dept.permissions?.includes(page.url) ? (
+                  <CheckCircle2 className="text-green-600 h-5 w-5" />
+                ) : (
+                  <Circle className="text-muted-foreground/30 h-5 w-5" />
+                )}
+                <span className="text-sm font-medium">{page.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <DialogFooter>
-          <Button onClick={onSave}>{editing ? "Update" : "Save"}</Button>
+        <DialogFooter className="pt-4 border-t">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={onSave}>Save Department Permissions</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

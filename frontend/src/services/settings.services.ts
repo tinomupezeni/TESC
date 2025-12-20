@@ -75,7 +75,7 @@ export const deleteRole = async (id) => {
 /** Adds a new department. */
 export const addDepartment = async (newDept) => {
   try {
-    return await apiClient.post("/departments/", newDept);
+    return await apiClient.post("/users/departments/", newDept);
   } catch (err) {
     console.error("Error adding department:", err);
     throw new Error("Failed to add department.");
@@ -85,7 +85,7 @@ export const addDepartment = async (newDept) => {
 /** Edits an existing department. */
 export const editDepartment = async (id, updatedDept) => {
   try {
-    return await apiClient.put(`/departments/${id}/`, updatedDept);
+    return await apiClient.put(`/users/departments/${id}/`, updatedDept);
   } catch (err) {
     console.error("Error updating department:", err);
     throw new Error("Failed to update department.");

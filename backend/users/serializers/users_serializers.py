@@ -4,25 +4,21 @@ from ..models import Role, Department, CustomUser
 # --- Nested Detail Serializers (for displaying objects) ---
 
 class RoleDetailSerializer(serializers.ModelSerializer):
-    """A simplified serializer for nesting Role data."""
     class Meta:
         model = Role
         fields = ['id', 'name']
         
 class DepartmentDetailSerializer(serializers.ModelSerializer):
-    """A simplified serializer for nesting Department data."""
+    """
+    🚨 FIX: Added 'permissions' to the fields so the frontend 
+    can consume them for the PermissionGuard.
+    """
     class Meta:
         model = Department
-        fields = ['id', 'name']
-        
+        fields = ['id', 'name', 'permissions'] # Permissions added here
 
-# --- 1. User Profile Serializer (For GET /api/users/profile/) ---
+# --- 1. User Profile Serializer ---
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for reading user profile data.
-    This ensures 'role' and 'department' are returned as objects, fixing the refresh bug.
-    """
-    # 🚨 FIX: Explicitly define the foreign key fields using the detail serializers
     role = RoleDetailSerializer(read_only=True)
     department = DepartmentDetailSerializer(read_only=True)
 
@@ -30,15 +26,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 
+            'username',
             'email', 
             'first_name', 
             'last_name', 
             'level', 
-            'role',             # Nested object returned
-            'department',       # Nested object returned
+            'role', 
+            'department', 
         ]
-        read_only_fields = fields # All fields are read-only for a profile GET request
-
+        read_only_fields = fields
 # --- 2. User Registration Serializer (For POST /api/users/register/) ---
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
