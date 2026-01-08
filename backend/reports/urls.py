@@ -1,7 +1,12 @@
-from django.urls import path
-from .views import GenerateReportView, DownloadReportView
+# reports/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ReportTemplateViewSet, GeneratedReportViewSet
+
+router = DefaultRouter()
+router.register(r'templates', ReportTemplateViewSet, basename='report-template')
+router.register(r'generated', GeneratedReportViewSet, basename='generated-report')
 
 urlpatterns = [
-    path("generate/", GenerateReportView.as_view()),
-    path("download/<uuid:report_id>/", DownloadReportView.as_view()),
+    path('', include(router.urls)),
 ]
