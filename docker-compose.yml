@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:15
+    container_name: tesc_db_container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: tesc_db
+      POSTGRES_USER: tesc_user
+      POSTGRES_PASSWORD: tesc@1234
+
+  backend:
+    build: ./backend
+    image: tinotenda762/backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_NAME: tesc_db
+      DB_USER: tesc_user
+      DB_PASSWORD: tesc@1234
+    depends_on:
+      - db
+
+  frontend-one:
+    build: ./frontend
+    image: tinotenda762/frontend:latest
+    ports:
+      - "3000:80"  # Mapping VM port 3000 to Nginx port 80
+    depends_on:
+      - backend
+
+  frontend-two:
+    build: ./inst
+    image: tinotenda762/inst:latest
+    ports:
+      - "3001:80"  # Mapping VM port 3001 to Nginx port 80
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
