@@ -1,12 +1,7 @@
 import axios from "axios";
 
-<<<<<<< HEAD
 export const baseURL = "http://127.0.0.1:8000/api";
 // export const baseURL = "https://tesc.zchpc.ac.zw/api";
-=======
-// export const baseURL = "http://127.0.0.1:8000/api";
-export const baseURL = "https://tesc.zchpc.ac.zw/api";
->>>>>>> origin/main
 
 // Create an axios instance with the base URL of your Django API
 const apiClient = axios.create({

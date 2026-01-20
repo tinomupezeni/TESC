@@ -79,10 +79,6 @@ export interface RegionalStats {
     total_institutions: number;
   };
   chart_data: Array<{
-<<<<<<< HEAD
-    location: ReactNode;
-=======
->>>>>>> origin/main
     province: string;
     institutions: number;
     students: number;
