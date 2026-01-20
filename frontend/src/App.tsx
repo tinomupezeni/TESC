@@ -15,6 +15,7 @@ import Signup from "./pages/auth/Signup";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
+import Staff from "./pages/Staff";
 import Facilities from "./pages/Facilities";
 import Innovation from "./pages/Innovation";
 import Industrialisation from "./pages/Industrialisation";
@@ -254,7 +255,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+            <Route
+  path="/staff"
+  element={
+    <ProtectedRoute>
+      <PermissionGuard>
+        <Staff />
+      </PermissionGuard>
+    </ProtectedRoute>
+  }
+/>
+ 
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
