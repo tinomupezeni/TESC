@@ -11,13 +11,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY backend/requirements.txt .
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the backend code
-COPY backend/ .
+COPY . .
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
@@ -26,8 +26,4 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 # Start Gunicorn
-<<<<<<< HEAD
-CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000"]
-=======
 CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
->>>>>>> origin/main

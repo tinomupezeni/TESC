@@ -1,74 +1,64 @@
-<<<<<<< HEAD
-version: "3.9"
-services:
-  backend:
-    build: ./backend
-    container_name: backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - db
+version: '3.8'
 
-  frontend:
-    build: ./frontend
-    container_name: frontend
+services:
+  # --- The Gatekeeper (Nginx Proxy) ---
+  nginx:
+    image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      # Uncomment below if you have SSL certs
+      # - ./certs:/etc/nginx/certs
+    depends_on:
+      - backend
+      - frontend_client
+      - frontend_admin
+    networks:
+      - main_net
 
+  # --- Database ---
   db:
     image: postgres:15
-    container_name: db
-    environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-    ports:
-      - "5432:5432"
-=======
-services:
-  db:
-    image: postgres:15
-    container_name: tesc_db_container
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: tesc_db
-      POSTGRES_USER: tesc_user
-      POSTGRES_PASSWORD: tesc@1234
+      - POSTGRES_DB=myproject_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - main_net
 
+  # --- Backend (Django) ---
   backend:
     build: ./backend
-    image: tinotenda762/backend:latest
-    ports:
-      - "8000:8000"
-    environment:
-      DB_HOST: db
-      DB_NAME: tesc_db
-      DB_USER: tesc_user
-      DB_PASSWORD: tesc@1234
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    # REMOVED public ports mapping (8000:8000)
     depends_on:
       - db
+    networks:
+      - main_net
 
-  frontend-one:
-    build: ./frontend
-    image: tinotenda762/frontend:latest
-    ports:
-      - "3000:80"  # Mapping VM port 3000 to Nginx port 80
-    depends_on:
-      - backend
+  # --- Frontend 1 (Student/Public) ---
+  frontend_client:
+    build: ./frontend  # Assuming folder is 'frontend'
+    # REMOVED public ports mapping (3000:80)
+    networks:
+      - main_net
 
-  frontend-two:
-    build: ./inst
-    image: tinotenda762/inst:latest
-    ports:
-      - "3001:80"  # Mapping VM port 3001 to Nginx port 80
-    depends_on:
-      - backend
+  # --- Frontend 2 (Institution/Admin) ---
+  frontend_admin:
+    build: ./inst      # Assuming folder is 'inst'
+    # REMOVED public ports mapping (3001:80)
+    networks:
+      - main_net
 
 volumes:
   postgres_data:
->>>>>>> origin/main
+
+networks:
+  main_net:
+    driver: bridge

@@ -94,7 +94,8 @@ DATABASES = {
         "NAME": "tesc_db",              
         "USER": "tesc_user",          
         "PASSWORD": "tesc@1234", 
-        "HOST": "localhost",         
+        # "HOST": "localhost",         
+        "HOST": "db",         
         "PORT": "5432",              
     }
 }
