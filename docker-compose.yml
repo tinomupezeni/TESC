@@ -32,11 +32,13 @@ services:
 
   # --- Backend (Django) ---
   backend:
+    # ADDED: Image tag for Docker Hub
+    image: tinotenda762/tesc-backend:latest
     build: ./backend
+    # NOTE: For production, we usually use Gunicorn instead of runserver
     command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend:/app
-    # REMOVED public ports mapping (8000:8000)
+    # volumes:
+    #   - ./backend:/app  <-- Commented out for Production/VM use
     depends_on:
       - db
     networks:
@@ -44,15 +46,17 @@ services:
 
   # --- Frontend 1 (Student/Public) ---
   frontend_client:
-    build: ./frontend  # Assuming folder is 'frontend'
-    # REMOVED public ports mapping (3000:80)
+    # ADDED: Image tag for Docker Hub
+    image: tinotenda762/tesc-main:latest
+    build: ./frontend 
     networks:
       - main_net
 
   # --- Frontend 2 (Institution/Admin) ---
   frontend_admin:
-    build: ./inst      # Assuming folder is 'inst'
-    # REMOVED public ports mapping (3001:80)
+    # ADDED: Image tag for Docker Hub
+    image: tinotenda762/tesc-inst:latest
+    build: ./inst
     networks:
       - main_net
 

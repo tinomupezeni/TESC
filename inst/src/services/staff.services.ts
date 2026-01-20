@@ -115,6 +115,11 @@ export const getVacancies = async (institutionId: number): Promise<Vacancy[]> =>
   });
   return response.data;
 };
+export const createVacancy = async (data: CreateVacancyData) => {
+  // We send 'data' as the body of the POST request
+  const response = await apiClient.post(VACANCY_ENDPOINT, data);
+  return response.data;
+};
 
 // Bulk upload and Excel export (unchanged)
 export const bulkUploadStaff = async (formData: FormData): Promise<any> => {
