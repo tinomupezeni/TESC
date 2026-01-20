@@ -39,7 +39,7 @@ export function StatsCard({
       className={cn(
         "shadow-md transition-all select-none",
         variants[variant],
-        onClick && "cursor-pointer hover:shadow-lg hover:scale-[1.02]"
+        onClick && "cursor-pointer hover:shadow-lg hover:scale-[1.02]",
       )}
       onKeyDown={(e) => {
         if (!onClick) return;
@@ -50,9 +50,7 @@ export function StatsCard({
       }}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">
-          {title}
-        </CardTitle>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
 
@@ -62,9 +60,7 @@ export function StatsCard({
         </div>
 
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {description}
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
 
         {trend && (
@@ -75,8 +71,8 @@ export function StatsCard({
                 trend.value > 0
                   ? "text-success"
                   : trend.value < 0
-                  ? "text-destructive"
-                  : "text-muted-foreground"
+                    ? "text-destructive"
+                    : "text-muted-foreground",
               )}
             >
               {trend.value > 0 ? "+" : ""}

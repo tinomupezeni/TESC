@@ -23,10 +23,8 @@ import Regional from "./pages/Regional";
 import Setting from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Help from "./pages/Help";
-import InnovationDashboard from "./pages/dashboards/InnovationDashboard";
 import Hubs from "./modules/innovation/Hubs";
 import Startups from "./modules/innovation/Startups";
-import AdmissionsDashboard from "./modules/admissions/AdmissionDashboard";
 import DropoutAnalysis from "./modules/admissions/DropOut";
 import SpecialEnrollment from "./modules/admissions/SpecialEnrollment";
 import PaymentsAndFees from "./modules/admissions/PaymentsAndFees";
@@ -81,26 +79,8 @@ const App = () => (
               }
             />
 
-            <Route
-              path="/dashboard/innovation"
-              element={
-                <ProtectedRoute>
-                  <PermissionGuard>
-                    <InnovationDashboard />
-                  </PermissionGuard>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admissions"
-              element={
-                <ProtectedRoute>
-                  <PermissionGuard>
-                    <AdmissionsDashboard />
-                  </PermissionGuard>
-                </ProtectedRoute>
-              }
-            />
+           
+         
             
             <Route
               path="/hubs"
