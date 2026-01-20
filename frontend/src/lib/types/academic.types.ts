@@ -49,6 +49,7 @@ export interface Institution {
   established: number;
   facilities: Facility[];
   student_count: number;
+ 
   program_count: number;
 }
 
@@ -120,6 +121,7 @@ export interface Staff {
   is_active: boolean;
   institution: number;
   institution_name?: string;
+  institution_type?:string;
   faculty?: number | null;
   faculty_name?: string | null;
   department?: number | null;
