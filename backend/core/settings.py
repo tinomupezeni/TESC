@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +27,11 @@ SECRET_KEY = "django-insecure-=f-2au0@)_*j88!pev#-n3pu08d$*1(n)583q@p_bq$g5a2%sw
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+STATIC_URL = 'static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 
 # Application definition
@@ -94,8 +100,8 @@ DATABASES = {
         "NAME": "tesc_db",              
         "USER": "tesc_user",          
         "PASSWORD": "tesc@1234", 
-        # "HOST": "localhost",         
-        "HOST": "db",         
+        "HOST": "localhost",         
+        # "HOST": "db",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
         "PORT": "5432",              
     }
 }

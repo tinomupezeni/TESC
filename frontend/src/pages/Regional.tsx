@@ -3,13 +3,13 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Building, Users, Beaker, Loader2 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
   ResponsiveContainer,
@@ -21,6 +21,7 @@ import {
   Tooltip,
 } from "recharts";
 import { getRegionalStats, RegionalStats } from "@/services/analysis.services";
+import { useNavigate } from "react-router-dom";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -39,6 +40,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function Regional() {
   const [data, setData] = useState<RegionalStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,11 +65,11 @@ export default function Regional() {
     const grouped = data.chart_data.reduce((acc: any, curr) => {
       const loc = curr.location || "Unknown";
       if (!acc[loc]) {
-        acc[loc] = { 
-          location: loc, 
-          students: 0, 
-          hubs: 0, 
-          institutions: [] // We'll store names as an array to list them
+        acc[loc] = {
+          location: loc,
+          students: 0,
+          hubs: 0,
+          institutions: [], // We'll store names as an array to list them
         };
       }
       acc[loc].students += curr.students;
@@ -80,10 +82,12 @@ export default function Regional() {
     }, {});
 
     // Convert the object back into an array and join institution names into a string
-    return Object.values(grouped).map((item: any) => ({
-      ...item,
-      institutions: item.institutions.join(", ")
-    })).sort((a: any, b: any) => b.students - a.students); // Sort by highest enrollment
+    return Object.values(grouped)
+      .map((item: any) => ({
+        ...item,
+        institutions: item.institutions.join(", "),
+      }))
+      .sort((a: any, b: any) => b.students - a.students); // Sort by highest enrollment
   }, [data]);
 
   if (loading) {
@@ -107,33 +111,76 @@ export default function Regional() {
             <MapPin className="h-7 w-7 text-primary" />
             Regional Analysis
           </h1>
-          <p className="text-muted-foreground">Aggregated institutional footprint by location</p>
+          <p className="text-muted-foreground">
+            Aggregated institutional footprint by location
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard title="Provinces Covered" value={stats.provinces_covered} description="Active regions" icon={MapPin} />
-          <StatsCard title="Top Location" value={stats.top_enrollment} description="Highest enrollment" icon={Users} variant="accent" />
-          <StatsCard title="Total Institutions" value={stats.total_institutions} description="Registered" icon={Building} variant="info" />
-          <StatsCard title="Innovation Hubs" value={distinctChartData.reduce((acc, curr) => acc + curr.hubs, 0)} description="Active centers" icon={Beaker} variant="success" />
+          <StatsCard
+            title="Provinces Covered"
+            value={stats.provinces_covered}
+            description="Active regions"
+            icon={MapPin}
+            onClick={() => navigate("/institutions?group=province")}
+          />
+          <StatsCard
+            title="Top Location"
+            value={stats.top_enrollment}
+            description="Highest enrollment"
+            icon={Users}
+            variant="accent"
+            onClick={() => navigate("/students?sort=location")}
+          />
+          <StatsCard
+            title="Total Institutions"
+            value={stats.total_institutions}
+            description="Registered"
+            icon={Building}
+            variant="info"
+            onClick={() => navigate("/institutions")}
+          />
+          <StatsCard
+            title="Innovation Hubs"
+            value={distinctChartData.reduce((acc, curr) => acc + curr.hubs, 0)}
+            description="Active centers"
+            icon={Beaker}
+            variant="success"
+            onClick={() => navigate("/innovation")}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Bar Chart Section */}
           <Card className="lg:col-span-3">
-            <CardHeader><CardTitle>Total Enrollment by Location</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Total Enrollment by Location</CardTitle>
+            </CardHeader>
             <CardContent className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={distinctChartData} layout="vertical" margin={{ left: 20, right: 30 }}>
+                <BarChart
+                  data={distinctChartData}
+                  layout="vertical"
+                  margin={{ left: 20, right: 30 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" fontSize={12} />
-                  <YAxis dataKey="location" type="category" fontSize={11} width={100} />
-                  <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
-                  <Bar 
-                    dataKey="students" 
-                    name="Total Students" 
-                    fill="hsl(var(--primary))" 
-                    radius={[0, 4, 4, 0]} 
-                    barSize={20} 
+                  <YAxis
+                    dataKey="location"
+                    type="category"
+                    fontSize={11}
+                    width={100}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ fill: "rgba(0,0,0,0.05)" }}
+                  />
+                  <Bar
+                    dataKey="students"
+                    name="Total Students"
+                    fill="hsl(var(--primary))"
+                    radius={[0, 4, 4, 0]}
+                    barSize={20}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -142,7 +189,9 @@ export default function Regional() {
 
           {/* Table Section */}
           <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>Distinct Location Stats</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Distinct Location Stats</CardTitle>
+            </CardHeader>
             <CardContent className="h-96 overflow-y-auto p-0">
               <Table>
                 <TableHeader>
@@ -156,7 +205,9 @@ export default function Regional() {
                   {distinctChartData.map((item: any, index: number) => (
                     <TableRow key={index}>
                       <TableCell className="py-3">
-                        <div className="font-medium text-xs">{item.location}</div>
+                        <div className="font-medium text-xs">
+                          {item.location}
+                        </div>
                         <div className="text-[10px] text-muted-foreground truncate max-w-[150px]">
                           {item.institutions}
                         </div>
@@ -164,7 +215,9 @@ export default function Regional() {
                       <TableCell className="text-right text-xs font-semibold">
                         {item.students.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-center text-xs">{item.hubs}</TableCell>
+                      <TableCell className="text-center text-xs">
+                        {item.hubs}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

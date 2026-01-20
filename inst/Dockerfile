@@ -12,7 +12,8 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-COPY --from=build /app/build /usr/share/nginx/html
+# --- FIXED LINE BELOW (Changed /app/build to /app/dist) ---
+COPY --from=build /app/dist /usr/share/nginx/html
 
 # Expose Nginx port
 EXPOSE 80
