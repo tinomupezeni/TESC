@@ -123,6 +123,12 @@ export const bulkUploadStaff = async (formData: FormData): Promise<any> => {
   });
   return response.data;
 };
+export const createVacancy = async (
+  data: CreateVacancyData
+): Promise<Vacancy> => {
+  const response = await apiClient.post<Vacancy>(VACANCY_ENDPOINT, data);
+  return response.data;
+};
 
 export const exportStaffToExcel = (staffList: Staff[], filename: string = "Staff_List.xlsx") => {
   if (!staffList || staffList.length === 0) return;
@@ -153,6 +159,7 @@ export default {
   getStaff,
   getStaffById,
   createStaff,
+  createVacancy,
   updateStaff,
   deleteStaff,
   getVacancies,

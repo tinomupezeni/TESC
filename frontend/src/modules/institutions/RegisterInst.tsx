@@ -54,6 +54,18 @@ const INSTITUTION_STATUSES: InstitutionWriteData["status"][] = [
   "Renovation",
   "Closed",
 ];
+const INSTITUTION_LOCATION: InstitutionWriteData["location"][] = [
+  "HARARE",
+  "BULAWAYO",
+  "MANICALAND",
+  "MASHONALAND CENTRAL",
+  "MASHONALAND EAST",
+  "MASHONALAND WEST",
+  "MASVINGO",
+  "MATABELELAND NORTH",
+  "MATABELELAND SOUTH",
+  "MIDLANDS",
+];
 
 const initialFormData: InstitutionWriteData = {
   name: "",
@@ -259,16 +271,31 @@ export default function RegisterInst({
                 </div>
 
                 {/* Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location (Province)</Label>
-                  <Input
-                    id="location"
-                    placeholder="e.g., Midlands Province"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                  />
-                  {apiErrors.location && <p className="text-xs text-red-500">{apiErrors.location[0]}</p>}
-                </div>
+<div className="space-y-2">
+  <Label htmlFor="location">Location (Province)</Label>
+
+  <Select
+    value={formData.location}
+    onValueChange={(value) =>
+      setFormData((prev) => ({ ...prev, location: value }))
+    }
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select province" />
+    </SelectTrigger>
+    <SelectContent>
+      {INSTITUTION_LOCATION.map((province) => (
+        <SelectItem key={province} value={province}>
+          {province}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+
+  {apiErrors.location && (
+    <p className="text-xs text-red-500">{apiErrors.location[0]}</p>
+  )}
+</div>
 
                 {/* Established Year */}
                 <div className="space-y-2">
