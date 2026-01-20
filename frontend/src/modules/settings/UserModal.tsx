@@ -88,10 +88,10 @@ function UserModal({
                 <SelectValue placeholder="Select Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Level 1 - Full Access (Admin)</SelectItem>
-                <SelectItem value="2">Level 2 - View & Edit</SelectItem>
-                <SelectItem value="3">Level 3 - View Only</SelectItem>
-                <SelectItem value="4">Level 4 - Limited Staff</SelectItem>
+                <SelectItem value="1">Full Access (Admin)</SelectItem>
+                {/* <SelectItem value="2">Level 2 - View & Edit</SelectItem>
+                <SelectItem value="3">Level 3 - View Only</SelectItem> */}
+                <SelectItem value="4">Limited Staff</SelectItem>
               </SelectContent>
             </Select>
           </div>
