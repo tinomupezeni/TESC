@@ -6,8 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Students from "./pages/Students";
-// --- IMPORT YOUR STUDENT DETAILS COMPONENT HERE ---
-// import StudentDetails from "./pages/StudentDetails"; 
 import Institutions from "./pages/Institutions";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -15,7 +13,6 @@ import Signup from "./pages/auth/Signup";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
-import Staff from "./pages/Staff";
 import Facilities from "./pages/Facilities";
 import Innovation from "./pages/Innovation";
 import Industrialisation from "./pages/Industrialisation";
@@ -36,17 +33,19 @@ import { PermissionGuard } from "./components/layout/PermissionGuard";
 const queryClient = new QueryClient();
 
 const App = () => (
+  // 1. BrowserRouter is now the top-level provider for routing
   <BrowserRouter>
+    {/* 2. AuthProvider is now inside, so it can use routing hooks */}
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          {/* 3. The Routes will work as before */}
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            
             <Route
               path="/dashboard"
               element={
@@ -55,32 +54,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-
-            {/* Students List Route */}
-            <Route
-              path="/students"
-              element={
-                <ProtectedRoute>
-                  <PermissionGuard>
-                    <Students />
-                  </PermissionGuard>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* FIXED: Added the Student Details Dynamic Route */}
-            <Route
-              path="/students/:id"
-              element={
-                <ProtectedRoute>
-                  <PermissionGuard>
-                    {/* Replace with your actual Student Detail component */}
-                    <div className="p-8">Student Detail Page Component Goes Here</div>
-                  </PermissionGuard>
-                </ProtectedRoute>
-              }
-            />
-
             <Route
               path="/dashboard/innovation"
               element={
@@ -101,7 +74,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+            {/* innovation */}
             <Route
               path="/hubs"
               element={
@@ -132,7 +105,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+            <Route
+              path="/students"
+              element={
+                <ProtectedRoute>
+                  <PermissionGuard>
+                    <Students />
+                  </PermissionGuard>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/institutions"
               element={
@@ -235,6 +217,7 @@ const App = () => (
               path="/settings"
               element={
                 <ProtectedRoute>
+                  
                   <Setting />
                 </ProtectedRoute>
               }
@@ -255,17 +238,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-  path="/staff"
-  element={
-    <ProtectedRoute>
-      <PermissionGuard>
-        <Staff />
-      </PermissionGuard>
-    </ProtectedRoute>
-  }
-/>
- 
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

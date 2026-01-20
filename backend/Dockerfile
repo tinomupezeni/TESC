@@ -11,13 +11,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the backend code
-COPY . .
+COPY backend/ .
 
 # Collect static files
 RUN python manage.py collectstatic --noinput

@@ -3,10 +3,10 @@ FROM node:18 AS build
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY inst/package*.json ./
 RUN npm install
 
-COPY . .
+COPY inst/ ./
 RUN npm run build
 
 # Production stage
