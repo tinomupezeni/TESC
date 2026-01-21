@@ -7,7 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Students from "./pages/Students";
 // --- IMPORT YOUR STUDENT DETAILS COMPONENT HERE ---
-// import StudentDetails from "./pages/StudentDetails"; 
+// import StudentDetails from "./pages/StudentDetails";
 import Institutions from "./pages/Institutions";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -44,7 +44,7 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            
+
             <Route
               path="/dashboard"
               element={
@@ -73,15 +73,14 @@ const App = () => (
                 <ProtectedRoute>
                   <PermissionGuard>
                     {/* Replace with your actual Student Detail component */}
-                    <div className="p-8">Student Detail Page Component Goes Here</div>
+                    <div className="p-8">
+                      Student Detail Page Component Goes Here
+                    </div>
                   </PermissionGuard>
                 </ProtectedRoute>
               }
             />
 
-           
-         
-            
             <Route
               path="/hubs"
               element={
@@ -112,7 +111,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/institutions"
               element={
@@ -236,16 +235,16 @@ const App = () => (
               }
             />
             <Route
-  path="/staff"
-  element={
-    <ProtectedRoute>
-      <PermissionGuard>
-        <Staff />
-      </PermissionGuard>
-    </ProtectedRoute>
-  }
-/>
- 
+              path="/staff"
+              element={
+                <ProtectedRoute>
+                  <PermissionGuard>
+                    <Staff />
+                  </PermissionGuard>
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

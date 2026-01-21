@@ -17,13 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Building, 
-  Loader2, 
-  Check, 
-  Copy, 
-  ShieldCheck 
-} from "lucide-react";
+import { Building, Loader2, Check, Copy, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -32,10 +26,7 @@ import {
   updateInstitution,
 } from "@/services/institution.service";
 import { getAllFacilities } from "@/services/academic.service";
-import {
-  InstitutionWriteData,
-  Institution,
-} from "@/lib/types/academic.types";
+import { InstitutionWriteData, Institution } from "@/lib/types/academic.types";
 
 interface RegisterInstProps {
   open: boolean;
@@ -53,6 +44,18 @@ const INSTITUTION_STATUSES: InstitutionWriteData["status"][] = [
   "Active",
   "Renovation",
   "Closed",
+];
+const INSTITUTION_LOCATION: InstitutionWriteData["location"][] = [
+  "HARARE",
+  "BULAWAYO",
+  "MANICALAND",
+  "MASHONALAND CENTRAL",
+  "MASHONALAND EAST",
+  "MASHONALAND WEST",
+  "MASVINGO",
+  "MATABELELAND NORTH",
+  "MATABELELAND SOUTH",
+  "MIDLANDS",
 ];
 
 const initialFormData: InstitutionWriteData = {
@@ -74,8 +77,11 @@ export default function RegisterInst({
   institutionToEdit,
 }: RegisterInstProps) {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<InstitutionWriteData>(initialFormData);
-  const [selectedFacilities, setSelectedFacilities] = useState(new Set<number>());
+  const [formData, setFormData] =
+    useState<InstitutionWriteData>(initialFormData);
+  const [selectedFacilities, setSelectedFacilities] = useState(
+    new Set<number>(),
+  );
   const [apiErrors, setApiErrors] = useState<Record<string, string[]>>({});
 
   // New state to hold credentials after successful creation
@@ -108,11 +114,13 @@ export default function RegisterInst({
         established: institutionToEdit.established,
         facility_ids: institutionToEdit.facilities.map((f) => f.id),
       });
-      setSelectedFacilities(new Set(institutionToEdit.facilities.map((f) => f.id)));
+      setSelectedFacilities(
+        new Set(institutionToEdit.facilities.map((f) => f.id)),
+      );
       setApiErrors({});
     } else {
       if (!open) setApiErrors({}); // Clear errors when closed
-      // Note: We don't reset form here to allow preserving state if accidentally closed, 
+      // Note: We don't reset form here to allow preserving state if accidentally closed,
       // or you can reset if preferred.
     }
   }, [institutionToEdit, open]);
@@ -146,12 +154,13 @@ export default function RegisterInst({
       } else {
         // 3. Handle Creation Credentials
         // Check if backend returned the credentials in the response
-        const creds = response?.admin_credentials || response?.data?.admin_credentials;
-        
+        const creds =
+          response?.admin_credentials || response?.data?.admin_credentials;
+
         if (creds) {
           setCreatedCredentials(creds);
           // Close the registration form, but KEEP the component mounted so we can show the credentials dialog
-          onOpenChange(false); 
+          onOpenChange(false);
         } else {
           toast.success("Institution registered successfully!");
           onOpenChange(false);
@@ -215,7 +224,6 @@ export default function RegisterInst({
           <form onSubmit={handleSubmit}>
             <div className="max-h-[70vh] overflow-y-auto pr-6 space-y-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
                 {/* Institution Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name">Institution Name</Label>
@@ -225,7 +233,9 @@ export default function RegisterInst({
                     value={formData.name}
                     onChange={handleInputChange}
                   />
-                  {apiErrors.name && <p className="text-xs text-red-500">{apiErrors.name[0]}</p>}
+                  {apiErrors.name && (
+                    <p className="text-xs text-red-500">{apiErrors.name[0]}</p>
+                  )}
                 </div>
 
                 {/* Institutional Email */}
@@ -239,7 +249,9 @@ export default function RegisterInst({
                     onChange={handleInputChange}
                     disabled={isEditMode} // Usually better not to change email/username on edit
                   />
-                  {apiErrors.email && <p className="text-xs text-red-500">{apiErrors.email[0]}</p>}
+                  {apiErrors.email && (
+                    <p className="text-xs text-red-500">{apiErrors.email[0]}</p>
+                  )}
                 </div>
 
                 {/* Institution Type */}
@@ -249,10 +261,14 @@ export default function RegisterInst({
                     value={formData.type}
                     onValueChange={(value) => handleSelectChange("type", value)}
                   >
-                    <SelectTrigger id="type"><SelectValue placeholder="Select a type" /></SelectTrigger>
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
                     <SelectContent>
                       {INSTITUTION_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -261,13 +277,30 @@ export default function RegisterInst({
                 {/* Location */}
                 <div className="space-y-2">
                   <Label htmlFor="location">Location (Province)</Label>
-                  <Input
-                    id="location"
-                    placeholder="e.g., Midlands Province"
+
+                  <Select
                     value={formData.location}
-                    onChange={handleInputChange}
-                  />
-                  {apiErrors.location && <p className="text-xs text-red-500">{apiErrors.location[0]}</p>}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, location: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select province" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INSTITUTION_LOCATION.map((province) => (
+                        <SelectItem key={province} value={province}>
+                          {province}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {apiErrors.location && (
+                    <p className="text-xs text-red-500">
+                      {apiErrors.location[0]}
+                    </p>
+                  )}
                 </div>
 
                 {/* Established Year */}
@@ -286,12 +319,18 @@ export default function RegisterInst({
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value) => handleSelectChange("status", value)}
+                    onValueChange={(value) =>
+                      handleSelectChange("status", value)
+                    }
                   >
-                    <SelectTrigger id="status"><SelectValue placeholder="Select status" /></SelectTrigger>
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
                     <SelectContent>
                       {INSTITUTION_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -312,11 +351,17 @@ export default function RegisterInst({
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
               </DialogClose>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isPending ? "Saving..." : isEditMode ? "Save Changes" : "Save Institution"}
+                {isPending
+                  ? "Saving..."
+                  : isEditMode
+                    ? "Save Changes"
+                    : "Save Institution"}
               </Button>
             </DialogFooter>
           </form>
@@ -324,7 +369,10 @@ export default function RegisterInst({
       </Dialog>
 
       {/* 2. Credentials Success Dialog */}
-      <Dialog open={!!createdCredentials} onOpenChange={(open) => !open && setCreatedCredentials(null)}>
+      <Dialog
+        open={!!createdCredentials}
+        onOpenChange={(open) => !open && setCreatedCredentials(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-green-600">
@@ -332,23 +380,27 @@ export default function RegisterInst({
               Registration Successful
             </DialogTitle>
             <DialogDescription>
-              The institution has been registered. Please share these login credentials with the administrator securely.
+              The institution has been registered. Please share these login
+              credentials with the administrator securely.
             </DialogDescription>
           </DialogHeader>
 
           <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-4 my-2">
-            
             {/* Email Field */}
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase">Username / Email</Label>
+              <Label className="text-xs text-muted-foreground uppercase">
+                Username / Email
+              </Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-white dark:bg-black p-2 rounded border font-mono text-sm">
                   {createdCredentials?.email}
                 </code>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => copyToClipboard(createdCredentials?.email || "")}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() =>
+                    copyToClipboard(createdCredentials?.email || "")
+                  }
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -357,15 +409,19 @@ export default function RegisterInst({
 
             {/* Password Field */}
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase">Default Password</Label>
+              <Label className="text-xs text-muted-foreground uppercase">
+                Default Password
+              </Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-white dark:bg-black p-2 rounded border font-mono text-sm">
                   {createdCredentials?.password}
                 </code>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => copyToClipboard(createdCredentials?.password || "")}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() =>
+                    copyToClipboard(createdCredentials?.password || "")
+                  }
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -373,12 +429,18 @@ export default function RegisterInst({
             </div>
 
             <div className="text-xs text-amber-600 flex items-center gap-2 bg-amber-50 p-2 rounded">
-               <span>⚠️ Note: The user will be prompted to change this password upon first login.</span>
+              <span>
+                ⚠️ Note: The user will be prompted to change this password upon
+                first login.
+              </span>
             </div>
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setCreatedCredentials(null)} className="w-full">
+            <Button
+              onClick={() => setCreatedCredentials(null)}
+              className="w-full"
+            >
               <Check className="mr-2 h-4 w-4" />
               Done
             </Button>
