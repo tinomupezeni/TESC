@@ -273,6 +273,7 @@ const Settings = () => {
         </TabsContent>
       </Tabs>
     </div>
+    
   );
 };
 
