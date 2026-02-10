@@ -13,6 +13,7 @@ from ..serializers.student_serializers import StudentSerializer
 from ..services.student_services import StudentService
 from ..services.analysis_services import AnalysisService
 
+
 COLOR_MAP = {
     'Financial': '#f87171',
     'Academic': '#60a5fa',
@@ -21,6 +22,8 @@ COLOR_MAP = {
     'Transfer': '#a78bfa',
     'Other': '#cbd5e1',
 }
+
+
 class StudentViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing Students.
@@ -118,22 +121,55 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='graduation-stats')
     def graduation_stats(self, request):
-        """
-        Aggregates graduation statistics by Year and Program.
-        """
         institution_id = request.query_params.get('institution_id')
 
-        queryset = Student.objects.filter(
-            institution_id=institution_id,
-            status='Graduated'
-        ).values('graduation_year', 'program__name', 'program__level').annotate(
+        queryset = Student.objects.filter(status='Graduated')
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+
+        stats = queryset.values(
+            'graduation_year',
+            'gender',
+            program__name=F('program__name'),
+            program__level=F('program__level'),
+            institution_name=F('institution__name'),
+            
+            type=F('institution__type'),
+        ).annotate(
             total_graduates=Count('id'),
             distinctions=Count('id', filter=Q(final_grade='Distinction')),
             credits=Count('id', filter=Q(final_grade='Credit')),
-            passes=Count('id', filter=Q(final_grade='Pass'))
-        ).order_by('-graduation_year')
+            passes=Count('id', filter=Q(final_grade='Pass')),
+            disabilities=Count('id', filter=~Q(disability_type='None'))
+        ).order_by('-graduation_year', 'program__name')
 
-        return Response(queryset)
+        for item in stats:
+            if item['graduation_year'] is None:
+                item['graduation_year'] = '0'
+
+        return Response(stats)
+
+    @action(detail=False, methods=['get'], url_path='summary-stats')
+    def summary_stats(self, request):
+        """
+        High-level KPI totals for StatsCards.
+        """
+        institution_id = request.query_params.get('institution_id')
+        base_query = Student.objects.all()
+
+        if institution_id:
+            base_query = base_query.filter(institution_id=institution_id)
+
+        stats = base_query.aggregate(
+            total_students=Count('id'),
+            total_graduates=Count('id', filter=Q(status='Graduated')),
+            total_distinctions=Count('id', filter=Q(status='Graduated', final_grade='Distinction')),
+            males=Count('id', filter=Q(status='Graduated', gender='Male')),
+            females=Count('id', filter=Q(status='Graduated', gender='Female')),
+        )
+
+        return Response(stats)
 
     @action(detail=False, methods=['get'], url_path='special-stats')
     def special_stats(self, request):
@@ -154,6 +190,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         """
         institution_id = request.query_params.get('institution_id')
         queryset = Student.objects.filter(status='Dropout')
+
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
 
@@ -166,11 +203,13 @@ class StudentViewSet(viewsets.ModelViewSet):
         for code, label in all_reasons:
             count_obj = next((x for x in reason_counts if x['dropout_reason'] == code), None)
             count = count_obj['value'] if count_obj else 0
+
             chart_data.append({
                 "name": label,
                 "value": count,
                 "color": COLOR_MAP.get(code, "#cbd5e1")
             })
+
             total_dropouts += count
 
         primary_cause = max(chart_data, key=lambda x: x['value']) if chart_data else None

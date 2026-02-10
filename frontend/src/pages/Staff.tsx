@@ -27,7 +27,9 @@ import {
   AlertCircle, 
   Loader2, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  FileDown,
+  RotateCcw
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 
@@ -36,7 +38,8 @@ import { getAllStaff } from "@/services/academic.service";
 import { Staff } from "@/lib/types/academic.types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStaffStatistics } from "@/hooks/useStaff";
-import { exportToExcel } from "@/lib/export-utils"; // Import the helper
+import { exportToExcel } from "@/lib/export-utils"; 
+
 const TableRowSkeleton = () => (
   <TableRow>
     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -52,11 +55,7 @@ const TableRowSkeleton = () => (
 export default function StaffPage() {
   // --- STATS HOOK ---
   const { data: statsData, loading: statsLoading } = useStaffStatistics();
-  const handleExport = () => {
-    // We export the filtered list so the user gets what they see on screen
-    // Or use 'allStaff' if you want everything regardless of filters
-    exportToExcel(filteredStaff, `Staff_Report_${new Date().toLocaleDateString()}`);
-  };
+
   // --- STATE ---
   const [allStaff, setAllStaff] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +64,8 @@ export default function StaffPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [instFilter, setInstFilter] = useState("all");
+  const [posFilter, setPosFilter] = useState("all");
 
   // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -76,7 +77,6 @@ export default function StaffPage() {
       setIsError(false);
       try {
         const data = await getAllStaff();
-        // Since your API returns a direct list [], we use it directly
         setAllStaff(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Failed to fetch staff:", error);
@@ -88,36 +88,75 @@ export default function StaffPage() {
     fetchStaff();
   }, []);
 
+  // --- DYNAMIC FILTER OPTIONS ---
+  const filterOptions = useMemo(() => {
+    return {
+      institutions: Array.from(new Set(allStaff.map(s => s.institution_name))).filter(Boolean).sort(),
+      positions: Array.from(new Set(allStaff.map(s => s.position))).filter(Boolean).sort()
+    };
+  }, [allStaff]);
+
+  // --- EXPORT & GENERATION ---
+  const handleExcelExport = () => {
+    exportToExcel(filteredStaff, `Staff_Report_${new Date().toLocaleDateString()}`);
+  };
+
+  const handleCSVExport = () => {
+    const headers = ["Employee ID", "Full Name", "Institution", "Department", "Position", "Status"];
+    const rows = filteredStaff.map(s => [
+      s.employee_id, s.full_name, s.institution_name, s.department_name || "N/A", s.position, s.is_active ? "Active" : "Inactive"
+    ]);
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Staff_Report.csv`;
+    link.click();
+  };
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedStatus("all");
+    setInstFilter("all");
+    setPosFilter("all");
+    setCurrentPage(1);
+  };
+
   // --- FILTER LOGIC ---
   const filteredStaff = useMemo(() => {
     if (!allStaff) return [];
     return allStaff.filter((staff) => {
       const search = searchTerm.toLowerCase();
+      const name = staff.full_name || "";
+      const empId = staff.employee_id || "";
+      const email = staff.email || "";
+
       const matchesSearch =
-        staff.full_name.toLowerCase().includes(search) ||
-        staff.employee_id.toLowerCase().includes(search) ||
-        (staff.email && staff.email.toLowerCase().includes(search));
+        name.toLowerCase().includes(search) ||
+        empId.toLowerCase().includes(search) ||
+        email.toLowerCase().includes(search);
       
       const matchesStatus =
         selectedStatus === "all" || 
         (selectedStatus === "Active" ? staff.is_active : !staff.is_active);
+
+      const matchesInst = instFilter === "all" || staff.institution_name === instFilter;
+      const matchesPos = posFilter === "all" || staff.position === posFilter;
         
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesInst && matchesPos;
     });
-  }, [allStaff, searchTerm, selectedStatus]);
+  }, [allStaff, searchTerm, selectedStatus, instFilter, posFilter]);
 
   // --- PAGINATION LOGIC ---
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
-  
   const paginatedStaff = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredStaff.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredStaff, currentPage]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedStatus]);
+  }, [searchTerm, selectedStatus, instFilter, posFilter]);
 
   if (isLoading && statsLoading) {
     return (
@@ -139,56 +178,83 @@ export default function StaffPage() {
               <h1 className="text-3xl font-bold">Staff Records</h1>
               <p className="text-muted-foreground">Manage and track institutional personnel</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleExport} disabled={filteredStaff.length === 0}>
-      <Download className="mr-2 h-4 w-4" /> Export to Excel
-    </Button>
-              
+            <div className="flex gap-2 print:hidden">
+              <Button variant="outline" onClick={handleExcelExport} disabled={filteredStaff.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Excel
+              </Button>
+              <Button variant="outline" onClick={handleCSVExport} disabled={filteredStaff.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> CSV
+              </Button>
+              <Button onClick={() => window.print()} disabled={filteredStaff.length === 0}>
+                <FileDown className="mr-2 h-4 w-4" /> PDF
+              </Button>
             </div>
           </div>
 
-          {/* Stats Cards using the useStaffStatistics hook */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <StatsCard 
-              title="Total Staff" 
-              value={statsData?.kpis.total.toLocaleString() || "0"} 
-              icon={Users} 
-              variant="accent" 
-            />
-            <StatsCard 
-              title="Active Staff" 
-              value={statsData?.kpis.active.toLocaleString() || "0"} 
-              icon={UserCheck} 
-              variant="success" 
-            />
-            <StatsCard 
-              title="Inactive Staff" 
-              value={statsData?.kpis.inactive.toLocaleString() || "0"} 
-              icon={Users} 
-              variant="warning" 
-            />
-            <StatsCard 
-              title="Active Rate" 
-              value={`${statsData?.kpis.active_rate || 0}%`} 
-              icon={UserCheck} 
-              variant="success" 
-            />
-          </div>
+          {/* Stats Summary Cards - Now Dynamic based on filteredStaff */}
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+  <StatsCard 
+    title="Total Staff" 
+    // Calculate total from the filtered list
+    value={filteredStaff.length.toLocaleString()} 
+    icon={Users} 
+    variant="accent" 
+  />
+  <StatsCard 
+    title="Active Staff" 
+    // Count how many in the filtered list are active
+    value={filteredStaff.filter(s => s.is_active).length.toLocaleString()} 
+    icon={UserCheck} 
+    variant="success" 
+  />
+  <StatsCard 
+    title="Inactive Staff" 
+    // Count how many in the filtered list are inactive
+    value={filteredStaff.filter(s => !s.is_active).length.toLocaleString()} 
+    icon={Users} 
+    variant="warning" 
+  />
+  <StatsCard 
+    title="Active Rate" 
+    // Calculate percentage based on the current filtered view
+    value={`${filteredStaff.length > 0 
+      ? ((filteredStaff.filter(s => s.is_active).length / filteredStaff.length) * 100).toFixed(1) 
+      : 0}%`} 
+    icon={UserCheck} 
+    variant="success" 
+  />
+</div>
 
-          {/* Search & Filter */}
-          <Card>
+          {/* Search & Filter - Hidden in Print */}
+          <Card className="print:hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Filter className="h-5 w-5" /> Search and Filter
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  placeholder="Search by name, ID or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="lg:col-span-1">
+                  <Input
+                    placeholder="Search by name, ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Select value={instFilter} onValueChange={setInstFilter}>
+                  <SelectTrigger><SelectValue placeholder="Institution" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Institutions</SelectItem>
+                    {filterOptions.institutions.map(inst => <SelectItem key={inst} value={inst}>{inst}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={posFilter} onValueChange={setPosFilter}>
+                  <SelectTrigger><SelectValue placeholder="Position" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Positions</SelectItem>
+                    {filterOptions.positions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
@@ -197,21 +263,24 @@ export default function StaffPage() {
                     <SelectItem value="Inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button variant="ghost" onClick={resetFilters} className="text-muted-foreground">
+                  <RotateCcw className="h-4 w-4 mr-2" /> Reset
+                </Button>
               </div>
             </CardContent>
           </Card>
 
           {/* Staff Table */}
-          <Card>
+          <Card className="print:shadow-none print:border-none">
             <CardHeader className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 pb-4">
               <div>
                 <CardTitle>Personnel List ({filteredStaff.length})</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1 print:hidden">
                   Showing {filteredStaff.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredStaff.length)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 print:hidden">
                 <Button
                   variant="outline"
                   size="sm"
@@ -244,7 +313,7 @@ export default function StaffPage() {
                     <TableHead>Department</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right print:hidden">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -269,7 +338,7 @@ export default function StaffPage() {
                             {staff.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right print:hidden">
                           <Button variant="ghost" size="sm" onClick={() => setSelectedStaff(staff)}>
                             View
                           </Button>

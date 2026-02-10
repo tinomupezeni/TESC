@@ -5,6 +5,7 @@ export interface DashboardStats {
   active_institutions: number;
   graduates_year: number;
   completion_rate: number;
+  total_students_this_year:number,
   total_staff:number;
   total_programs:number;
   breakdown: {
