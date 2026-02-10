@@ -4,7 +4,7 @@ import apiClient from "./api";
 
 // Enums based on your Django Choices
 export type Sector = 'agritech' | 'edtech' | 'healthtech' | 'fintech' | 'mining' | 'energy' | 'manufacturing' | 'other';
-export type ProjectStage = 'ideation' | 'prototype' | 'incubation' | 'market_ready' | 'scaling' | 'industrial';
+export type ProjectStage = 'ideation' | 'prototype' | 'incubation' | 'registered_ips' | 'commercialisation' | 'industrial';
 export type HubStatus = 'High' | 'Medium' | 'Full';
 
 // 1. Innovation Hub Interface

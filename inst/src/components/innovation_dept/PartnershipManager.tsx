@@ -23,8 +23,8 @@ const PartnershipManager = ({ partnerships = [], onRefresh }: PartnershipManager
   const [search, setSearch] = useState("");
 
   const filteredPartnerships = partnerships.filter(p => 
-    p.partner_name.toLowerCase().includes(search.toLowerCase()) ||
-    p.focus_area.toLowerCase().includes(search.toLowerCase())
+    p.partner_name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.focus_area?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -40,7 +40,7 @@ const PartnershipManager = ({ partnerships = [], onRefresh }: PartnershipManager
             </CardDescription>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-             <div className="relative flex-1 sm:w-[250px]">
+              <div className="relative flex-1 sm:w-[250px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search partners..." 
@@ -48,8 +48,8 @@ const PartnershipManager = ({ partnerships = [], onRefresh }: PartnershipManager
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-             </div>
-             <PartnershipFormDialog onSuccess={onRefresh} />
+              </div>
+              <PartnershipFormDialog onSuccess={onRefresh} />
           </div>
         </div>
       </CardHeader>

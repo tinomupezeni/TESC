@@ -20,7 +20,7 @@ ALLOWED_HOSTS = [
     'tesc.zchpc.ac.zw', 
     '127.0.0.1', 
     'localhost', 
-    'tesc-inst.zchpc.ac.zw'
+    'tesc-inst.zchpc.ac.zw',
     '10.50.200.35'
 ]
 
@@ -85,12 +85,8 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",  # this creates/uses a file named db.sqlite3 in your project root
     }
 }
 
@@ -165,6 +161,7 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
+    
     "http://10.50.200.35",
     "https://tesc.zchpc.ac.zw",
     "https://tesc-inst.zchpc.ac.zw",

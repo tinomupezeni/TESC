@@ -198,8 +198,8 @@ export function ProjectFormDialog({ onSuccess }: ProjectFormDialogProps) {
                   <SelectItem value="ideation">Ideation</SelectItem>
                   <SelectItem value="prototype">Prototyping</SelectItem>
                   <SelectItem value="incubation">Incubation</SelectItem>
-                  <SelectItem value="market_ready">Market Ready</SelectItem>
-                  <SelectItem value="scaling">Scaling / Startup</SelectItem>
+                  <SelectItem value="ip_registration">Registered IPs</SelectItem>
+                  <SelectItem value="commercialisation">Commercialisation</SelectItem>
                   <SelectItem value="industrial">Industrialised</SelectItem>
                 </SelectContent>
               </Select>

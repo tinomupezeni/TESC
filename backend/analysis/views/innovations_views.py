@@ -100,8 +100,9 @@ class InnovationOverviewView(APIView):
             'research': {'label': 'Research', 'color': 'hsl(var(--info))'}, # If you use this stage
             'prototype': {'label': 'Prototype', 'color': 'hsl(var(--accent))'},
             'incubation': {'label': 'Incubation', 'color': 'hsl(var(--accent))'},
-            'scaling': {'label': 'Industrialization', 'color': 'hsl(var(--success))'},
-            'industrial': {'label': 'Commercialized', 'color': 'hsl(var(--primary))'}
+            'ip_registration': {'label': 'IP registration', 'color': 'hsl(var(--success))'},
+            'commercialisation': {'label': 'Commercialisation', 'color': 'hsl(var(--success))'},
+            'industrial': {'label': 'Industrialisation', 'color': 'hsl(var(--primary))'}
         }
 
         pipeline_data = []

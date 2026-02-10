@@ -144,3 +144,61 @@ All colors MUST be HSL.
     @apply font-sans; /* This will now use Inter */
   }
 }
+@media print {
+  /* 1. Hide the Sidebar and the entire Navigation pane */
+  aside, 
+  .sidebar, 
+  nav,
+  [data-sidebar="sidebar"],
+  .dashboard-sidebar { 
+    display: none !important; 
+  }
+
+  /* 2. Hide specific interactive elements from your screenshot */
+  button,
+  .print\:hidden,
+  .actions-header, /* The 'Actions' column header */
+  .actions-cell,   /* The 'View' buttons */
+  .pagination-controls,
+  input[type="text"], /* Search bars */
+  .select-trigger {
+    display: none !important;
+  }
+
+  /* 3. Hide the User/Admin profile info seen in the bottom left */
+  .user-profile-section,
+  .admin-footer,
+  [data-access-level] {
+    display: none !important;
+  }
+
+  /* 4. Force the main dashboard to take up 100% width */
+  main, 
+  .dashboard-layout, 
+  #root > div {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important; /* Professional margin for PDF */
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+  }
+
+  /* 5. Prevent charts from being cut in half across pages */
+  .card, .recharts-responsive-container {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* 6. Clean up the table (Remove the 'Actions' column) */
+  table th:last-child, 
+  table td:last-child {
+    display: none !important;
+  }
+}
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+}

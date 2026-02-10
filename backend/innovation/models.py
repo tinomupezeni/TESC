@@ -20,9 +20,26 @@ PROJECT_STAGES = [
     ('prototype', 'Prototyping'),
     ('incubation', 'Incubation'),
     # Commercialisation Phase
-    ('market_ready', 'Market Ready'),
-    ('scaling', 'Scaling / Startup'),
+    ('ip_registration', 'IP Registration'),
+    ('commercialisation', 'Commercialisation'),
     ('industrial', 'Industrialised'),
+]
+
+# --- NEW IP CHOICES ---
+IP_TYPES = [
+    ('copyright', 'Copyright and Neighbouring Rights'),
+    ('industrial_design', 'Industrial Designs'),
+    ('ic_layout', 'Integrated Circuit Lay-Out Designs'),
+    ('geographical', 'Geographical Indications'),
+    ('patents', 'Patents'),
+    ('plant_breeders', 'Plant Breeders Rights'),
+    ('trademarks', 'Trade Marks'),
+]
+
+FILING_ROUTES = [
+    ('national', 'National'),
+    ('regional', 'Regional'),
+    ('international', 'International'),
 ]
 
 class InnovationHub(models.Model):
@@ -57,6 +74,8 @@ class Project(models.Model):
     location_category = models.CharField(max_length=10, choices=[('Urban', 'Urban'), ('Rural', 'Rural')], default='Urban')
     stage = models.CharField(max_length=50, choices=PROJECT_STAGES, default='ideation')
     
+    
+    
     # Descriptions (From your old Innovation model)
     problem_statement = models.TextField(blank=True)
     proposed_solution = models.TextField(blank=True)
@@ -71,7 +90,17 @@ class Project(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_stage_display()})"
-
+class IPRegistration(models.Model):
+    """
+    Holds persistent IP data, linked to a project.
+    """
+    project = models.OneToOneField(Project, on_delete=models.CASCADE, related_name='ip_details')
+    ip_type = models.CharField(max_length=50, choices=IP_TYPES)
+    filing_route = models.CharField(max_length=50, choices=FILING_ROUTES)
+    date_filed = models.DateField()
+    
+    def __str__(self):
+        return f"{self.ip_type} - {self.project.name}"
 class ResearchGrant(models.Model):
     """
     Tracks specific research grants (SRS Requirement 4).
