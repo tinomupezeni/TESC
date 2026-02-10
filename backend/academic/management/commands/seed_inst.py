@@ -3,8 +3,8 @@
 import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from academic.models import Institution, Facility, Program
-
+from academic.models import Institution, Facility
+from faculties.models import Program
 # Set up a simple logger
 logger = logging.getLogger(__name__)
 

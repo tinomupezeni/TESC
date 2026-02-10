@@ -65,7 +65,7 @@ const Index = () => {
           <StatsCard
             title="Total Students"
             value={stats?.total_students || 0}
-            description="Across all institutions"
+            description="Across all institutions over the years"
             icon={Users}
             // trend={{ value: 8.2, label: "from last year" }} // You can calculate this dynamically too if backend supports it
             variant="accent"
@@ -79,19 +79,19 @@ const Index = () => {
             variant="success"
           />
           <StatsCard
-            title="Graduates (This Year)"
+            title="Graduates"
             value={stats?.graduates_year || 0}
-            description="Completed programs"
+            description="Across all institutions over the years"
             icon={GraduationCap}
             // trend={{ value: 12.5, label: "increase" }}
             variant="default"
           />
           <StatsCard
-            title="Program Completion Rate"
-            value={`${stats?.completion_rate}%`}
-            description="System average"
+            title="Total Number of students"
+            value={stats?.total_students_this_year || 0}
+            description={`Active in ${new Date().getFullYear()}`}
             icon={Award}
-            // trend={{ value: 2.1, label: "improvement" }}
+            
             variant="success"
           />
         </div>
@@ -101,21 +101,21 @@ const Index = () => {
           <StatsCard
             title="Teachers Colleges"
             value={stats?.breakdown.teachers_colleges || 0}
-            description="Students enrolled"
+            description="Students enrolled over the years"
             icon={BookOpen}
             variant="default"
           />
           <StatsCard
             title="Polytechnics"
             value={stats?.breakdown.polytechnics || 0}
-            description="Students enrolled"
+            description="Students enrolled over the years"
             icon={TrendingUp}
             variant="default"
           />
           <StatsCard
             title="Industrial Training"
             value={stats?.breakdown.industrial_training || 0}
-            description="Students enrolled"
+            description="Students enrolled over the years"
             icon={UserCheck}
             variant="default"
           />

@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Edit, Activity } from "lucide-react";
+import { Building2, Edit, Activity } from "lucide-react";
 import { HubFormDialog } from "./HubFormDialog";
 
 interface HubManagerProps {

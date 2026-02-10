@@ -1,7 +1,7 @@
 // services/student.service.ts
 
 import apiClient from "./api"; // Use your new api.ts
-import { Student, StudentWriteData } from "@/lib/types/academic.types";
+import { Student, StudentWriteData,StudentGraduate, GraduationStat,GraduationSummary } from "@/lib/types/academic.types";
 
 const BASE_PATH = "/academic/students/";
 
@@ -50,4 +50,14 @@ export const updateStudent = async (
  */
 export const deleteStudent = async (id: number): Promise<void> => {
   await apiClient.delete(`${BASE_PATH}${id}/`);
+};
+/**
+ * Fetch individual graduate records
+ */
+export const getGraduates = async (institutionId?: string | number): Promise<StudentGraduate[]> => {
+  const params: any = { status: 'Graduated' };
+  if (institutionId) params.institution = institutionId;
+  
+  const response = await apiClient.get<StudentGraduate[]>(BASE_PATH, { params });
+  return response.data;
 };
