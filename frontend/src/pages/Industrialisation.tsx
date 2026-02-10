@@ -1,47 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Factory, Handshake, Rocket, DollarSign, Loader2, FolderOpen } from "lucide-react";
+import { Factory, Handshake, Rocket, DollarSign, Loader2, FolderOpen, Target, BarChart3, BriefcaseBusiness } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
-import { getIndustrialStats } from "@/services/analysis.services";
+// IMPORT BOTH HOOKS
+import { useDetailedInnovations, usePartnerships } from "@/hooks/useInnovationAnalytics";
 
-const COLORS = [
-  "hsl(var(--primary))", 
-  "hsl(var(--accent-foreground))", 
-  "hsl(var(--success))", 
-  "hsl(var(--info))", 
-  "hsl(var(--muted-foreground))",
-  "#FACC15",  // yellow fallback
-  "#3B82F6",  // blue fallback
-  "#F59E0B",  // amber fallback
-  "#8B5CF6",  // purple fallback
-  "#EF4444",  // red fallback
-  "#10B981",  // green fallback
-  "#6B7280",  // gray fallback
-];
 const SECTOR_COLORS: Record<string, string> = {
+  agritech: "#6B7280",      // gray
   edtech: "#FACC15",        // yellow
   energy: "#3B82F6",        // blue
+  fintech: "#10B981",       // green
   healthtech: "#F59E0B",    // amber
   manufacturing: "#8B5CF6", // purple
   mining: "#EF4444",        // red
-  fintech: "#10B981",       // green
-  agritech: "#6B7280",      // gray
-  other: "#A855F7",          // custom purple
+  other: "#A855F7",         // custom purple
 };
 
 export default function Industrialisation() {
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    // 1. Fetch data using both hooks
+    const { data: projects, loading: loadingProjects } = useDetailedInnovations();
+    const { data: partnerships, loading: loadingPartnerships } = usePartnerships();
+    
+    const loading = loadingProjects || loadingPartnerships;
 
-    useEffect(() => {
-        getIndustrialStats()
-            .then(setData)
-            .catch((err) => console.error(err))
-            .finally(() => setLoading(false));
-    }, []);
+    // 2. Process and filter data for stats calculation
+    const calculatedStats = useMemo(() => {
+        if (!projects) return { commercialised: 0, revenue: 0, startupCount: 0 };
+        
+        const commercialisedProjects = projects.filter(p => p.stage === 'commercialisation');
+        const commercialisedCount = commercialisedProjects.length;
+        
+        // Assuming startupCount is a specific metric you need calculated
+        const startupCount = projects.filter(p => p.stage === 'prototype' || p.stage === 'incubation').length;
+        
+        const totalRevenue = commercialisedProjects.reduce((sum, p) => sum + parseFloat(p.revenue_generated || "0"), 0);
+
+        return {
+            commercialised: commercialisedCount,
+            startupCount: startupCount,
+            revenue: totalRevenue,
+        };
+    }, [projects]);
 
     if (loading) {
         return (
@@ -53,8 +55,7 @@ export default function Industrialisation() {
         );
     }
 
-    const formatMoney = (amount: number | undefined) => {
-        if (amount === undefined || amount === null) return "$0";
+    const formatMoney = (amount: number) => {
         return new Intl.NumberFormat('en-US', { 
             style: 'currency', 
             currency: 'USD', 
@@ -62,21 +63,21 @@ export default function Industrialisation() {
         }).format(amount);
     };
 
-    const stats = data?.stats || {};
-    const sectors = data?.sectors || [];
-    const partnerships = data?.partnerships || [];
+    // --- Chart Data: Filter for 'commercialisation' stage only ---
+    const commercialisedProjects = projects?.filter(p => p.stage === 'commercialisation') || [];
+    
+    const sectorCounts = commercialisedProjects.reduce((acc, p) => {
+        acc[p.sector] = (acc[p.sector] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
 
-    const hasSectorData = sectors.length > 0;
-    const displaySectors = hasSectorData ? sectors : [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
+    const displaySectors = Object.entries(sectorCounts).map(([name, value]) => ({
+        name,
+        value
+    }));
 
-    // Map each sector to a unique color **outside JSX**
-    const sectorColorsMap: Record<string, string> = displaySectors.reduce(
-        (acc, sector, i) => {
-            acc[sector.name] = COLORS[i % COLORS.length];
-            return acc;
-        },
-        {} as Record<string, string>
-    );
+    const hasSectorData = displaySectors.length > 0;
+    const chartData = hasSectorData ? displaySectors : [{ name: 'No Data', value: 1 }];
 
     return (
         <DashboardLayout>
@@ -86,7 +87,7 @@ export default function Industrialisation() {
                 <div className="pb-2 border-b">
                     <h1 className="text-3xl font-bold flex items-center gap-2">
                         <Factory className="h-7 w-7 text-primary" /> 
-                        Industrialisation
+                        Commercialisation
                     </h1>
                     <p className="text-muted-foreground">
                         Monitor industry linkages, startups, and commercialization.
@@ -96,31 +97,31 @@ export default function Industrialisation() {
                 {/* Key Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard 
-                        title="Commercialized Products" 
-                        value={stats.commercialized || 0} 
-                        description="Market ready" 
-                        icon={DollarSign} 
+                        title="Commercialised Projects" 
+                        value={calculatedStats.commercialised} 
+                        icon={BriefcaseBusiness} 
                         variant="success" 
                     />
                     <StatsCard 
                         title="Industry Partnerships" 
-                        value={stats.partnerships || 0} 
-                        description="Active Projects" 
+                        value={partnerships?.length || 0} // Uses partnerships hook
+                        description="Active Agreements" 
                         icon={Handshake} 
                         variant="info" 
                     />
                     <StatsCard 
                         title="Student Startups" 
-                        value={stats.startups || 0} 
-                        description="Across All Institutions" 
+                        value={calculatedStats.startupCount} 
+                        description="" 
                         icon={Rocket} 
                         variant="accent" 
                     />
                     <StatsCard 
                         title="Revenue Generated" 
-                        value={formatMoney(stats.revenue)} 
+                        value={formatMoney(calculatedStats.revenue)} 
                         description="Total Income" 
                         icon={DollarSign} 
+                        variant="danger" 
                     />
                 </div>
 
@@ -128,14 +129,15 @@ export default function Industrialisation() {
                     
                     {/* Sector Chart */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Project Sectors</CardTitle>
+                        <CardHeader className="flex flex-row items-center gap-2">
+                            <BarChart3 className="h-5 w-5 text-emerald-600" />
+                            <CardTitle>Commercialised Project Sectors</CardTitle>
                         </CardHeader>
                         <CardContent className="h-80 relative">
                             {!hasSectorData && (
                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                                     <span className="text-muted-foreground font-medium bg-background/80 px-2 py-1 rounded">
-                                        No Sector Data
+                                        No Commercialised Data
                                     </span>
                                 </div>
                             )}
@@ -144,7 +146,7 @@ export default function Industrialisation() {
                                     {hasSectorData && <Tooltip />}
                                     {hasSectorData && <Legend verticalAlign="bottom" height={36} />}
                                     <Pie
-                                        data={displaySectors}
+                                        data={chartData}
                                         dataKey="value"
                                         nameKey="name"
                                         cx="50%"
@@ -153,10 +155,10 @@ export default function Industrialisation() {
                                         innerRadius={0}
                                         stroke="none"
                                     >
-                                        {displaySectors.map((entry) => (
+                                        {chartData.map((entry) => (
                                             <Cell
                                                 key={entry.name}
-                                                fill={SECTOR_COLORS[entry.name]}
+                                                fill={SECTOR_COLORS[entry.name] || '#e2e8f0'}
                                                 opacity={1}
                                             />
                                         ))}
@@ -166,25 +168,26 @@ export default function Industrialisation() {
                         </CardContent>
                     </Card>
 
-                    {/* Partnership Table */}
+                    {/* Partnerships Table */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Key Industry Partners</CardTitle>
+                        <CardHeader className="flex flex-row items-center gap-2">
+                            <Target className="h-5 w-5 text-sky-600" />
+                            <CardTitle>Recent Partnerships</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="rounded-md border max-h-[320px] overflow-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Partner</TableHead>
+                                            <TableHead>Partner Name</TableHead>
                                             <TableHead>Focus Area</TableHead>
                                             <TableHead>Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {partnerships.length > 0 ? (
-                                            partnerships.map((item: any, i: number) => (
-                                                <TableRow key={i}>
+                                        {partnerships && partnerships.length > 0 ? (
+                                            partnerships.slice(0, 10).map((item) => (
+                                                <TableRow key={item.id}>
                                                     <TableCell className="font-medium">{item.partner_name}</TableCell>
                                                     <TableCell>{item.focus_area}</TableCell>
                                                     <TableCell>
@@ -199,7 +202,7 @@ export default function Industrialisation() {
                                                 <TableCell colSpan={3} className="h-48 text-center">
                                                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                                                         <FolderOpen className="h-8 w-8 mb-2 opacity-20" />
-                                                        <p>No partnerships recorded.</p>
+                                                        <p>No partnership data available.</p>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

@@ -5,6 +5,7 @@ from django.db.models import Sum
 class StudentSerializer(serializers.ModelSerializer):
     # Read-only fields for frontend display
     institution_name = serializers.CharField(source='institution.name', read_only=True)
+    type=serializers.CharField(source='institution.type', read_only=True)
     program_name = serializers.CharField(source='program.name', read_only=True)
     full_name = serializers.CharField(read_only=True)
     
@@ -32,6 +33,9 @@ class StudentSerializer(serializers.ModelSerializer):
             'enrollment_year',
             'status',
             "dropout_reason",
+            'graduation_year',
+            'type',  
+            'final_grade',
             'institution',
             'institution_name',
             'program',

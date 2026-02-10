@@ -33,20 +33,19 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { tesc_logo } from "./logo";
 
-// --- Navigation Item Definitions ---
 const mainNavigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Institutions", url: "/institutions", icon: Building },
   { title: "Student Records", url: "/students", icon: GraduationCap },
   { title: "Staff Records", url: "/staff", icon: User },
   { title: "Statistics", url: "/statistics", icon: BarChart3 },
-  
+  { title: "Graduation Records", url: "/graduates", icon: GraduationCap },
 ];
 
 const dataCategories = [
   { title: "Facilities & Capacity", url: "/facilities", icon: School },
   { title: "Innovation", url: "/innovation", icon: Lightbulb },
-  { title: "Industrialisation", url: "/industrialisation", icon: Factory },
+  { title: "Commercialisation", url: "/industrialisation", icon: Factory },
   { title: "Incubation Hubs", url: "/hubs", icon: Building2 },
   { title: "Startups", url: "/startups", icon: Rocket },
   { title: "Regional Analysis", url: "/regional", icon: MapPin },
@@ -56,11 +55,11 @@ const admissionsCategory = [
   { title: "Admissions Dashboard", url: "/admissions", icon: GraduationCap },
   { title: "Dropout Analysis", url: "/admissions/dropouts", icon: UserX },
   { title: "Special Enrollments", url: "/admissions/special", icon: User },
-  { title: "Payments & Fees", url: "/admissions/fees", icon: Wallet },
+ 
 ];
 
 const systemItems = [
-  { title: "Reports", url: "/reports", icon: FileText },
+  
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Help", url: "/help", icon: HelpCircle },
 ];
@@ -68,100 +67,75 @@ const systemItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const { user, logout } = useAuth();
+  const location = useLocation();
   const isCollapsed = state === "collapsed";
 
-  console.log(user);
-  
-
-  // 🚨 Dynamic Access Control Logic
   const userPermissions = user?.department?.permissions || [];
-  const userRoleName = user?.role?.name || "";
   const userLevel = user?.level;
 
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-primary text-black font-medium" : "hover:bg-muted";
-
-  /**
-   * Filters navigation items based on Database Permissions + Admin Levels
-   */
   const filterLinks = (items: any[]) => {
-    // 1. Level 1 (Super Admin) or "Superuser" role gets everything
-    if (userLevel === "1" || userRoleName === "Superuser") {
-      return items;
-    }
-
+    if (userLevel === "1") return items;
     return items.filter((item) => {
-      // 2. Public pages (Dashboard/Help) are always visible
-      if (item.url === "/dashboard" || item.url === "/help" || item.url === "/settings") {
-        return true;
-      }
-
-      // 3. Security Layer: Hard-restrict Settings to Level 1 only
-      // Even if the permission exists in the department list, block it for others
-      if (item.url === "/settings" && userLevel !== "1") {
-        return false;
-      }
-
-      // 4. Departmental Permission Check
-      // Matches the URLs saved in the Settings -> Department Permissions matrix
+      if (["/dashboard", "/help", "/settings"].includes(item.url)) return true;
       return userPermissions.includes(item.url);
     });
   };
 
-  const filteredMainNavigation = filterLinks(mainNavigation);
-  const filteredDataCategories = filterLinks(dataCategories);
-  const filteredAdmissionsCategory = filterLinks(admissionsCategory);
-  const filteredSystemItems = filterLinks(systemItems);
-
   return (
-    <Sidebar className={isCollapsed ? "w-14" : "w-64"}>
-      <SidebarContent>
-        {/* Logo and Title */}
-        <div className="p-4 border-b">
+    <Sidebar className={`border-r border-slate-200 dark:border-slate-800 ${isCollapsed ? "w-14" : "w-64"}`}>
+      <SidebarContent className="bg-white dark:bg-[#0c0c0e]">
+        {/* Logo Section */}
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/20">
           {!isCollapsed ? (
             <div className="flex items-center">
-              <img src={tesc_logo} className="w-12 mr-3" alt="TESC Logo" />
+              <img src={tesc_logo} className="w-10 mr-3" alt="TESC Logo" />
               <div>
-                <h1 className="text-md font-bold text-primary leading-tight">
-                  TESC SRS
-                </h1>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                  Data Systems
-                </p>
+                <h1 className="text-sm font-black text-blue-700 dark:text-blue-400 leading-none">TESC SRS</h1>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase mt-1">Data Systems</p>
               </div>
             </div>
           ) : (
-            <div className="text-primary font-bold text-xl text-center">T</div>
+            <div className="text-blue-700 dark:text-blue-400 font-black text-xl text-center">T</div>
           )}
         </div>
 
-        {/* Navigation Groups */}
         {[
-          { label: "Main", items: filteredMainNavigation },
-          { label: "Data Categories", items: filteredDataCategories },
-          { label: "Analysis", items: filteredAdmissionsCategory },
-          { label: "System", items: filteredSystemItems },
+          { label: "Main", items: filterLinks(mainNavigation) },
+          { label: "Data Categories", items: filterLinks(dataCategories) },
+          { label: "Analysis", items: filterLinks(admissionsCategory) },
+          { label: "System", items: filterLinks(systemItems) },
         ].map(
           (group) =>
             group.items.length > 0 && (
-              <SidebarGroup key={group.label}>
-                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              <SidebarGroup key={group.label} className="py-2">
+                <SidebarGroupLabel className="text-blue-800 dark:text-blue-400 font-black text-[11px] px-4 mb-2 uppercase tracking-widest !opacity-100">
+                  {group.label}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    {group.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url}
-                            end={item.url === "/dashboard"}
-                            className={getNavCls}
+                  <SidebarMenu className="px-2 gap-1">
+                    {group.items.map((item) => {
+                      const isActive = location.pathname === item.url;
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton 
+                            asChild 
+                            isActive={isActive}
+                            className={`
+                              w-full font-bold transition-all duration-200
+                              ${isActive 
+                                ? "!bg-primary !text-white" 
+                                : "!text-slate-900 dark:!text-slate-100 hover:bg-slate-200 dark:hover:bg-white/10"
+                              }
+                            `}
                           >
-                            <item.icon className="mr-2 h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                            <NavLink to={item.url} end={item.url === "/dashboard"}>
+                              <item.icon className={`h-5 w-5 shrink-0 ${isActive ? "!text-white" : "text-blue-700 dark:text-blue-400"}`} />
+                              {!isCollapsed && <span className="text-[13px]">{item.title}</span>}
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -169,46 +143,25 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      {/* User Info & Logout Footer */}
       {user && (
-        <div
-          className={`p-4 border-t bg-muted/10 ${
-            isCollapsed ? "flex justify-center" : ""
-          }`}
-        >
+        <div className={`p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white/5 ${isCollapsed ? "flex justify-center" : ""}`}>
           {!isCollapsed ? (
             <>
-              <div className="flex items-center space-x-2 mb-1">
-                <User className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold truncate">
+              <div className="mb-3">
+                <p className="text-sm font-black text-slate-900 dark:text-white truncate">
                   {user.first_name} {user.last_name}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 mb-3">
-                <span className="text-[10px] font-bold text-muted-foreground bg-white/50 px-2 py-0.5 rounded w-fit border border-muted">
-                  {user.department?.name || "Staff"}
-                </span>
-                <span className="text-[9px] text-primary/70 uppercase font-bold px-2">
+                </p>
+                <p className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase">
                   Level {user.level} Access
-                </span>
+                </p>
               </div>
-              <Button
-                onClick={logout}
-                className="w-full h-8 text-xs"
-                variant="destructive"
-              >
-                <LogOut className="mr-2 h-3 w-3" />
-                Log Out
+              <Button onClick={logout} className="w-full h-10 font-black shadow-lg uppercase tracking-wider" variant="destructive">
+                <LogOut className="mr-2 h-4 w-4" /> Log Out
               </Button>
             </>
           ) : (
-            <Button
-              onClick={logout}
-              size="icon"
-              variant="destructive"
-              title="Log Out"
-            >
-              <LogOut className="h-4 w-4" />
+            <Button onClick={logout} size="icon" variant="destructive" className="h-10 w-10 shadow-xl rounded-full">
+              <LogOut className="h-5 w-5" />
             </Button>
           )}
         </div>

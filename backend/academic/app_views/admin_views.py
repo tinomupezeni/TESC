@@ -41,7 +41,7 @@ class DashboardStatsView(views.APIView):
         # 1. Key Metrics
         total_students = Student.objects.count()
         active_institutions = Institution.objects.filter(status='Active').count()
-        
+        total_students_this_year= Student.objects.filter(status__in=['Active', 'Attachment']).count()
         # optimized count for graduates in current year
         graduates_current_year = Student.objects.filter(
             status='Graduated', 
@@ -67,6 +67,7 @@ class DashboardStatsView(views.APIView):
             "total_students": total_students,
             "active_institutions": active_institutions,
             "graduates_year": graduates_current_year,
+            'total_students_this_year':total_students_this_year,
             "completion_rate": round(completion_rate, 1),
             "breakdown": {
                 "teachers_colleges": breakdown.get('Teachers College', 0),

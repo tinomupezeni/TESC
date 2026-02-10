@@ -5,17 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Edit, Save } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { 
   createProject, 
   updateProject, 
-  createHub, 
-  createPartnership, 
-  createGrant, 
-  getProjects,
-  getHubs // Ensure this is imported
+  getHubs 
 } from "@/services/innovation.services"; 
 
 // --- 1. PROJECT FORM (Handles Create & Edit) ---
@@ -35,9 +32,10 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
   const institutionId = user?.institution?.id || user?.institution_id;
   const isEditing = !!project;
 
+  // Initial state matching the structure expected by components
   const initialData = {
     institution: institutionId,
-    hub: null, // New field for Hub Linkage
+    hub: null,
     name: '', 
     team_name: '', 
     sector: '', 
@@ -47,7 +45,11 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
     proposed_solution: '',
     revenue_generated: 0, 
     funding_acquired: 0, 
-    jobs_created: 0
+    jobs_created: 0,
+    // --- IP FIELDS (flattened or nested depending on API) ---
+    ip_type: '',
+    filing_route: '',
+    date_filed: '',
   };
 
   const [formData, setFormData] = useState(initialData);
@@ -64,7 +66,7 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
       if (project) {
         setFormData({
           institution: project.institution,
-          hub: project.hub,
+          hub: project.hub?.id || project.hub || null, 
           name: project.name,
           team_name: project.team_name,
           sector: project.sector,
@@ -74,7 +76,11 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
           proposed_solution: project.proposed_solution,
           revenue_generated: project.revenue_generated,
           funding_acquired: project.funding_acquired,
-          jobs_created: project.jobs_created
+          jobs_created: project.jobs_created,
+          // --- Populate IP data ---
+          ip_type: project.ip_type || '',
+          filing_route: project.filing_route || '',
+          date_filed: project.date_filed || '',
         });
       } else {
         setFormData({ ...initialData, institution: institutionId });
@@ -86,15 +92,37 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // --- Check if stage is 'ip_registration' ---
+  const showPatentFields = formData.stage === 'ip_registration';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // --- VALIDATION FOR IP FIELDS ---
+    if (showPatentFields) {
+      if (!formData.ip_type || !formData.filing_route || !formData.date_filed) {
+        toast.error("Please fill in all IP Registration Details (Type, Route, and Date)");
+        return;
+      }
+    }
+
     setLoading(true);
+    
+    // Structure payload 
+    const payload = {
+        ...formData,
+        // Send IP fields directly on root or nested depending on backend
+        ip_type: showPatentFields ? formData.ip_type : null,
+        filing_route: showPatentFields ? formData.filing_route : null,
+        date_filed: showPatentFields ? formData.date_filed : null,
+    };
+
     try {
       if (isEditing) {
-        await updateProject(project.id, formData);
+        await updateProject(project.id, payload);
         toast.success("Project updated successfully");
       } else {
-        await createProject({ ...formData, institution: institutionId });
+        await createProject({ ...payload, institution: institutionId });
         toast.success("Project created successfully");
       }
       
@@ -142,11 +170,12 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
               <Select value={formData.sector} onValueChange={val => handleChange('sector', val)}>
                 <SelectTrigger><SelectValue placeholder="Select Sector" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="agritech">AgriTech</SelectItem>
-                  <SelectItem value="edtech">EdTech</SelectItem>
-                  <SelectItem value="healthtech">HealthTech</SelectItem>
+                  {/* --- UPDATED SECTOR KEYS --- */}
+                  <SelectItem value="agritech">Agriculture / AgriTech</SelectItem>
+                  <SelectItem value="edtech">Education / EdTech</SelectItem>
+                  <SelectItem value="healthtech">Health / BioTech</SelectItem>
                   <SelectItem value="fintech">FinTech</SelectItem>
-                  <SelectItem value="mining">Mining</SelectItem>
+                  <SelectItem value="mining">Mining & Engineering</SelectItem>
                   <SelectItem value="energy">Green Energy</SelectItem>
                   <SelectItem value="manufacturing">Manufacturing</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
@@ -161,8 +190,8 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
                   <SelectItem value="ideation">Ideation</SelectItem>
                   <SelectItem value="prototype">Prototyping</SelectItem>
                   <SelectItem value="incubation">Incubation</SelectItem>
-                  <SelectItem value="market_ready">Market Ready</SelectItem>
-                  <SelectItem value="scaling">Scaling / Startup</SelectItem>
+                  <SelectItem value="ip_registration">IP Registration</SelectItem>
+                  <SelectItem value="commercialisation">Commercialisation</SelectItem>
                   <SelectItem value="industrial">Industrialised</SelectItem>
                 </SelectContent>
               </Select>
@@ -184,36 +213,73 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
             </div>
           </div>
 
+          {/* --- CONDITIONAL IP FIELDS --- */}
+          {showPatentFields && (
+            <Card className="border-dashed bg-green-50/50 border-green-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-green-900">IP Registration Details</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>IP Type *</Label>
+                  <Select value={formData.ip_type} onValueChange={val => handleChange('ip_type', val)}>
+                    <SelectTrigger><SelectValue placeholder="Select IP Type" /></SelectTrigger>
+                    <SelectContent>
+                      {/* --- UPDATED IP_TYPE KEYS --- */}
+                      <SelectItem value="copyright">Copyright and Neighbouring Rights</SelectItem>
+                      <SelectItem value="industrial_design">Industrial Designs</SelectItem>
+                      <SelectItem value="ic_layout">Integrated Circuit Lay-Out Designs</SelectItem>
+                      <SelectItem value="geographical">Geographical Indications</SelectItem>
+                      <SelectItem value="patents">Patents</SelectItem>
+                      <SelectItem value="plant_breeders">Plant Breeders Rights</SelectItem>
+                      <SelectItem value="trademarks">Trade Marks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Filing Route *</Label>
+                  <Select value={formData.filing_route} onValueChange={val => handleChange('filing_route', val)}>
+                    <SelectTrigger><SelectValue placeholder="Select Route" /></SelectTrigger>
+                    <SelectContent>
+                      {/* --- UPDATED FILING_ROUTES KEYS --- */}
+                      <SelectItem value="national">National</SelectItem>
+                      <SelectItem value="regional">Regional</SelectItem>
+                      <SelectItem value="international">International</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Date Filed *</Label>
+                  <Input type="date" value={formData.date_filed} onChange={e => handleChange('date_filed', e.target.value)} />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Additional info */}
           <div className="space-y-2">
-            <Label>Problem Statement *</Label>
-            <Textarea required value={formData.problem_statement} onChange={e => handleChange('problem_statement', e.target.value)} rows={3} />
+            <Label>Problem Statement</Label>
+            <Textarea value={formData.problem_statement} onChange={e => handleChange('problem_statement', e.target.value)} />
           </div>
 
-          <div className="space-y-2">
-            <Label>Proposed Solution</Label>
-            <Textarea value={formData.proposed_solution} onChange={e => handleChange('proposed_solution', e.target.value)} rows={2} />
-          </div>
-
-          {/* Metrics Section */}
-          <div className="grid grid-cols-3 gap-4 border-t pt-4 bg-muted/30 p-4 rounded-md">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-               <Label className="text-xs font-semibold">Revenue Generated ($)</Label>
-               <Input type="number" step="0.01" value={formData.revenue_generated} onChange={e => handleChange('revenue_generated', parseFloat(e.target.value))} />
+              <Label>Revenue ($)</Label>
+              <Input type="number" value={formData.revenue_generated} onChange={e => handleChange('revenue_generated', parseFloat(e.target.value))} />
             </div>
             <div className="space-y-2">
-               <Label className="text-xs font-semibold">Funding Acquired ($)</Label>
-               <Input type="number" step="0.01" value={formData.funding_acquired} onChange={e => handleChange('funding_acquired', parseFloat(e.target.value))} />
+              <Label>Funding ($)</Label>
+              <Input type="number" value={formData.funding_acquired} onChange={e => handleChange('funding_acquired', parseFloat(e.target.value))} />
             </div>
             <div className="space-y-2">
-               <Label className="text-xs font-semibold">Jobs Created</Label>
-               <Input type="number" value={formData.jobs_created} onChange={e => handleChange('jobs_created', parseInt(e.target.value))} />
+              <Label>Jobs Created</Label>
+              <Input type="number" value={formData.jobs_created} onChange={e => handleChange('jobs_created', parseInt(e.target.value))} />
             </div>
           </div>
-
-          <Button type="submit" disabled={loading} className="w-full mt-2">
-            {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : (
-              <><Save className="w-4 h-4 mr-2" /> {isEditing ? "Update Project" : "Create Project"}</>
-            )}
+          
+          <Button type="submit" className="mt-4" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+            {isEditing ? "Update Project" : "Save Project"}
           </Button>
         </form>
       </DialogContent>
