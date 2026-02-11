@@ -4,30 +4,43 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { InstitutionOverview } from "@/components/dashboard/InstitutionOverview";
 import { EnrollmentChart } from "@/components/dashboard/EnrollmentChart";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import { DashboardService} from "@/services/admin.dashboard.service";
+import { DashboardService } from "@/services/admin.dashboard.service";
+// Import from student service instead of dashboard service for specific student endpoints
+import * as StudentService from "@/services/student.service"; 
+// IMPORT YOUR NEW TYPE HERE (Update path based on your actual file structure)
 import { DashboardStats } from "@/lib/types/dashboard.types";
-import { 
-  Users, 
-  GraduationCap, 
-  Building, 
-  TrendingUp, 
-  UserCheck, 
+import { ProgramCompletionStats } from "@/lib/types/academic.types";
+import {
+  Users,
+  GraduationCap,
+  Building,
+  TrendingUp,
+  UserCheck,
   BookOpen,
   Award,
-  Loader2
+  Loader2,
+  Hourglass // Added icon for completion rate
 } from "lucide-react";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  // ADD STATE FOR COMPLETION STATS
+  const [completionStats, setCompletionStats] = useState<ProgramCompletionStats | null>(null);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
+        // Fetch standard dashboard stats
         const data = await DashboardService.getStats();
         setStats(data);
+
+        // --- CORRECTED: Fetch completion statistics from StudentService ---
+        const completionData = await StudentService.getCompletionStats();
+        setCompletionStats(completionData);
+
       } catch (error) {
-        // Handle error specifically if needed, e.g. toast notification
+        console.error("Error loading dashboard data", error);
       } finally {
         setLoading(false);
       }
@@ -67,7 +80,6 @@ const Index = () => {
             value={stats?.total_students || 0}
             description="Across all institutions over the years"
             icon={Users}
-            // trend={{ value: 8.2, label: "from last year" }} // You can calculate this dynamically too if backend supports it
             variant="accent"
           />
           <StatsCard
@@ -75,7 +87,6 @@ const Index = () => {
             value={stats?.active_institutions || 0}
             description="Nationwide coverage"
             icon={Building}
-            // trend={{ value: 0, label: "stable" }}
             variant="success"
           />
           <StatsCard
@@ -83,16 +94,26 @@ const Index = () => {
             value={stats?.graduates_year || 0}
             description="Across all institutions over the years"
             icon={GraduationCap}
-            // trend={{ value: 12.5, label: "increase" }}
             variant="default"
           />
           <StatsCard
-            title="Total Number of students"
+            title="Active Students"
             value={stats?.total_students_this_year || 0}
-            description={`Active in ${new Date().getFullYear()}`}
+            description={`Enrolled in ${new Date().getFullYear()}`}
             icon={Award}
-            
             variant="success"
+          />
+          
+          {/* --- NEW: Program Completion Rate Card --- */}
+          <StatsCard
+            title="Program Completion Rate over the years"
+            // Display percentage
+            value={`${completionStats?.completion_rate_percentage || 0}%`}
+            // Add helpful description
+            description={`${completionStats?.graduated || 0} graduated / ${completionStats?.total_students || 0} total enrolled`}
+            icon={Hourglass}
+            // Use warning variant if completion is low, default otherwise
+            variant={ (completionStats?.completion_rate_percentage || 0) < 50 ? "warning" : "default" }
           />
         </div>
 

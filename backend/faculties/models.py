@@ -17,6 +17,19 @@ PROGRAM_LEVELS = [
     ('Other', 'Other'),
 ]
 
+# --- FIX: Structured as (actual_value, human_readable_name) ---
+PROGRAM_CATEGORIES = [
+  ("STEM", "STEM (Science, Tech, Engineering, Math)"),
+  ("HEALTH", "Health Sciences & Medicine"),
+  ("BUSINESS", "Business & Management"),
+  ("SOCIAL", "Social Sciences"),
+  ("HUMANITIES", "Humanities & Arts"),
+  ("EDUCATION", "Education & Teaching"),
+  ("LAW", "Law & Legal Studies"),
+  ("VOCATIONAL", "Vocational & Technical Training"),
+  ("INTERDISCIPLINARY", "Interdisciplinary Studies"),
+]
+
 class Faculty(models.Model):
     institution = models.ForeignKey(
         'academic.Institution', 
@@ -73,6 +86,10 @@ class Program(models.Model):
     code = models.CharField(max_length=50, help_text="e.g., BSCS")
     duration = models.PositiveIntegerField(help_text="Duration in years")
     level = models.CharField(max_length=50, choices=PROGRAM_LEVELS)
+    
+    # --- This field now uses the corrected tuples ---
+    category = models.CharField(max_length=100, choices=PROGRAM_CATEGORIES)
+    
     description = models.TextField(blank=True)
     coordinator = models.CharField(max_length=100, blank=True, help_text="Program Coordinator Name")
     student_capacity = models.PositiveIntegerField(default=0)
@@ -87,7 +104,6 @@ class Program(models.Model):
 
     class Meta:
         ordering = ['name']
-        # --- FIX IS HERE: Changed 'faculty' to 'department' ---
         unique_together = ('department', 'code') 
 
     def __str__(self):

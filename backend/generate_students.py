@@ -6,17 +6,36 @@ fake = Faker()
 
 # Configuration
 NUM_STUDENTS = 250
-FILENAME = "bulk_students_autocreate5.xlsx"
+FILENAME = "bulk_students_autocreate6.xlsx" # Updated filename
 
-# Realistic Structure
+# --- FIX: Mapping structure to include Categories ---
+# Realistic Structure Mapping
 ACADEMIC_STRUCTURE = {
     'Faculty of Science': {
-        'Computer Science': ['BSCS', 'BIT', 'BSc Software Eng'],
-        'Physics': ['BSc Physics', 'BSc Applied Physics']
+        'Computer Science': {
+            'programs': ['BSCS', 'BIT', 'BSc Software Eng'],
+            'category': 'STEM'
+        },
+        'Physics': {
+            'programs': ['BSc Physics', 'BSc Applied Physics'],
+            'category': 'STEM'
+        }
     },
     'Faculty of Engineering': {
-        'Civil Engineering': ['BEng Civil', 'Diploma Civil'],
-        'Electrical': ['BEng Electrical', 'HND Electrical']
+        'Civil Engineering': {
+            'programs': ['BEng Civil', 'Diploma Civil'],
+            'category': 'STEM'
+        },
+        'Electrical': {
+            'programs': ['BEng Electrical', 'HND Electrical'],
+            'category': 'STEM'
+        }
+    },
+    'Faculty of Arts': {
+        'Languages': {
+            'programs': ['BA English', 'BA Literature'],
+            'category': 'HUMANITIES'
+        }
     }
 }
 
@@ -36,8 +55,12 @@ def generate_data(num):
         # Pick random structure
         fac_name = random.choice(list(ACADEMIC_STRUCTURE.keys()))
         dept_name = random.choice(list(ACADEMIC_STRUCTURE[fac_name].keys()))
-        prog_name = random.choice(ACADEMIC_STRUCTURE[fac_name][dept_name])
-
+        
+        # --- Get program and its category ---
+        prog_info = ACADEMIC_STRUCTURE[fac_name][dept_name]
+        prog_name = random.choice(prog_info['programs'])
+        category = prog_info['category']
+        
         # 1. Pick the year first (2020 - 2025)
         enrol_year = random.randint(2020, 2025)
 
@@ -58,7 +81,8 @@ def generate_data(num):
             "faculty": fac_name,       
             "department": dept_name,   
             "program": prog_name,
-            "enrollment_year": enrol_year # <--- Uses the random year chosen above
+            "category": category, # <--- New Column Added
+            "enrollment_year": enrol_year 
         }
         data.append(record)
 
