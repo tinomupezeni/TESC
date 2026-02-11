@@ -9,7 +9,7 @@ class HubAnalysisView(APIView):
         
         # Stats
         total_hubs = hubs.count()
-        total_cap = hubs.aggregate(Sum('capacity'))['capacity__sum'] or 1
+        total_cap = hubs.aggregate(Sum('capacity'))['capacity__sum'] or 0
         total_occ = hubs.aggregate(Sum('occupied'))['occupied__sum'] or 0
         occupancy_rate = int((total_occ / total_cap) * 100)
         

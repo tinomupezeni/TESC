@@ -31,6 +31,15 @@ export interface DashboardInnovationStats {
   industrial: number;
 }
 
+// --- NEW: Completion Rate Interface ---
+export interface ProgramCompletionStats {
+  total_students: number;
+  graduated: number;
+  in_progress_on_time: number;
+  in_progress_delayed: number;
+  completion_rate_percentage: number;
+}
+
 // --- Facility & Institution ---
 export interface Facility {
   id: number;
@@ -79,6 +88,7 @@ export interface Student {
   student_id: string;
   national_id: string | null;
   program_name: string;
+  program_category: string; 
   institution_name: string;
   type: string;
   full_name: string;
@@ -192,6 +202,7 @@ export interface InnovationHub {
   name: string;
   institution: number;
   location: string;
+  
 }
 
 // --- Helpers ---
@@ -232,7 +243,11 @@ export interface StudentGraduate {
   full_name: string;
   first_name: string;
   last_name: string;
+  // FIXED: API uses double underscore for related field
   program_name: string;
+  program_level: string; // Added to match API
+  // FIXED: Included based on API response
+  program_category: string; 
   institution_name: string;
   graduation_year: number;
   disabilities: number;
@@ -240,4 +255,8 @@ export interface StudentGraduate {
   gender: string;
   status: 'Graduated';
   type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' | 'Other';
+  // Additional fields from API
+  distinctions: number;
+  credits: number;
+  passes: number;
 }

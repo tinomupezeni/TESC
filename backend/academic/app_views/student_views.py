@@ -4,15 +4,16 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Count, Q, Sum, F, DecimalField
+from django.db.models import Count, Q, Sum, F, DecimalField, ExpressionWrapper, BooleanField
 from django.db.models.functions import Coalesce
 from collections import OrderedDict
+from datetime import date
 
 from ..models import Student
 from ..serializers.student_serializers import StudentSerializer
 from ..services.student_services import StudentService
 from ..services.analysis_services import AnalysisService
-
+from faculties.models import Program # Import to access duration
 
 COLOR_MAP = {
     'Financial': '#f87171',
@@ -119,6 +120,49 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['get'], url_path='completion-stats')
+    def completion_stats(self, request):
+        """
+        Calculates program completion rates based on duration and student status.
+        """
+        institution_id = request.query_params.get('institution_id')
+        current_year = date.today().year
+        
+        # Statuses indicating the student is still in the system but not finished
+        in_progress_statuses = ['Active', 'Attachment', 'Suspended', 'Deferred']
+
+        queryset = Student.objects.select_related('program')
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+
+        # Annotate expected completion year and identify delayed students
+        annotated_students = queryset.annotate(
+            expected_completion_year=F('enrollment_year') + F('program__duration'),
+            is_delayed=ExpressionWrapper(
+                Q(expected_completion_year__lt=current_year) & 
+                Q(status__in=in_progress_statuses),
+                output_field=BooleanField()
+            )
+        )
+
+        total_students = annotated_students.count()
+        delayed_students_count = annotated_students.filter(is_delayed=True).count()
+        graduated_count = annotated_students.filter(status='Graduated').count()
+
+        # Calculate Rate
+        completion_rate = 0
+        if total_students > 0:
+            completion_rate = (graduated_count / total_students) * 100
+
+        return Response({
+            "total_students": total_students,
+            "graduated": graduated_count,
+            "in_progress_on_time": total_students - graduated_count - delayed_students_count,
+            "in_progress_delayed": delayed_students_count,
+            "completion_rate_percentage": round(completion_rate, 1)
+        })
+
     @action(detail=False, methods=['get'], url_path='graduation-stats')
     def graduation_stats(self, request):
         institution_id = request.query_params.get('institution_id')
@@ -128,13 +172,15 @@ class StudentViewSet(viewsets.ModelViewSet):
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
 
+        # 1. Get raw data first
         stats = queryset.values(
             'graduation_year',
             'gender',
             program__name=F('program__name'),
             program__level=F('program__level'),
+            # Get the raw code (e.g., 'STEM')
+            category_code=F('program__category'), 
             institution_name=F('institution__name'),
-            
             type=F('institution__type'),
         ).annotate(
             total_graduates=Count('id'),
@@ -144,9 +190,18 @@ class StudentViewSet(viewsets.ModelViewSet):
             disabilities=Count('id', filter=~Q(disability_type='None'))
         ).order_by('-graduation_year', 'program__name')
 
+        # 2. FIX: Map the raw code to the human-readable label
+        # We need to import Program to get the choices
+        from faculties.models import Program
+        category_map = dict(Program._meta.get_field('category').choices)
+
         for item in stats:
             if item['graduation_year'] is None:
                 item['graduation_year'] = '0'
+            
+            # Replace code with label
+            code = item.pop('category_code')
+            item['category'] = category_map.get(code, code)
 
         return Response(stats)
 

@@ -10,7 +10,7 @@ export interface Program {
   department_name?: string;   // Read-only
   faculty_name?: string;      // Read-only (via department)
   institution_name?: string;  // Read-only (via department)
-
+  category:string;
   // Details
   name: string;
   code: string;
