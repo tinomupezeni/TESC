@@ -8,26 +8,31 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 # --- SECURITY CONFIGURATION ---
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
+# 🔐 AES-256 Field Encryption (Fernet)
+FERNET_KEYS = [os.getenv("CRYPTOGRAPHY_KEY")]
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'tesc.zchpc.ac.zw', 
-    '127.0.0.1', 
-    'localhost', 
+    'tesc.zchpc.ac.zw',
+    '127.0.0.1',
+    'localhost',
     'tesc-inst.zchpc.ac.zw',
     '10.50.200.35'
 ]
 
+
 # --- APPLICATION DEFINITION ---
 
 INSTALLED_APPS = [
-    'corsheaders',  # Must be before other apps for middleware to work well
+    'corsheaders',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -35,9 +40,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'rest_framework_simplejwt',
+
     # Third-party
     "rest_framework",
     'django_filters',
+
     # Local Apps
     "users",
     "academic",
@@ -49,8 +56,9 @@ INSTALLED_APPS = [
     "innovation",
 ]
 
+
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # MUST be at the top
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -60,7 +68,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = "core.urls"
+
 
 TEMPLATES = [
     {
@@ -77,40 +87,32 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = "core.wsgi.application"
 
 
 # --- DATABASE ---
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",  # this creates/uses a file named db.sqlite3 in your project root
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
 
 # --- PASSWORD VALIDATION ---
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
 # --- DRF SETTINGS ---
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -119,7 +121,6 @@ REST_FRAMEWORK = {
 
 
 # --- INTERNATIONALIZATION ---
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -128,25 +129,23 @@ USE_TZ = True
 
 
 # --- STATIC FILES ---
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Default primary key field type
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
 # --- AUTH MODEL ---
+
 AUTH_USER_MODEL = 'users.CustomUser'
 
 
 # --- CORS & CSRF CONFIGURATION ---
 
-# 1. THE NUCLEAR OPTION (Fixes Dev Issues)
-# Set this to True for development to allow requests from anywhere.
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOW_ALL_ORIGINS = True
 
-# 2. Specific Origins (Kept for when you turn off ALLOW_ALL later)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8000",
@@ -157,11 +156,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://tesc.zchpc.ac.zw",
 ]
 
-# CSRF Trusted Origins are strict even if CORS is open
+
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
-    
     "http://10.50.200.35",
     "https://tesc.zchpc.ac.zw",
     "https://tesc-inst.zchpc.ac.zw",
