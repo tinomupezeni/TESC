@@ -16,6 +16,7 @@ class ProgramSerializer(serializers.ModelSerializer):
             'faculty_name',     # Optional: Show faculty name via department
             'institution_name', # Optional: Show institution name via department
             'name', 
+            'category',
             'code', 
             'duration', 
             'level', 

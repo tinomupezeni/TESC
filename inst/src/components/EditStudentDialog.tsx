@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -32,14 +32,14 @@ import {
   Department,
 } from "@/services/faculties.services";
 
-// Define all possible status and fee choices based on your model/request
+// Define all possible status and fee choices
 const STUDENT_STATUS_CHOICES = [
   { value: "Active", label: "Active" },
   { value: "Attachment", label: "On Attachment" },
   { value: "Graduated", label: "Graduated" },
   { value: "Suspended", label: "Suspended" },
   { value: "Deferred", label: "Deferred" },
-  { value: "Dropout", label: "Dropout" }, // Added Dropout as per model update in section 2
+  { value: "Dropout", label: "Dropout" },
 ];
 
 const DROPOUT_REASON_CHOICES = [
@@ -65,6 +65,19 @@ const FINAL_GRADE_CHOICES = [
   { value: "Fail", label: "Fail" },
 ];
 
+// --- Added Program Category Choices Mapping ---
+const PROGRAM_CATEGORIES = [
+  { value: "STEM", label: "STEM (Science, Tech, Engineering, Math)" },
+  { value: "HEALTH", label: "Health Sciences & Medicine" },
+  { value: "BUSINESS", label: "Business & Management" },
+  { value: "SOCIAL", label: "Social Sciences" },
+  { value: "HUMANITIES", label: "Humanities & Arts" },
+  { value: "EDUCATION", label: "Education & Teaching" },
+  { value: "LAW", label: "Law & Legal Studies" },
+  { value: "VOCATIONAL", label: "Vocational & Technical Training" },
+  { value: "INTERDISCIPLINARY", label: "Interdisciplinary Studies" },
+];
+
 interface EditStudentDialogProps {
   student: Student | null;
   onClose: () => void;
@@ -80,7 +93,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Academic Data States (needed to populate dropdowns correctly)
+  // Academic Data States
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -90,10 +103,10 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
   const [selectedFacultyId, setSelectedFacultyId] = useState<string>("");
   const [selectedDeptId, setSelectedDeptId] = useState<string>("");
 
-  // NOTE: Fee Status is currently local as it's not mapped to the Django model yet.
+  // Local state for fee status
   const [feeStatus, setFeeStatus] = useState<string>("PartiallyPaid");
 
-  // --- 1. Load data and Initialize form state when student prop changes ---
+  // --- 1. Load data and Initialize form state ---
   useEffect(() => {
     if (student) {
       // Reset and populate form data from student prop
@@ -107,11 +120,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
         enrollment_year: student.enrollment_year,
         status: student.status,
         program: student.program, // This is the Program ID
-        // Assuming institution ID is always available on the student object
         institution: student.institution,
-
-        // Extended fields (assuming student object includes them from model update)
-        // Set defaults if student object doesn't contain them initially
         graduation_year: (student as any).graduation_year || null,
         final_grade: (student as any).final_grade || null,
         dropout_reason: (student as any).dropout_reason || null,
@@ -131,15 +140,20 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
           setDepartments(deptData || []);
           setPrograms(progData || []);
 
-          // Try to set initial dropdown values based on the student's current program
+          // --- FIX: Retain previously saved values for dropdowns ---
           const currentProgram = progData?.find(
             (p) => p.id === student.program
           );
           if (currentProgram) {
+            // Set Program
+            handleSelectChange("program", currentProgram.id.toString());
+            
+            // Set Department
             setSelectedDeptId(currentProgram.department.toString());
-            // Need a way to map dept ID back to faculty ID if not directly available
+            
+            // Set Faculty
             const currentDept = deptData?.find(
-              (d) => d.id.toString() === currentProgram.department.toString()
+              (d) => d.id === currentProgram.department
             );
             if (currentDept) {
               setSelectedFacultyId(currentDept.faculty.toString());
@@ -177,7 +191,6 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
   // --- 3. Handlers ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
-    // Ensure numerical values are stored as numbers if needed
     const val = type === "number" && value ? parseInt(value, 10) : value;
     setFormData((prev) => ({ ...prev, [id]: val }));
   };
@@ -192,7 +205,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
     }
     setFormData((prev) => ({ ...prev, [field]: finalValue }));
 
-    // Reset specific fields when status changes to non-relevant value
+    // Reset specific fields when status changes
     if (field === "status") {
       if (value !== "Graduated") {
         setFormData((prev) => ({
@@ -207,11 +220,6 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
     }
   };
 
-  const handleProgramSelect = (programId: string) => {
-    // Find the program object to get its details if needed, but primarily set the program ID
-    handleSelectChange("program", programId);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!student?.id || !student.institution) return;
@@ -221,11 +229,9 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
     try {
       const dataToSend: UpdateStudentData = {
         ...formData,
-
         date_of_birth: formData.date_of_birth && formData.date_of_birth.trim() !== "" 
         ? formData.date_of_birth 
         : null,
-        
         program: parseInt(formData.program as any, 10),
         institution: student.institution,
         graduation_year:
@@ -239,7 +245,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
       await updateStudent(student.id, dataToSend);
 
       toast.success(`Student ${student.student_id} updated successfully!`);
-      onSuccess(); // Close and trigger data refresh in parent
+      onSuccess();
     } catch (error: any) {
       console.error("Failed to update student:", error);
       const errorMsg =
@@ -249,6 +255,11 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
       setIsLoading(false);
     }
   };
+
+  // Find the selected program object to display its category
+  const selectedProgramObj = useMemo(() => {
+    return programs.find(p => p.id.toString() === formData.program?.toString());
+  }, [programs, formData.program]);
 
   return (
     <Dialog open={!!student} onOpenChange={onClose}>
@@ -410,7 +421,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
               <div className="space-y-2">
                 <Label htmlFor="program">Program *</Label>
                 <Select
-                  onValueChange={handleProgramSelect}
+                  onValueChange={(val) => handleSelectChange("program", val)}
                   value={formData.program?.toString()}
                   disabled={
                     isLoading ||
@@ -432,7 +443,18 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            
+            {/* --- Added Program Category Display --- */}
+            <div className="space-y-2">
+              <Label>Program Category</Label>
+              <Input 
+                value={selectedProgramObj?.category ? PROGRAM_CATEGORIES.find(c => c.value === selectedProgramObj.category)?.label : "N/A"} 
+                disabled 
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="enrollment_year">Enrollment Year</Label>
                 <Input
@@ -474,11 +496,11 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 </Select>
               </div>
 
-              {/* Financial Status (Local/Custom field for design) */}
+              {/* Financial Status */}
               <div className="space-y-2">
                 <Label htmlFor="feeStatus">Fees Payment Status</Label>
                 <Select
-                  onValueChange={setFeeStatus} // Local state for design alignment
+                  onValueChange={setFeeStatus}
                   value={feeStatus}
                   disabled={isLoading}
                 >
