@@ -7,6 +7,7 @@ class StudentSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.name', read_only=True)
     type=serializers.CharField(source='institution.type', read_only=True)
     program_name = serializers.CharField(source='program.name', read_only=True)
+    program_category = serializers.CharField(source='program.category', read_only=True)
     full_name = serializers.CharField(read_only=True)
     
     semester_fee = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
@@ -40,6 +41,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'institution_name',
             'program',
             'program_name',
+            'program_category',
             'created_at',
             'updated_at',
             'is_iseop', 'is_work_for_fees', 'work_area', 

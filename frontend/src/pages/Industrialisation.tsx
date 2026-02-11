@@ -34,7 +34,7 @@ export default function Industrialisation() {
         const commercialisedCount = commercialisedProjects.length;
         
         // Assuming startupCount is a specific metric you need calculated
-        const startupCount = projects.filter(p => p.stage === 'prototype' || p.stage === 'incubation').length;
+        const startupCount = projects.filter(p => p.stage === 'industrialised').length;
         
         const totalRevenue = commercialisedProjects.reduce((sum, p) => sum + parseFloat(p.revenue_generated || "0"), 0);
 

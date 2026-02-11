@@ -44,6 +44,19 @@ import { createProgram } from "@/services/programs.services";
 import { getFaculties, getDepartments, Faculty, Department } from "@/services/faculties.services";
 import { getStaff, Staff } from "@/services/staff.services"; // Import Staff Service
 
+// --- FIX: Updated categories to map short codes to full labels ---
+const PROGRAM_CATEGORIES = [
+  { value: "STEM", label: "STEM (Science, Tech, Engineering, Math)" },
+  { value: "HEALTH", label: "Health Sciences & Medicine" },
+  { value: "BUSINESS", label: "Business & Management" },
+  { value: "SOCIAL", label: "Social Sciences" },
+  { value: "HUMANITIES", label: "Humanities & Arts" },
+  { value: "EDUCATION", label: "Education & Teaching" },
+  { value: "LAW", label: "Law & Legal Studies" },
+  { value: "VOCATIONAL", label: "Vocational & Technical Training" },
+  { value: "INTERDISCIPLINARY", label: "Interdisciplinary Studies" },
+];
+
 export function AddProgramDialog({ institutionId = 1, onSuccess }: { institutionId?: number, onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,6 +75,7 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     code: "",
     faculty: "",
     department: "",
+    category: "", // Now stores the 'value' (e.g., "STEM")
     duration: "",
     level: "",
     description: "",
@@ -128,8 +142,8 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     setLoading(true);
 
     try {
-      if (!formData.faculty || !formData.department) {
-        toast.error("Please select both a faculty and a department.");
+      if (!formData.faculty || !formData.department || !formData.category) {
+        toast.error("Please fill in all required fields including Faculty, Department, and Category.");
         setLoading(false);
         return;
       }
@@ -138,6 +152,7 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
         department: parseInt(formData.department),
         name: formData.name,
         code: formData.code,
+        category: formData.category, // This now sends "STEM", "HEALTH", etc.
         duration: parseInt(formData.duration),
         level: formData.level,
         description: formData.description,
@@ -171,7 +186,7 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
           Add Program
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-visible">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Program</DialogTitle>
           <DialogDescription>Create a new academic program under a specific department.</DialogDescription>
@@ -216,9 +231,9 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
             </div>
           </div>
 
-          {/* Row 3: ACADEMIC PLACEMENT */}
           <div className="p-4 bg-muted/30 rounded-md border space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Academic Placement</h4>
+            
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="faculty">Faculty *</Label>
@@ -256,12 +271,27 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                         ))}
                         </SelectContent>
                     </Select>
-                    {formData.faculty && filteredDepartments.length === 0 && (
-                        <span className="text-[10px] text-destructive flex items-center mt-1">
-                            <AlertCircle className="w-3 h-3 mr-1" /> No departments found
-                        </span>
-                    )}
                 </div>
+            </div>
+
+            {/* Program Category */}
+            <div className="space-y-2">
+                <Label htmlFor="category">Program Category *</Label>
+                <Select 
+                    value={formData.category} 
+                    onValueChange={(val) => handleSelectChange("category", val)}
+                    required
+                >
+                    <SelectTrigger id="category">
+                        <SelectValue placeholder="Select program category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {/* --- FIX: Mapping updated objects --- */}
+                        {PROGRAM_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
           </div>
 
@@ -295,7 +325,6 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                     <CommandList>
                         <CommandEmpty>No staff found.</CommandEmpty>
                         <CommandGroup className="max-h-[200px] overflow-auto">
-                            {/* Option to clear selection */}
                             <CommandItem
                                 onSelect={() => {
                                     setFormData(prev => ({ ...prev, coordinator: "" }));
@@ -309,7 +338,7 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                             {staffList.map((staff) => (
                             <CommandItem
                                 key={staff.id}
-                                value={staff.full_name} // Search by name
+                                value={staff.full_name}
                                 onSelect={() => {
                                     setFormData(prev => ({
                                         ...prev,
@@ -380,7 +409,7 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
             />
           </div>
 
-          <DialogFooter className="pt-4">
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>

@@ -41,6 +41,19 @@ import {
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// --- MAPPING OBJECT ---
+const CATEGORY_MAP: { [key: string]: string } = {
+  "STEM": "STEM (Science, Tech, Engineering, Math)",
+  "HEALTH": "Health Sciences & Medicine",
+  "BUSINESS": "Business & Management",
+  "SOCIAL": "Social Sciences",
+  "HUMANITIES": "Humanities & Arts",
+  "EDUCATION": "Education & Teaching",
+  "LAW": "Law & Legal Studies",
+  "VOCATIONAL": "Vocational & Technical Training",
+  "INTERDISCIPLINARY": "Interdisciplinary Studies",
+};
+
 const TableRowSkeleton = () => (
   <TableRow>
     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -48,6 +61,7 @@ const TableRowSkeleton = () => (
     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
     <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-32" /></TableCell> {/* Category column */}
     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
@@ -69,6 +83,7 @@ export default function Students() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInstitution, setSelectedInstitution] = useState("all");
   const [selectedProgram, setSelectedProgram] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all"); // Added Category Filter
   const [selectedGender, setSelectedGender] = useState("all");
   const [selectedInstType, setSelectedInstType] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
@@ -99,6 +114,7 @@ export default function Students() {
     return {
       institutions: Array.from(new Set(allStudents.map(s => s.institution_name))).filter(Boolean).sort(),
       programs: Array.from(new Set(allStudents.map(s => s.program_name))).filter(Boolean).sort(),
+      categories: Array.from(new Set(allStudents.map(s => s.program_category))).filter(Boolean).sort(), // Added Categories
       genders: Array.from(new Set(allStudents.map(s => s.gender))).filter(Boolean).sort(),
       types: Array.from(new Set(allStudents.map(s => s.type))).filter(Boolean).sort(),
       years: Array.from(new Set(allStudents.map(s => s.enrollment_year?.toString()))).filter(Boolean).sort().reverse()
@@ -110,6 +126,7 @@ export default function Students() {
     setSelectedStatus("all");
     setSelectedInstitution("all");
     setSelectedProgram("all");
+    setSelectedCategory("all"); // Reset Category
     setSelectedGender("all");
     setSelectedInstType("all");
     setSelectedYear("all");
@@ -130,6 +147,8 @@ export default function Students() {
         selectedInstitution === "all" || student.institution_name === selectedInstitution;
       const matchesProg =
         selectedProgram === "all" || student.program_name === selectedProgram;
+      const matchesCategory =
+        selectedCategory === "all" || student.program_category === selectedCategory; // Category Filter
       const matchesGender =
         selectedGender === "all" || student.gender === selectedGender;
       const matchesInstType =
@@ -137,9 +156,9 @@ export default function Students() {
       const matchesYear =
         selectedYear === "all" || student.enrollment_year?.toString() === selectedYear;
 
-      return matchesSearch && matchesStatus && matchesInst && matchesProg && matchesGender && matchesInstType && matchesYear;
+      return matchesSearch && matchesStatus && matchesInst && matchesProg && matchesGender && matchesInstType && matchesYear && matchesCategory;
     });
-  }, [allStudents, searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear]);
+  }, [allStudents, searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear, selectedCategory]);
 
   // --- PAGINATION LOGIC ---
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
@@ -152,17 +171,18 @@ export default function Students() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear]);
+  }, [searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear, selectedCategory]);
 
   // --- EXPORT LOGIC ---
   const exportData = (type: 'csv' | 'excel') => {
-    const headers = ["Student ID", "Full Name", "Institution", "Institution Type", "Program", "Gender", "Year", "Status"];
+    const headers = ["Student ID", "Full Name", "Institution", "Institution Type", "Program", "Program Category", "Gender", "Year", "Status"];
     const rows = filteredStudents.map(d => [
       d.student_id,
       d.full_name,
       d.institution_name,
       d.type,
       d.program_name,
+      CATEGORY_MAP[d.program_category] || d.program_category || 'N/A', // Mapped Category
       d.gender,
       d.enrollment_year,
       d.status
@@ -195,7 +215,8 @@ export default function Students() {
   const femalePercentage = totalStudents > 0 ? ((femaleStudents / totalStudents) * 100).toFixed(1) : "0";
   const maleStudents = filteredStudents.filter((s) => s.gender === "Male").length;
   const malePercentage = totalStudents > 0 ? ((maleStudents / totalStudents) * 100).toFixed(1) : "0";
-  const disabledCount = filteredStudents.filter(s => s.disability_type && s.disability_type !== 'None').length;
+  // Updated disability count to be more robust based on types
+  const disabledCount = filteredStudents.filter(s => s.disability_type && s.disability_type !== 'None' && s.disability_type !== 'none').length;
   const specialPercentage = totalStudents > 0 ? ((disabledCount / totalStudents) * 100).toFixed(1) : "0";
 
   if (isLoading && specialLoading) {
@@ -231,7 +252,6 @@ export default function Students() {
             </div>
           </div>
 
-          {/* ADDED print:grid and print:grid-cols-4 to make stats visible in print */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 print:grid print:grid-cols-4">
             <StatsCard title="Total Students" value={totalStudents.toLocaleString()} icon={Users} variant="accent" />
             <StatsCard title="Female Students" value={femaleStudents.toLocaleString()} description={`${femalePercentage}%`} icon={UserCheck} variant="success" />
@@ -241,7 +261,7 @@ export default function Students() {
 
           {/* FILTERS SECTION - Hides in print */}
           <Card className="p-4 border-blue-100 shadow-sm print:hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
               <div className="relative lg:col-span-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -276,6 +296,19 @@ export default function Students() {
                 </SelectContent>
               </Select>
 
+              {/* Added Category Selector */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {filterOptions.categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>
+                      {CATEGORY_MAP[cat] || cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={selectedGender} onValueChange={setSelectedGender}>
                 <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
                 <SelectContent>
@@ -299,16 +332,16 @@ export default function Students() {
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Attachment">Attachment</SelectItem>
                   <SelectItem value="Graduated">Graduated</SelectItem>
+                  <SelectItem value="Suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
-              
-              <Button variant="ghost" onClick={resetFilters} className="text-slate-500 font-bold hover:text-blue-600">
+
+              <Button variant="ghost" onClick={resetFilters} className="text-slate-500 font-bold hover:text-blue-600 lg:col-span-1">
                 <RotateCcw className="h-4 w-4 mr-2" /> Reset
               </Button>
             </div>
           </Card>
 
-          {/* Student Records Table - ADDED print:shadow-none and print:border-none to remove lines */}
           <Card className="print:shadow-none print:border-none">
             <CardHeader className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 pb-4 print:hidden">
               <div>
@@ -350,10 +383,10 @@ export default function Students() {
                     <TableHead>Institution</TableHead>
                     <TableHead>Institution Type</TableHead>
                     <TableHead>Program</TableHead>
+                    <TableHead>Category</TableHead> {/* Added Column Header */}
                     <TableHead>Gender</TableHead>
                     <TableHead>Year</TableHead>
                     <TableHead>Status</TableHead>
-                    {/* Hides Action column header in print */}
                     <TableHead className="text-right print:hidden">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -362,13 +395,13 @@ export default function Students() {
                     Array(5).fill(0).map((_, i) => <TableRowSkeleton key={i} />)
                   ) : isError ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-red-500 py-10">
+                      <TableCell colSpan={10} className="text-center text-red-500 py-10">
                         <AlertCircle className="inline-block mr-2" /> Failed to load data.
                       </TableCell>
                     </TableRow>
                   ) : paginatedStudents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
                         No students found matching filters.
                       </TableCell>
                     </TableRow>
@@ -380,6 +413,10 @@ export default function Students() {
                         <TableCell>{student.institution_name}</TableCell>
                         <TableCell>{student.type}</TableCell>
                         <TableCell>{student.program_name}</TableCell>
+                        {/* Mapped Category Display */}
+                        <TableCell className="text-xs font-medium text-slate-600">
+                          {CATEGORY_MAP[student.program_category] || student.program_category || 'N/A'}
+                        </TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell>{student.enrollment_year}</TableCell>
                         <TableCell>
@@ -387,7 +424,6 @@ export default function Students() {
                             {student.status}
                           </Badge>
                         </TableCell>
-                        {/* Hides Action button in print */}
                         <TableCell className="text-right print:hidden">
                           <Button variant="ghost" size="sm" onClick={() => setstudent(student)}>
                             View
