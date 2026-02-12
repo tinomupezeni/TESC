@@ -21,7 +21,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
 import Faculties from "./pages/Faculties";
-import EnrolmentSupport from "./pages/EnrolmentSupport";
+import EnrolmentSupport from "./pages/IseopEnrolment";
 import InstitutionalFinance from "./pages/InstitutionalFinance";
 
 const queryClient = new QueryClient();
