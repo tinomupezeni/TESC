@@ -24,7 +24,6 @@ const HubManager = ({ hubs = [], onRefresh }: HubManagerProps) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-background p-1 rounded-lg">
          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Innovation Centers</h2>
             <p className="text-sm text-muted-foreground">Manage capacity and activity levels.</p>
          </div>
          <HubFormDialog onSuccess={onRefresh} />

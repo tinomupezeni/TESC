@@ -51,7 +51,7 @@ const menuGroups = [
     label: "Academic Management",
     items: [
       { title: "Students", url: "/dashboard/students", icon: Users },
-      { title: "Special Enrolment", url: "/dashboard/special-enrollment", icon: HeartHandshake },
+      { title: "ISEOP Enrollment Statistics", url: "/dashboard/special-enrollment", icon: HeartHandshake },
       { title: "Fees & Payments", url: "/dashboard/fees", icon: Wallet2 },
       { title: "Staff", url: "/dashboard/staff", icon: UserCog },
       { title: "Faculties", url: "/dashboard/faculties", icon: School }, // Changed icon to distinguish

@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "reports",
     "analysis",
     "innovation",
+    "iseop",
 ]
 
 
