@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  getstudents, getprograms, getanalysis, getgrants,
-  Project, InnovationHub, Partnership, ResearchGrant 
+import {
+  getstudents, getprograms, getstats, getgrants,
+  IseopStudent, IseopProgram, IseopStats, ResearchGrant,
+  // Legacy type aliases for compatibility
+  Project, InnovationHub, Partnership
 } from '@/services/iseop.services';
 import { toast } from 'sonner';
 
 export const useIseopData = (institutionId: number | undefined) => {
-  // We keep the Interface names (Project, etc.) but name the states 
-  // to match your enrollment/ISEOP context
-  const [students, setStudents] = useState<Project[]>([]);
-  const [programs, setPrograms] = useState<InnovationHub[]>([]);
-  const [analysis, setAnalysis] = useState<Partnership[]>([]);
+  const [students, setStudents] = useState<IseopStudent[]>([]);
+  const [programs, setPrograms] = useState<IseopProgram[]>([]);
+  const [analysis, setAnalysis] = useState<IseopStats | null>(null);
   const [grants, setGrants] = useState<ResearchGrant[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,17 +22,17 @@ export const useIseopData = (institutionId: number | undefined) => {
     setLoading(true);
     setError(null);
     try {
-      // Fetching all data in parallel using your new lowercase service functions
-      const [studentsData, programsData, analysisData, grantsData] = await Promise.all([
+      // Fetching all data in parallel
+      const [studentsData, programsData, statsData, grantsData] = await Promise.all([
         getstudents({ institution_id: institutionId }),
         getprograms({ institution_id: institutionId }),
-        getanalysis({ institution_id: institutionId }),
+        getstats({ institution_id: institutionId }),
         getgrants({ institution_id: institutionId }),
       ]);
 
       setStudents(studentsData);
       setPrograms(programsData);
-      setAnalysis(analysisData);
+      setAnalysis(statsData);
       setGrants(grantsData);
     } catch (err) {
       console.error("Failed to load ISEOP data", err);
@@ -55,6 +55,6 @@ export const useIseopData = (institutionId: number | undefined) => {
     grants,
     loading,
     error,
-    refresh: fetchData // Call this to update the UI after a successful POST/PATCH
+    refresh: fetchData
   };
 };

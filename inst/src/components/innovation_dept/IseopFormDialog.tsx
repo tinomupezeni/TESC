@@ -7,8 +7,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { toast } from "sonner";
-import { IseopService } from "@/services/innovation.services";
-import { createHub, updateHub } from "@/services/innovation.services"; 
+import { createprograms, updateprograms } from "@/services/iseop.services"; 
 
 
 export const IseopFormDialog = ({ hub, trigger, onSuccess }: any) => {
@@ -67,10 +66,10 @@ export const IseopFormDialog = ({ hub, trigger, onSuccess }: any) => {
       };
 
       if (isEditing) {
-        await updateHub(hub.id, payload);
+        await updateprograms(hub.id, payload);
         toast.success("ISEOP Program updated successfully");
       } else {
-        await createHub(payload);
+        await createprograms(payload);
         toast.success("New ISEOP Program created");
       }
 

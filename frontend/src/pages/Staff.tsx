@@ -19,19 +19,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Users, 
-  UserCheck, 
-  Download, 
-  Filter, 
-  AlertCircle, 
-  Loader2, 
-  ChevronLeft, 
+import {
+  Users,
+  UserCheck,
+  Download,
+  Filter,
+  AlertCircle,
+  Loader2,
+  ChevronLeft,
   ChevronRight,
-  FileDown,
-  RotateCcw
+  RotateCcw,
+  FileText
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { ReportBuilder } from "@/components/reports";
 
 import { useState, useMemo, useEffect } from "react";
 import { getAllStaff } from "@/services/academic.service";
@@ -66,6 +67,7 @@ export default function StaffPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [instFilter, setInstFilter] = useState("all");
   const [posFilter, setPosFilter] = useState("all");
+  const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
 
   // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -185,8 +187,8 @@ export default function StaffPage() {
               <Button variant="outline" onClick={handleCSVExport} disabled={filteredStaff.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> CSV
               </Button>
-              <Button onClick={() => window.print()} disabled={filteredStaff.length === 0}>
-                <FileDown className="mr-2 h-4 w-4" /> PDF
+              <Button onClick={() => setReportBuilderOpen(true)} className="bg-green-600 hover:bg-green-700">
+                <FileText className="mr-2 h-4 w-4" /> Generate Report
               </Button>
             </div>
           </div>
@@ -355,6 +357,13 @@ export default function StaffPage() {
 
       {/* Profile View Modal */}
       <StaffView data={selectedStaff} setData={setSelectedStaff} />
+
+      {/* Report Builder Dialog */}
+      <ReportBuilder
+        reportType="staff"
+        open={reportBuilderOpen}
+        onOpenChange={setReportBuilderOpen}
+      />
     </>
   );
 }
