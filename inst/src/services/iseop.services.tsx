@@ -27,6 +27,7 @@ export interface IseopProgram {
 // ISEOP Student Interface - Community members (NOT institutional students)
 export interface IseopStudent {
   id: number;
+  student_id?: string;
   institution: number;
   institution_name: string;
   program: number;
@@ -90,11 +91,32 @@ export interface IseopStats {
   program_breakdown: Array<{ program: string; count: number }>;
 }
 
+// Research Grant Interface
+export interface ResearchGrant {
+  id: number;
+  institution: number;
+  institution_name: string;
+  title: string;
+  description?: string;
+  amount: number;
+  status: 'Pending' | 'Approved' | 'Active' | 'Completed' | 'Rejected';
+  start_date?: string;
+  end_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Legacy type aliases for compatibility
+export type Project = ResearchGrant;
+export type InnovationHub = IseopProgram;
+export type Partnership = ResearchGrant;
+
 // --- API Endpoints ---
 const ENDPOINTS = {
   PROGRAMS: '/iseop/programs/',
   STUDENTS: '/iseop/students/',
   STATS: '/iseop/stats/',
+  GRANTS: '/iseop/grants/',
 };
 
 // --- Service Functions ---
@@ -145,6 +167,34 @@ export const deleteStudent = async (id: number) => {
   await apiClient.delete(`${ENDPOINTS.STUDENTS}${id}/`);
 };
 
+// Enroll a student in ISEOP program
+export interface EnrollStudentData {
+  student_id: number;
+  work_area?: WorkArea;
+  hours_pledged?: number;
+  is_work_for_fees?: boolean;
+}
+
+export const enrollStudent = async (data: EnrollStudentData) => {
+  const response = await apiClient.post<IseopStudent>(`${ENDPOINTS.STUDENTS}enroll/`, data);
+  return response.data;
+};
+
+// Unenroll a student from ISEOP program
+export const unenrollStudent = async (id: number) => {
+  const response = await apiClient.post<IseopStudent>(`${ENDPOINTS.STUDENTS}${id}/unenroll/`);
+  return response.data;
+};
+
+// Get available students (not yet enrolled in ISEOP)
+export const getAvailableStudents = async (params?: {
+  institution_id?: number;
+  search?: string;
+}) => {
+  const response = await apiClient.get<IseopStudent[]>(`${ENDPOINTS.STUDENTS}available/`, { params });
+  return response.data;
+};
+
 // 3. STATS
 export const getstats = async (params?: { institution_id?: number }) => {
   const response = await apiClient.get<IseopStats>(ENDPOINTS.STATS, { params });
@@ -153,6 +203,12 @@ export const getstats = async (params?: { institution_id?: number }) => {
 
 // Alias for backwards compatibility
 export const getanalysis = getstats;
+
+// 4. GRANTS
+export const getgrants = async (params?: { institution_id?: number }) => {
+  const response = await apiClient.get<ResearchGrant[]>(ENDPOINTS.GRANTS, { params });
+  return response.data;
+};
 
 // --- Service Object Export ---
 const iseopService = {
@@ -166,9 +222,14 @@ const iseopService = {
   createStudent,
   updatestudents,
   deleteStudent,
+  enrollStudent,
+  unenrollStudent,
+  getAvailableStudents,
   // Stats
   getstats,
   getanalysis,
+  // Grants
+  getgrants,
 };
 
 export default iseopService;
