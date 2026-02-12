@@ -36,10 +36,11 @@ import {
   ChevronRight,
   RotateCcw,
   Search,
-  FileDown
+  FileText
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReportBuilder } from "@/components/reports";
 
 // --- MAPPING OBJECT ---
 const CATEGORY_MAP: { [key: string]: string } = {
@@ -87,6 +88,7 @@ export default function Students() {
   const [selectedGender, setSelectedGender] = useState("all");
   const [selectedInstType, setSelectedInstType] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
 
   // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -246,8 +248,8 @@ export default function Students() {
               <Button onClick={() => exportData('csv')} variant="outline" className="flex gap-2 font-bold border-blue-200">
                 <Download className="h-4 w-4" /> CSV
               </Button>
-              <Button onClick={() => window.print()} variant="outline" className="flex gap-2 font-bold border-blue-200">
-                <FileDown className="h-4 w-4" /> PDF
+              <Button onClick={() => setReportBuilderOpen(true)} className="flex gap-2 font-bold bg-green-600 hover:bg-green-700">
+                <FileText className="h-4 w-4" /> Generate Report
               </Button>
             </div>
           </div>
@@ -439,6 +441,13 @@ export default function Students() {
         </div>
       </DashboardLayout>
       <StudentView data={student} setdata={setstudent} />
+
+      {/* Report Builder Dialog */}
+      <ReportBuilder
+        reportType="students"
+        open={reportBuilderOpen}
+        onOpenChange={setReportBuilderOpen}
+      />
     </>
   );
 }
