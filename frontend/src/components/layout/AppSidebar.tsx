@@ -37,6 +37,7 @@ const mainNavigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Institutions", url: "/institutions", icon: Building },
   { title: "Student Records", url: "/students", icon: GraduationCap },
+  
   { title: "Staff Records", url: "/staff", icon: User },
   { title: "Statistics", url: "/statistics", icon: BarChart3 },
   { title: "Graduation Records", url: "/graduates", icon: GraduationCap },

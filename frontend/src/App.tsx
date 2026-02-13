@@ -25,6 +25,7 @@ import Industrialisation from "./pages/Industrialisation";
 import Regional from "./pages/Regional";
 import Setting from "./pages/Settings";
 
+
 import Help from "./pages/Help";
 import Admissions from "./pages/Admissions";
 
@@ -84,7 +85,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-
+              
               <Route
                 path="/staff"
                 element={

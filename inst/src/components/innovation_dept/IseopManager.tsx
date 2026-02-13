@@ -1,100 +1,114 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import React, { useEffect, useState } from "react";
+import iseopService, { IseopProgram } from "@/services/iseop.services";
+import { IseopProgramFormDialog } from "@/components/innovation_dept/IseopProgramFormDialog";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Edit, Activity, Users } from "lucide-react";
+// Assuming you are using a table component, import it here
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 
-// UPDATED IMPORT: Swapped ProgramFormDialog for IseopFormDialog
-import { IseopFormDialog } from "./IseopFormDialog"; 
-
-interface ProgramManagerProps {
-  hubs: any[]; 
+interface IseopManagerProps {
   onRefresh?: () => void;
 }
 
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case "active": return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    case "full": return "bg-orange-100 text-orange-800 border-orange-200";
-    case "closed": return "bg-red-100 text-red-800 border-red-200";
-    default: return "bg-secondary";
-  }
-};
+const IseopManager = ({ onRefresh }: IseopManagerProps) => {
+  const [programs, setPrograms] = useState<IseopProgram[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const IseopManager = ({ hubs = [], onRefresh }: ProgramManagerProps) => {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-background p-1 rounded-lg">
-         <div>
-            <h2 className="text-lg font-semibold text-slate-900">Training Programs</h2>
-            <p className="text-sm text-muted-foreground">Manage vocational courses and student enrollment quotas.</p>
-         </div>
-         
-         {/* UPDATED: Component name changed to IseopFormDialog */}
-         <IseopFormDialog onSuccess={onRefresh} />
-      </div>
+  const fetchPrograms = async () => {
+    setLoading(true);
+    try {
+      // 1. Service returns IseopProgram[]
+      const data = await iseopService.getPrograms();
+      console.log("Fetched Programs Array:", data); 
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {hubs.map((program) => {
-          const enrollmentRate = program.capacity > 0 ? (program.occupied / program.capacity) * 100 : 0;
-          
-          return (
-            <Card key={program.id} className="group hover:shadow-md transition-all border-l-4" style={{ borderLeftColor: '#002e5b' }}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                     <div className="p-2 bg-[#002e5b]/10 rounded-lg text-[#002e5b]">
-                        <GraduationCap className="h-5 w-5" />
-                     </div>
-                     <div>
-                        <CardTitle className="text-base font-bold">{program.name}</CardTitle>
-                        <CardDescription className="text-xs font-medium text-slate-500 uppercase">
-                          {program.duration || '6 Months'}
-                        </CardDescription>
-                     </div>
-                  </div>
-                  
-                  {/* UPDATED: Component name changed to IseopFormDialog */}
-                  <IseopFormDialog 
-                    hub={program} 
-                    onSuccess={onRefresh}
-                    trigger={
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-[#002e5b]">
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                    }
-                  />
-                </div>
-              </CardHeader>
-              
-              <CardContent className="pt-4">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                        <Activity className="h-3.5 w-3.5" /> Admission Status
-                    </span>
-                    <Badge variant="outline" className={`${getStatusColor(program.status)} capitalize`}>
-                        {program.status || 'Active'}
-                    </Badge>
-                  </div>
+      // 2. Ensure data is an array before setting state
+      if (Array.isArray(data)) {
+        setPrograms(data);
+      } else {
+        console.error("Expected array, got:", data);
+        setPrograms([]);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load programs.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span className="flex items-center gap-1 text-slate-600">
-                        <Users className="h-3 w-3" /> Enrolled Students
-                      </span>
-                      <span>
-                        {program.occupied} / {program.capacity}
-                      </span>
-                    </div>
-                    <Progress value={enrollmentRate} className="h-2 bg-slate-100" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this program?")) return;
+    try {
+      await iseopService.deleteProgram(id);
+      toast.success("Program deleted!");
+      fetchPrograms();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete program.");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-bold">ISEOP Programs</h2>
+        <IseopProgramFormDialog onSuccess={fetchPrograms} trigger={<Button>Add Program</Button>} />
       </div>
+
+      {loading ? (
+        <p>Loading programs...</p>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Capacity</TableHead>
+                <TableHead>Occupied</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {programs.length > 0 ? (
+                programs.map((program) => (
+                  <TableRow key={program.id}>
+                    <TableCell className="font-medium">{program.name}</TableCell>
+                    <TableCell>{program.capacity}</TableCell>
+                    <TableCell>{program.occupied}</TableCell>
+                    <TableCell>{program.status}</TableCell>
+                    <TableCell className="text-right flex gap-2 justify-end">
+                      <IseopProgramFormDialog
+                        program={program}
+                        onSuccess={fetchPrograms}
+                        trigger={<Button size="sm" variant="outline">Edit</Button>}
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(program.id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                    No programs found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
