@@ -1,156 +1,110 @@
 import apiClient from "./api";
 
-// --- Types ---
+// ----------------- TYPES -----------------
+export interface IseopStudent {
+  id: number;
+  institution: number;
+  name: string;
+  first_name: string;
+  last_name: string;
+  student_id: string; // --- ADD THIS ---
+  gender: "Male" | "Female" | "Other";
+  national_id?: string;
+  program_name?: string;
+  duration?: string;
+  enrollment_date?: string;
+  certification_level?: string;
+  status?: "Active/Enrolled" | "Completed" | "Deferred";
+  revenue_generated?: number;
+  funding_acquired?: number;
+  jobs_created?: number;
+  created_at?: string;
+  email:string;
+}
 
-// Enums based on your Django Choices (Updated for Student/Program context)
-export type Sector = 'agritech' | 'edtech' | 'healthtech' | 'fintech' | 'mining' | 'energy' | 'manufacturing' | 'other';
-export type ProjectStage = 'ideation' | 'prototype' | 'incubation' | 'registered_ips' | 'commercialisation' | 'industrial';
-export type HubStatus = 'High' | 'Medium' | 'Full';
-
-// 1. Program Interface (Mapped from InnovationHub)
-export interface InnovationHub {
+export interface IseopProgram {
   id: number;
   institution: number;
   name: string;
   capacity: number;
   occupied: number;
-  services: number;
-  status: HubStatus;
-}
-
-// 2. Student Detail Interface (Mapped from Project)
-export interface Project {
-  id: number;
-  institution: number;
-  hub?: number | null; 
-  name: string;
-  team_name: string;
-  sector: Sector;
-  location_category: 'Urban' | 'Rural';
-  stage: ProjectStage;
-  stage_display?: string; 
-  problem_statement: string;
-  proposed_solution: string;
-  revenue_generated: number;
-  funding_acquired: number;
-  jobs_created: number;
+  status: "Active" | "Full" | "Closed";
+  activity_level?: string;
+  description?: string;
   created_at?: string;
 }
 
-// 3. Analysis Interface (Mapped from Partnership)
-export interface Partnership {
-  id: number;
-  institution: number;
-  partner_name: string;
-  focus_area: string;
-  agreement_date: string; 
-  status: string;
-}
-
-// 4. Research Grant Interface
-export interface ResearchGrant {
-  id: number;
-  institution: number;
-  project: number; 
-  project_name?: string; 
-  donor: string;
-  amount: number;
-  date_awarded: string;
-}
-
-// --- API Endpoints ---
+// ----------------- ENDPOINTS -----------------
 const ENDPOINTS = {
-  STUDENTSDETAILS: '/innovation/studentsdetails/',
-  PROGRAMS: '/innovation/programs/',
-  ANALYSIS: '/innovation/analysis/',
-  GRANTS: '/innovation/grants/',
+  STUDENTS: "/iseop/students/",
+  PROGRAMS: "/iseop/programs/",
 };
 
-// --- Service Functions ---
-
-// 1. STUDENTS DETAILS
-export const getstudents = async (params?: { institution_id?: number; search?: string }) => {
-  const response = await apiClient.get<Project[]>(ENDPOINTS.STUDENTSDETAILS, { params });
+// ----------------- STUDENTS -----------------
+export const getStudents = async (params?: { institution_id?: number; search?: string }) => {
+  const response = await apiClient.get<IseopStudent[]>(ENDPOINTS.STUDENTS, { params });
   return response.data;
 };
 
-export const createstudents = async (data: Partial<Project>) => {
-  const response = await apiClient.post<Project>(ENDPOINTS.STUDENTSDETAILS, data);
+export const createStudent = async (data: Partial<IseopStudent>) => {
+  console.log(data);
+  
+  const response = await apiClient.post<IseopStudent>(ENDPOINTS.STUDENTS, data);
   return response.data;
 };
 
-export const updatestudents = async (id: number, data: Partial<Project>) => {
-  const response = await apiClient.patch<Project>(`${ENDPOINTS.STUDENTSDETAILS}${id}/`, data);
+export const updateStudent = async (id: number, data: Partial<IseopStudent>) => {
+  const response = await apiClient.patch<IseopStudent>(`${ENDPOINTS.STUDENTS}${id}/`, data);
   return response.data;
 };
 
-export const deletestudents = async (id: number) => {
-  await apiClient.delete(`${ENDPOINTS.STUDENTSDETAILS}${id}/`);
+export const deleteStudent = async (id: number) => {
+  await apiClient.delete(`${ENDPOINTS.STUDENTS}${id}/`);
 };
 
-// 2. PROGRAMS
-export const getprograms = async (params?: { institution_id?: number }) => {
-  const response = await apiClient.get<InnovationHub[]>(ENDPOINTS.PROGRAMS, { params });
+// ----------------- PROGRAMS -----------------
+export const getPrograms = async () => {
+  const response = await apiClient.get<IseopProgram[]>(ENDPOINTS.PROGRAMS);
+  console.log(response);
+  
   return response.data;
 };
 
-export const createprograms = async (data: Partial<InnovationHub>) => {
-  const response = await apiClient.post<InnovationHub>(ENDPOINTS.PROGRAMS, data);
+export const createProgram = async (data: Partial<IseopProgram>) => {
+  const response = await apiClient.post<IseopProgram>(ENDPOINTS.PROGRAMS, data);
   return response.data;
 };
 
-export const updateprograms = async (id: number, data: Partial<InnovationHub>) => {
-  const response = await apiClient.patch<InnovationHub>(`${ENDPOINTS.PROGRAMS}${id}/`, data);
+export const updateProgram = async (id: number, data: Partial<IseopProgram>) => {
+  const response = await apiClient.patch<IseopProgram>(`${ENDPOINTS.PROGRAMS}${id}/`, data);
   return response.data;
 };
 
-// 3. ANALYSIS
-export const getanalysis = async (params?: { institution_id?: number }) => {
-  const response = await apiClient.get<Partnership[]>(ENDPOINTS.ANALYSIS, { params });
+export const deleteProgram = async (id: number) => {
+  await apiClient.delete(`${ENDPOINTS.PROGRAMS}${id}/`);
+};
+export const bulkUploadStudents = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await apiClient.post(`${ENDPOINTS.STUDENTS}bulk_upload/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
-
-export const createanalysis = async (data: Partial<Partnership>) => {
-  const response = await apiClient.post<Partnership>(ENDPOINTS.ANALYSIS, data);
-  return response.data;
-};
-
-export const updateanalysis = async (id: number, data: Partial<Partnership>) => {
-  const response = await apiClient.patch<Partnership>(`${ENDPOINTS.ANALYSIS}${id}/`, data);
-  return response.data;
-};
-
-// 4. GRANTS
-export const getgrants = async (params?: { institution_id?: number }) => {
-  const response = await apiClient.get<ResearchGrant[]>(ENDPOINTS.GRANTS, { params });
-  return response.data;
-};
-
-export const creategrants = async (data: Partial<ResearchGrant>) => {
-  const response = await apiClient.post<ResearchGrant>(ENDPOINTS.GRANTS, data);
-  return response.data;
-};
-
-export const updategrants = async (id: number, data: Partial<ResearchGrant>) => {
-  const response = await apiClient.patch<ResearchGrant>(`${ENDPOINTS.GRANTS}${id}/`, data);
-  return response.data;
-};
-
-// --- Service Object Export ---
+// ----------------- EXPORT SERVICE OBJECT -----------------
 const iseopService = {
-  getstudents,
-  createstudents,
-  updatestudents,
-  deletestudents,
-  getprograms,
-  createprograms,
-  updateprograms,
-  getanalysis,
-  createanalysis,
-  updateanalysis,
-  getgrants,
-  creategrants,
-  updategrants
+  getStudents,
+  createStudent,
+  updateStudent,
+  deleteStudent,
+  getPrograms,
+  createProgram,
+  updateProgram,
+  deleteProgram,
+  bulkUploadStudents,
 };
 
 export default iseopService;

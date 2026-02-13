@@ -17,6 +17,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # 🔐 AES-256 Field Encryption (Fernet)
 FERNET_KEYS = [os.getenv("CRYPTOGRAPHY_KEY")]
 
+print(FERNET_KEYS)
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
