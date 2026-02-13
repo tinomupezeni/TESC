@@ -247,7 +247,7 @@ export interface StudentGraduate {
   program_name: string;
   program_level: string; // Added to match API
   // FIXED: Included based on API response
-  program_category: string; 
+  program_category: string;
   institution_name: string;
   graduation_year: number;
   disabilities: number;
@@ -259,4 +259,77 @@ export interface StudentGraduate {
   distinctions: number;
   credits: number;
   passes: number;
+}
+
+// --- ISEOP Types ---
+export type IseopWorkArea = 'Library' | 'Grounds' | 'Labs' | 'Admin' | 'Cafeteria' | 'Maintenance';
+
+export interface IseopProgram {
+  id: number;
+  institution: number;
+  institution_name: string;
+  name: string;
+  capacity: number;
+  occupied: number;
+  status: 'Active' | 'Inactive' | 'Pending';
+  activity_level: 'High' | 'Medium' | 'Low';
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IseopProgramWriteData {
+  institution: number;
+  name: string;
+  capacity: number;
+  occupied?: number;
+  status?: 'Active' | 'Inactive' | 'Pending';
+  activity_level?: 'High' | 'Medium' | 'Low';
+  description?: string;
+}
+
+export interface IseopStudent {
+  id: number;
+  student_id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  gender: 'Male' | 'Female' | 'Other';
+  status: string;
+  institution: number;
+  institution_name: string;
+  program: number;
+  program_name: string;
+  is_iseop: boolean;
+  is_work_for_fees: boolean;
+  work_area?: IseopWorkArea;
+  hours_pledged: number;
+  created_at: string;
+}
+
+export interface IseopEnrollData {
+  student_id: number;
+  is_work_for_fees?: boolean;
+  work_area?: IseopWorkArea;
+  hours_pledged?: number;
+}
+
+export interface IseopStats {
+  programs: {
+    total: number;
+    active: number;
+    capacity: number;
+    occupied: number;
+    utilization: number;
+  };
+  students: {
+    total: number;
+    work_for_fees: number;
+    iseop_only: number;
+  };
+  work_areas: Array<{ work_area: string; count: number }>;
+  gender_breakdown: Array<{ gender: string; count: number }>;
+  status_breakdown: Array<{ status: string; count: number }>;
 }

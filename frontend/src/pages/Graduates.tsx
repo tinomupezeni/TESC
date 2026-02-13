@@ -5,16 +5,17 @@ import {
   Users,
   GraduationCap,
   Search,
-  FileDown,
   Download,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
   User,
-  Accessibility
+  Accessibility,
+  FileText
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { useGraduationStats } from "@/hooks/useGraduation";
+import { ReportBuilder } from "@/components/reports";
 import { StudentView } from "@/components/student view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ export default function Statistics() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
 
   const { data: gradData, loading: gradLoading } = useGraduationStats();
 
@@ -204,8 +206,8 @@ export default function Statistics() {
             <Button onClick={() => exportData('csv')} variant="outline" className="flex gap-2 font-bold border-blue-200">
               <Download className="h-4 w-4" /> CSV
             </Button>
-            <Button onClick={() => window.print()} className="flex gap-2 font-bold bg-blue-600 hover:bg-blue-700">
-              <FileDown className="h-4 w-4" /> PDF
+            <Button onClick={() => setReportBuilderOpen(true)} className="flex gap-2 font-bold bg-green-600 hover:bg-green-700">
+              <FileText className="h-4 w-4" /> Generate Report
             </Button>
           </div>
         </div>
@@ -373,6 +375,13 @@ export default function Statistics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Report Builder Dialog */}
+      <ReportBuilder
+        reportType="graduates"
+        open={reportBuilderOpen}
+        onOpenChange={setReportBuilderOpen}
+      />
     </DashboardLayout>
   );
 }

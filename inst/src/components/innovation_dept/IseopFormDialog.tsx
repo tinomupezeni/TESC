@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Loader2, GraduationCap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-// --- IMPORT SERVICE AND TYPES ---
-import iseopService, { IseopStudent, IseopProgram } from "@/services/iseop.services";
+import { createprograms, updateprograms } from "@/services/iseop.services"; 
 
 interface IseopFormProps {
   student?: IseopStudent; 
@@ -82,12 +81,12 @@ export const IseopStudentFormDialog = ({ student, trigger, onSuccess }: IseopFor
     try {
       
 
-      if (isEditing && student?.id) {
-        await iseopService.updateStudent(student.id, formData);
-        toast.success("Student record updated");
+      if (isEditing) {
+        await updateprograms(hub.id, payload);
+        toast.success("ISEOP Program updated successfully");
       } else {
-        await iseopService.createStudent(formData);
-        toast.success("Student enrolled successfully");
+        await createprograms(payload);
+        toast.success("New ISEOP Program created");
       }
       setOpen(false);
       if (onSuccess) onSuccess();
