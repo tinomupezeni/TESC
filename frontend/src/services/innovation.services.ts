@@ -35,8 +35,15 @@ export const InnovationAnalyticsService = {
 // --- ISEOP SERVICE (ACADEMIC PROGRAMS) ---
 // This connects to your new 'iseop' Django app
 export const IseopService = {
-  getPrograms: async () => {
-    const response = await apiClient.get("/iseop/programs/");
+  // Programs CRUD
+  getPrograms: async (institutionId?: number | string) => {
+    const params = institutionId ? `?institution_id=${institutionId}` : '';
+    const response = await apiClient.get(`/iseop/programs/${params}`);
+    return response.data;
+  },
+
+  getProgram: async (id: number | string) => {
+    const response = await apiClient.get(`/iseop/programs/${id}/`);
     return response.data;
   },
 
@@ -52,6 +59,45 @@ export const IseopService = {
 
   deleteProgram: async (id: number | string) => {
     const response = await apiClient.delete(`/iseop/programs/${id}/`);
+    return response.data;
+  },
+
+  // Students CRUD
+  getStudents: async (params?: { institution_id?: string; search?: string; work_area?: string; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.institution_id) searchParams.append('institution_id', params.institution_id);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.work_area) searchParams.append('work_area', params.work_area);
+    if (params?.status) searchParams.append('status', params.status);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const response = await apiClient.get(`/iseop/students/${query}`);
+    return response.data;
+  },
+
+  getStudent: async (id: number | string) => {
+    const response = await apiClient.get(`/iseop/students/${id}/`);
+    return response.data;
+  },
+
+  updateStudent: async (id: number | string, payload: any) => {
+    const response = await apiClient.patch(`/iseop/students/${id}/`, payload);
+    return response.data;
+  },
+
+  enrollStudent: async (payload: { student_id: number; is_work_for_fees?: boolean; work_area?: string; hours_pledged?: number }) => {
+    const response = await apiClient.post("/iseop/students/enroll/", payload);
+    return response.data;
+  },
+
+  unenrollStudent: async (id: number | string) => {
+    const response = await apiClient.post(`/iseop/students/${id}/unenroll/`);
+    return response.data;
+  },
+
+  // Statistics
+  getStats: async (institutionId?: number | string) => {
+    const params = institutionId ? `?institution_id=${institutionId}` : '';
+    const response = await apiClient.get(`/iseop/stats/${params}`);
     return response.data;
   }
 };
