@@ -86,10 +86,10 @@ const Login = () => {
       
       <Card className="w-full max-w-md shadow-2xl rounded-xl relative z-10 border-white/10 bg-white/95 dark:bg-slate-950/95">
         <CardHeader className="space-y-1 text-center pb-6">
-          <img 
-            src={tesc_logo} 
-            alt="TESC Logo" 
-            className="h-24 mx-auto mb-4 drop-shadow-md" 
+          <img
+            src={tesc_logo}
+            alt="TESC Logo"
+            className="h-24 mx-auto mb-4 drop-shadow-md rounded-full"
           />
 
           <CardTitle className="text-2xl font-bold tracking-tight">

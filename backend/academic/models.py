@@ -71,7 +71,7 @@ class Institution(models.Model):
     type = models.CharField(max_length=50, choices=INSTITUTION_TYPES)
     location = models.CharField(max_length=100)
     address = models.TextField(blank=True)
-    capacity = models.PositiveIntegerField(default=0)
+    capacity = models.PositiveIntegerField(default=5000)
     staff = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=50, choices=INSTITUTION_STATUSES, default='Active')
     established = models.PositiveIntegerField()

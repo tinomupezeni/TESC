@@ -86,7 +86,7 @@ const Login = () => {
       <div className="absolute inset-0 bg-black bg-opacity-50" />
       <Card className="w-full max-w-md shadow-2xl rounded-2xl relative z-10">
         <CardContent className="p-8 space-y-6">
-          <img src={tesc_logo} className="h-28 mx-auto" />
+          <img src={tesc_logo} className="h-28 mx-auto rounded-full" alt="TESC Logo" />
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800">TESC SRS Login</h1>
             <p className="text-gray-500 text-sm">
