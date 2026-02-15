@@ -14,8 +14,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-# 🔐 AES-256 Field Encryption (Fernet)
-FERNET_KEYS = [os.getenv("CRYPTOGRAPHY_KEY")]
+# 🔐 AES-256 Field Encryption (Fernet) - Supports key rotation
+# Format: CRYPTOGRAPHY_KEYS=new_key,old_key1,old_key2 (newest first)
+# The first key is used for encryption, all keys are tried for decryption
+_crypto_keys = os.getenv("CRYPTOGRAPHY_KEYS") or os.getenv("CRYPTOGRAPHY_KEY") or ""
+FERNET_KEYS = [k.strip() for k in _crypto_keys.split(",") if k.strip()]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

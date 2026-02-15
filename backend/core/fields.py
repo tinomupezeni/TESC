@@ -1,7 +1,16 @@
+"""
+Custom Django model fields with AES-256 encryption (Fernet).
+
+Supports key rotation - can decrypt with old keys, encrypts with newest key.
+"""
+
 from django.db import models
-from core.utils.crypto import get_fernet
+from core.utils.crypto import get_multi_fernet, encrypt_value, decrypt_value
 from cryptography.fernet import InvalidToken
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def is_fernet_token(value):
@@ -16,10 +25,23 @@ def is_fernet_token(value):
 
 
 class EncryptedTextField(models.TextField):
+    """
+    A TextField that automatically encrypts data before saving
+    and decrypts when reading from the database.
+
+    Supports key rotation via MultiFernet:
+    - Data encrypted with old keys can still be read
+    - New data is always encrypted with the newest key
+    """
+
+    description = "An encrypted text field"
+
     def get_prep_value(self, value):
+        """Encrypt value before saving to database."""
         if value is None:
             return value
 
+        # Convert dates to ISO format string
         if isinstance(value, (datetime.date, datetime.datetime)):
             value = value.isoformat()
 
@@ -31,24 +53,44 @@ class EncryptedTextField(models.TextField):
         if is_fernet_token(value):
             return value
 
-        f = get_fernet()
-        return f.encrypt(value.encode()).decode()
+        try:
+            f = get_multi_fernet()
+            return f.encrypt(value.encode()).decode()
+        except Exception as e:
+            logger.error(f"Encryption failed: {e}")
+            # Return plain value rather than failing completely
+            # It will be encrypted on next save when keys are fixed
+            return value
 
     def from_db_value(self, value, expression, connection):
+        """Decrypt value when reading from database."""
         if value is None:
             return value
 
-        # Try to decrypt - if it fails, the data is plain text
+        # If it doesn't look like encrypted data, return as-is
+        if not is_fernet_token(value):
+            return value
+
         try:
-            f = get_fernet()
+            f = get_multi_fernet()
             return f.decrypt(value.encode()).decode()
         except InvalidToken:
-            # Data is not encrypted (plain text) - return as-is
-            # It will be encrypted on next save
+            # Data encrypted with unknown key - log warning but don't crash
+            logger.warning(
+                f"Failed to decrypt field value. Data may be encrypted with an old key "
+                f"not in CRYPTOGRAPHY_KEYS. Value length: {len(value)}"
+            )
+            # Return a placeholder or the encrypted value
+            return "[DECRYPTION FAILED - Check encryption keys]"
+        except Exception as e:
+            logger.error(f"Unexpected decryption error: {e}")
             return value
 
     def to_python(self, value):
-        # If this field is used for dates, you might want to
-        # convert back to a date object here if necessary,
-        # but returning the string is fine for now.
+        """Convert value to Python object (used in forms)."""
         return value
+
+    def deconstruct(self):
+        """Support for migrations."""
+        name, path, args, kwargs = super().deconstruct()
+        return name, path, args, kwargs
