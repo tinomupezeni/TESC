@@ -64,7 +64,7 @@ const initialFormData: InstitutionWriteData = {
   type: "Polytechnic",
   location: "",
   address: "",
-  capacity: 0,
+  capacity: 5000,
   staff: 0,
   status: "Active",
   established: new Date().getFullYear(),
@@ -312,6 +312,22 @@ export default function RegisterInst({
                     value={formData.established}
                     onChange={handleInputChange}
                   />
+                </div>
+
+                {/* Full Capacity */}
+                <div className="space-y-2">
+                  <Label htmlFor="capacity">Full Capacity (Max Students)</Label>
+                  <Input
+                    id="capacity"
+                    type="number"
+                    min={0}
+                    placeholder="e.g., 5000"
+                    value={formData.capacity}
+                    onChange={handleInputChange}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Maximum number of students the institution can accommodate
+                  </p>
                 </div>
 
                 {/* Status */}

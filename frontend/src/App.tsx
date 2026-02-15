@@ -27,6 +27,7 @@ import Setting from "./pages/Settings";
 
 import Help from "./pages/Help";
 import Admissions from "./pages/Admissions";
+import ISEOP from "./pages/ISEOP";
 
 // Modules
 import Hubs from "./modules/innovation/Hubs";
@@ -41,7 +42,7 @@ const App = () => (
   <BrowserRouter>
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -169,7 +170,16 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              
+              <Route
+                path="/iseop"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <ISEOP />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Institutional Records */}
               <Route

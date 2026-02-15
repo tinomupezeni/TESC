@@ -1,0 +1,83 @@
+version: '3.8'
+
+# ============================================
+# TESC Production Docker Compose
+# Uses images from GitHub Container Registry
+# ============================================
+
+services:
+  # --- The Gatekeeper (Nginx Proxy) ---
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      # Uncomment for SSL:
+      # - ./certs:/etc/nginx/certs
+    depends_on:
+      - backend
+      - frontend_client
+      - frontend_admin
+    networks:
+      - main_net
+    restart: unless-stopped
+
+  # --- Database ---
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - main_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Backend (Django + Gunicorn) ---
+  backend:
+    image: ghcr.io/tinomupezeni/tesc-backend:latest
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DEBUG=False
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - main_net
+    restart: unless-stopped
+
+  # --- Frontend (Student/Public Portal) ---
+  frontend_client:
+    image: ghcr.io/tinomupezeni/tesc-frontend:latest
+    networks:
+      - main_net
+    restart: unless-stopped
+
+  # --- Frontend (Institution/Admin Portal) ---
+  frontend_admin:
+    image: ghcr.io/tinomupezeni/tesc-inst:latest
+    networks:
+      - main_net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  main_net:
+    driver: bridge
