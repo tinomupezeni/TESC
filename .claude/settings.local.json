@@ -3,7 +3,8 @@
     "allow": [
       "Bash(tree:*)",
       "Bash(git fetch:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(chmod:*)"
     ]
   }
 }
