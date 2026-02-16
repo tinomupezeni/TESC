@@ -1,18 +1,25 @@
-import { useState, useMemo, useEffect } from "react";
-import { getAllIseopStudents, IseopStudent } from "@/services/iseop.service";
 
+
+import { useState, useMemo, useEffect } from "react";
+import { getIseopStudents } from "@/services/iseop.service";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LabelList,
+} from "recharts";
 import {
   Table,
   TableBody,
@@ -22,306 +29,340 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Users,
-  UserCheck,
-  Download,
-  AlertCircle,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
-  Search,
   GraduationCap,
-  Clock,
+  Building,
+  Zap,
+  RotateCcw,
+  Info,
+  AlertTriangle,
+  FileDown,
+  Download,
+  Accessibility,
 } from "lucide-react";
-import { StatsCard } from "@/components/dashboard/StatsCard";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StudentView } from "@/components/student view";
+import { IseopStudent } from "@/lib/types/iseop.types";
+import { exportToExcel } from "@/lib/export-utils"; 
 
 const TableRowSkeleton = () => (
   <TableRow>
-    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+    {Array(9).fill(0).map((_, i) => (
+      <TableCell key={i}><Skeleton className="h-4 w-full" /></TableCell>
+    ))}
   </TableRow>
 );
 
-export default function ISEOP() {
-  const [allStudents, setAllStudents] = useState<IseopStudent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+const getStatusVariant = (status: string) => {
+  switch (status) {
+    case "Active/Enrolled": return "default";
+    case "Completed": return "success";
+    case "Deferred": return "warning";
+    default: return "outline";
+  }
+};
 
-  // --- FILTERS STATE ---
+export default function ISEOPStudents() {
+  const [allStudents, setAllStudents] = useState<IseopStudent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<IseopStudent | null>(null);
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInstitution, setSelectedInstitution] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedGender, setSelectedGender] = useState("all");
+  const [selectedProgram, setSelectedProgram] = useState("all");
 
-  // --- PAGINATION STATE ---
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
+  // Fetch
   useEffect(() => {
-    const fetchStudents = async () => {
-      setIsLoading(true);
-      setIsError(false);
+    const fetch = async () => {
       try {
-        const students = await getAllIseopStudents();
-        setAllStudents(students || []);
-      } catch (error) {
-        console.error("Failed to fetch ISEOP students:", error);
-        setIsError(true);
+        const data = await getIseopStudents();
+        setAllStudents(data);
+      } catch {
+        setError(true);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    fetchStudents();
+    fetch();
   }, []);
 
-  // --- DYNAMIC FILTER OPTIONS ---
-  const filterOptions = useMemo(() => {
+  // =======================
+  // FILTERED STUDENTS
+  // =======================
+  const filteredStudents = useMemo(() => {
+    return allStudents.filter((s: any) => {
+      const search = searchTerm.toLowerCase();
+      const matchesSearch =
+        s.full_name?.toLowerCase().includes(search) ||
+        s.student_id?.toLowerCase().includes(search) ||
+        s.program_name?.toLowerCase().includes(search) ||
+        s.institution_name?.toLowerCase().includes(search);
+
+      const matchesStatus = selectedStatus === "all" || s.status === selectedStatus;
+      const matchesInstitution = selectedInstitution === "all" || s.institution_name === selectedInstitution;
+      const matchesYear = selectedYear === "all" || s.enrollment_year?.toString() === selectedYear;
+      const matchesGender = selectedGender === "all" || s.gender === selectedGender;
+
+      return matchesSearch && matchesStatus && matchesInstitution && matchesYear && matchesGender;
+    });
+  }, [allStudents, searchTerm, selectedStatus, selectedInstitution, selectedYear, selectedGender]);
+
+  // =======================
+  // STATS (INCLUDING GENDER & DISABILITY)
+  // =======================
+  const stats = useMemo(() => {
+    const total = filteredStudents.length;
+    let active = 0, completed = 0, deferred = 0;
+    let male = 0, female = 0;
+    let disabilityTotal = 0, disabilityActive = 0, disabilityCompleted = 0;
+    const programs = new Set<string>();
+
+    filteredStudents.forEach((s: any) => {
+      if (s.status === "Active/Enrolled") active++;
+      if (s.status === "Completed") completed++;
+      if (s.status === "Deferred") deferred++;
+      if (s.gender === "Male") male++;
+      if (s.gender === "Female") female++;
+      if (s.program_name) programs.add(s.program_name);
+
+      if (s.disability_type && s.disability_type !== "None") {
+        disabilityTotal++;
+        if (s.status === "Active/Enrolled") disabilityActive++;
+        if (s.status === "Completed") disabilityCompleted++;
+      }
+    });
+
     return {
-      institutions: Array.from(new Set(allStudents.map(s => s.institution_name))).filter(Boolean).sort(),
-      statuses: Array.from(new Set(allStudents.map(s => s.status))).filter(Boolean).sort(),
+      total,
+      active,
+      completed,
+      deferred,
+      male,
+      female,
+      totalPrograms: programs.size,
+      maleRate: total ? ((male / total) * 100).toFixed(1) : "0",
+      femaleRate: total ? ((female / total) * 100).toFixed(1) : "0",
+      disabilityTotal,
+      disabilityActive,
+      disabilityCompleted,
     };
-  }, [allStudents]);
+  }, [filteredStudents]);
+
+  // =======================
+  // CHART DATA
+  // =======================
+  const chartData = useMemo(() => {
+    const temp: Record<string, { year: string; Enrolled: number; Completed: number }> = {};
+    filteredStudents.forEach((s: any) => {
+      const year = s.enrollment_year?.toString();
+      if (!year || (selectedProgram !== "all" && s.program_name !== selectedProgram)) return;
+      if (!temp[year]) temp[year] = { year, Enrolled: 0, Completed: 0 };
+      if (s.status === "Active/Enrolled") temp[year].Enrolled++;
+      if (s.status === "Completed") temp[year].Completed++;
+    });
+    return Object.values(temp).sort((a, b) => Number(a.year) - Number(b.year));
+  }, [filteredStudents, selectedProgram]);
+
+  // =======================
+  // PAGINATION
+  // =======================
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredStudents.slice(start, start + itemsPerPage);
+  }, [filteredStudents, currentPage]);
+
+  useEffect(() => setCurrentPage(1), [searchTerm, selectedStatus, selectedInstitution, selectedYear, selectedGender]);
 
   const resetFilters = () => {
     setSearchTerm("");
     setSelectedStatus("all");
     setSelectedInstitution("all");
-    setCurrentPage(1);
+    setSelectedYear("all");
+    setSelectedGender("all");
+    setSelectedProgram("all");
   };
 
-  // --- FILTERING LOGIC ---
-  const filteredStudents = useMemo(() => {
-    if (!allStudents) return [];
-    return allStudents.filter((student) => {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch =
-        student.full_name?.toLowerCase().includes(search) ||
-        student.student_id?.toLowerCase().includes(search) ||
-        student.email?.toLowerCase().includes(search);
-      const matchesStatus =
-        selectedStatus === "all" || student.status === selectedStatus;
-      const matchesInst =
-        selectedInstitution === "all" || student.institution_name === selectedInstitution;
+  const uniqueInstitutions = Array.from(new Set(allStudents.map(s => s.institution_name).filter(Boolean)));
+  const uniqueYears = Array.from(new Set(allStudents.map(s => s.enrollment_year).filter(Boolean).map(String))).sort();
+  const uniquePrograms = Array.from(new Set(allStudents.map(s => s.program_name).filter(Boolean)));
 
-      return matchesSearch && matchesStatus && matchesInst;
-    });
-  }, [allStudents, searchTerm, selectedStatus, selectedInstitution]);
+  // =======================
+  // EXPORT FUNCTIONS
+  // =======================
+  const handleExcelExport = () => exportToExcel(filteredStudents, `ISEOP_Report_${new Date().toLocaleDateString()}`);
 
-  // --- PAGINATION LOGIC ---
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-
-  const paginatedStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredStudents.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredStudents, currentPage]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedStatus, selectedInstitution]);
-
-  // --- EXPORT LOGIC ---
-  const exportData = (type: 'csv' | 'excel') => {
-    const headers = ["Student ID", "Full Name", "Institution", "Email", "Status"];
-    const rows = filteredStudents.map(d => [
-      d.student_id,
-      d.full_name,
-      d.institution_name,
-      d.email || 'N/A',
-      d.status
+  const handleCSVExport = () => {
+    const headers = ["ID","Name","Institution","Program","Year","Gender","Disability","Status"];
+    const rows = filteredStudents.map(s => [
+      s.student_id, s.full_name, s.institution_name, s.program_name, s.enrollment_year, s.gender, s.disability_type ?? "None", s.status
     ]);
-
-    let content = "";
-    let mimeType = "";
-    let fileExtension = "";
-
-    if (type === 'csv') {
-      content = [headers, ...rows].map(e => e.join(",")).join("\n");
-      mimeType = 'text/csv;charset=utf-8;';
-      fileExtension = 'csv';
-    } else {
-      content = [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
-      mimeType = 'application/vnd.ms-excel;charset=utf-8;';
-      fileExtension = 'xls';
-    }
-
-    const blob = new Blob([content], { type: mimeType });
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `ISEOP_Students.${fileExtension}`;
+    link.download = `ISEOP_Report_${new Date().toLocaleDateString()}.csv`;
     link.click();
   };
 
-  // --- STATS CALCULATION ---
-  const totalStudents = filteredStudents.length;
-  const activeStudents = filteredStudents.filter((s) => s.status === "Active/Enrolled").length;
-  const completedStudents = filteredStudents.filter((s) => s.status === "Completed").length;
-  const deferredStudents = filteredStudents.filter((s) => s.status === "Deferred").length;
+  const handlePDFExport = () => window.print();
 
-  const activePercentage = totalStudents > 0 ? ((activeStudents / totalStudents) * 100).toFixed(1) : "0";
-  const completedPercentage = totalStudents > 0 ? ((completedStudents / totalStudents) * 100).toFixed(1) : "0";
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="h-[80vh] flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
+  // =======================
+  // RENDER
+  // =======================
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">ISEOP Students</h1>
-            <p className="text-muted-foreground">
-              Industrial Skills and Entrepreneurship Outreach Programme
-            </p>
-          </div>
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" onClick={() => exportData('excel')} className="flex gap-2 font-bold border-blue-200">
-              <Download className="h-4 w-4" /> Excel
-            </Button>
-            <Button onClick={() => exportData('csv')} variant="outline" className="flex gap-2 font-bold border-blue-200">
-              <Download className="h-4 w-4" /> CSV
-            </Button>
-          </div>
+        <h1 className="text-3xl font-bold">ISEOP Dashboard</h1>
+
+        {/* STATS CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <StatsCard title="Total Students" value={stats.total} description="Across all years/institutions" icon={Users} variant="accent" />
+          <StatsCard title="Active Students" value={stats.active} description={`Active in ${new Date().getFullYear()}`} icon={Zap} variant="success" />
+          <StatsCard title="Students that Completed Programs" value={stats.completed} description="Completed across all years" icon={GraduationCap} variant="info" />
+          <StatsCard title="Deferred / Dropped" value={stats.deferred} description="Students that Deferred/Dropped across all years" icon={AlertTriangle} variant="warning" />
+          <StatsCard title="Male Students" value={stats.male} description={`${stats.maleRate}% of total`} icon={Users} variant="default" />
+          <StatsCard title="Female Students" value={stats.female} description={`${stats.femaleRate}% of total`} icon={Users} variant="default" />
+          <StatsCard title="Total Programs" value={stats.totalPrograms} description="Active programs" icon={Building} variant="default" />
+          <StatsCard title="Students with Disabilities" value={stats.disabilityTotal} description="All students with disabilities" icon={Accessibility} variant="info" />
+          <StatsCard title="Active (Disability)" value={stats.disabilityActive} description="Currently active with disability" icon={Zap} variant="success" />
+          <StatsCard title="Completed (Disability)" value={stats.disabilityCompleted} description="Completed programs with disability" icon={GraduationCap} variant="info" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 print:grid print:grid-cols-4">
-          <StatsCard title="Total ISEOP Students" value={totalStudents.toLocaleString()} icon={Users} variant="accent" />
-          <StatsCard title="Active/Enrolled" value={activeStudents.toLocaleString()} description={`${activePercentage}%`} icon={UserCheck} variant="success" />
-          <StatsCard title="Completed" value={completedStudents.toLocaleString()} description={`${completedPercentage}%`} icon={GraduationCap} variant="success" />
-          <StatsCard title="Deferred" value={deferredStudents.toLocaleString()} icon={Clock} variant="warning" />
-        </div>
-
-        {/* FILTERS SECTION */}
-        <Card className="p-4 border-blue-100 shadow-sm print:hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, ID, or email..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        {/* CHART */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Enrollment vs Completion Trends</CardTitle>
+            <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Programs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Programs</SelectItem>
+                {uniquePrograms.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" allowDecimals={false} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="Enrolled" stroke="#4f46e5" strokeWidth={2} activeDot={{ r: 8 }}>
+                    <LabelList dataKey="Enrolled" position="top" offset={10} />
+                  </Line>
+                  <Line type="monotone" dataKey="Completed" stroke="#22c55e" strokeWidth={2}>
+                    <LabelList dataKey="Completed" position="top" offset={10} />
+                  </Line>
+                </LineChart>
+              </ResponsiveContainer>
             </div>
+          </CardContent>
+        </Card>
 
+        {/* FILTERS */}
+        <Card className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="relative md:col-span-2">
+              <Input placeholder="Search name, ID, program..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
             <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
               <SelectTrigger><SelectValue placeholder="Institution" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Institutions</SelectItem>
-                {filterOptions.institutions.map(inst => <SelectItem key={inst} value={inst}>{inst}</SelectItem>)}
+                {uniqueInstitutions.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
               </SelectContent>
             </Select>
-
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Active/Enrolled">Active/Enrolled</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
-                <SelectItem value="Deferred">Deferred</SelectItem>
+                <SelectItem value="all">All Years</SelectItem>
+                {uniqueYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
-
-            <Button variant="ghost" onClick={resetFilters} className="text-slate-500 font-bold hover:text-blue-600">
-              <RotateCcw className="h-4 w-4 mr-2" /> Reset
-            </Button>
+            <Select value={selectedGender} onValueChange={setSelectedGender}>
+              <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Genders</SelectItem>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" onClick={resetFilters}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
           </div>
         </Card>
 
-        <Card className="print:shadow-none print:border-none">
-          <CardHeader className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 pb-4 print:hidden">
-            <div>
-              <CardTitle>ISEOP Student Records ({filteredStudents.length})</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredStudents.length)}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-              </Button>
-              <div className="text-sm font-medium px-2">
-                Page {currentPage} of {totalPages || 1}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage >= totalPages || totalPages === 0}
-              >
-                Next <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+        {/* TABLE WITH EXPORT */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Students ({filteredStudents.length})</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExcelExport}><Download className="h-4 w-4 mr-2" /> Excel</Button>
+              <Button variant="outline" size="sm" onClick={handleCSVExport}><Download className="h-4 w-4 mr-2" /> CSV</Button>
+              <Button variant="outline" size="sm" onClick={handlePDFExport}><FileDown className="h-4 w-4 mr-2" /> PDF</Button>
             </div>
           </CardHeader>
-
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student ID</TableHead>
+                  <TableHead>ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Institution</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Program</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Disability</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  Array(5).fill(0).map((_, i) => <TableRowSkeleton key={i} />)
-                ) : isError ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-red-500 py-10">
-                      <AlertCircle className="inline-block mr-2" /> Failed to load data.
+                {loading ? Array(5).fill(0).map((_, i) => <TableRowSkeleton key={i} />) : paginatedStudents.map((s: any) => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.student_id}</TableCell>
+                    <TableCell>{s.full_name}</TableCell>
+                    <TableCell>{s.institution_name}</TableCell>
+                    <TableCell>{s.program_name}</TableCell>
+                    <TableCell>{s.enrollment_year ?? "N/A"}</TableCell>
+                    <TableCell>{s.gender ?? "N/A"}</TableCell>
+                    <TableCell>{s.disability_type && s.disability_type !== "None" ? s.disability_type : "None"}</TableCell>
+                    <TableCell><Badge variant={getStatusVariant(s.status)}>{s.status}</Badge></TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="ghost" onClick={() => setSelectedStudent(s)}>
+                        <Info className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : paginatedStudents.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                      No ISEOP students found matching filters.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.student_id}</TableCell>
-                      <TableCell>{student.full_name}</TableCell>
-                      <TableCell>{student.institution_name}</TableCell>
-                      <TableCell>{student.email || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            student.status === "Active/Enrolled" ? "default" :
-                            student.status === "Completed" ? "secondary" : "outline"
-                          }
-                        >
-                          {student.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
+
+      <StudentView data={selectedStudent} setdata={setSelectedStudent} />
     </DashboardLayout>
   );
 }

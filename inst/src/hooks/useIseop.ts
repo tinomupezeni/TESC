@@ -3,6 +3,7 @@ import { IseopStudent, IseopProgram, getStudents, getPrograms } from "@/services
 import { toast } from "sonner";
 
 export const useIseopData = (institutionId: number | undefined) => {
+
   const [students, setStudents] = useState<IseopStudent[]>([]);
   const [programs, setPrograms] = useState<IseopProgram[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,8 @@ export const useIseopData = (institutionId: number | undefined) => {
       console.error("Failed to load ISEOP data", err);
       setError("Failed to load ISEOP data");
       toast.error("Could not load ISEOP data.");
+      setError("Failed to load ISEOP data");
+      toast.error("Could not load ISEOP data.");
     } finally {
       setLoading(false);
     }
@@ -34,4 +37,6 @@ export const useIseopData = (institutionId: number | undefined) => {
   }, [fetchData]);
 
   return { students, programs, loading, error, refresh: fetchData };
+  return { students, programs, loading, error, refresh: fetchData };
 };
+
