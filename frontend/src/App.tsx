@@ -10,6 +10,7 @@ import { PermissionGuard } from "./components/layout/PermissionGuard";
 // Pages
 import Index from "./pages/Index";
 import Students from "./pages/Students";
+import ISEOPStudents from "./pages/ISEOP";
 import Institutions from "./pages/Institutions";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -223,7 +224,16 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-
+              <Route
+                path="/ISEOP"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <ISEOPStudents />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
               {/* User & Support */}
               <Route
                 path="/profile"

@@ -1,110 +1,115 @@
 import apiClient from "./api";
 
-// ----------------- TYPES -----------------
+/* =======================
+   TYPES
+   ======================= */
+export type DisabilityType =
+  | "None"
+  | "Physical"
+  | "Albino"
+  | "Hearing"
+  | "Visual"
+  | "Intellectual"
+  | "Psychosocial"
+  | "Speech"
+  | "Multiple";
+
 export interface IseopStudent {
-  id: number;
-  institution: number;
-  name: string;
+  id: number; // DB PK
+  student_id: string;
+  national_id: string;
   first_name: string;
   last_name: string;
-  student_id: string; // --- ADD THIS ---
-  gender: "Male" | "Female" | "Other";
-  national_id?: string;
-  program_name?: string;
-  duration?: string;
-  enrollment_date?: string;
-  certification_level?: string;
+  email?: string;
+  gender?: "Male" | "Female" | "Other";
   status?: "Active/Enrolled" | "Completed" | "Deferred";
-  revenue_generated?: number;
-  funding_acquired?: number;
-  jobs_created?: number;
-  created_at?: string;
-  email:string;
+  disability_type?: DisabilityType; // ✅ ADDED
+  institution: number;
+  program?: number | null;
+  enrollment_year?: number | null;
+  full_name?: string;
+  program_name?: string;
 }
 
 export interface IseopProgram {
   id: number;
   institution: number;
   name: string;
-  capacity: number;
-  occupied: number;
-  status: "Active" | "Full" | "Closed";
-  activity_level?: string;
-  description?: string;
-  created_at?: string;
 }
 
-// ----------------- ENDPOINTS -----------------
+/* =======================
+   ENDPOINTS
+   ======================= */
 const ENDPOINTS = {
   STUDENTS: "/iseop/students/",
   PROGRAMS: "/iseop/programs/",
 };
 
-// ----------------- STUDENTS -----------------
-export const getStudents = async (params?: { institution_id?: number; search?: string }) => {
-  const response = await apiClient.get<IseopStudent[]>(ENDPOINTS.STUDENTS, { params });
-  return response.data;
-};
-
+/* =======================
+   STUDENTS
+   ======================= */
 export const createStudent = async (data: Partial<IseopStudent>) => {
-  console.log(data);
-  
-  const response = await apiClient.post<IseopStudent>(ENDPOINTS.STUDENTS, data);
-  return response.data;
+  const res = await apiClient.post(ENDPOINTS.STUDENTS, {
+    student_id: data.student_id,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    national_id: data.national_id,
+    email: data.email,
+    gender: data.gender,
+    status: data.status,
+    disability_type: data.disability_type ?? "None", // ✅ SENT TO DB
+    institution: data.institution,
+    program: data.program ?? null,
+    enrollment_year: data.enrollment_year ?? null,
+  });
+  return res.data;
 };
 
-export const updateStudent = async (id: number, data: Partial<IseopStudent>) => {
-  const response = await apiClient.patch<IseopStudent>(`${ENDPOINTS.STUDENTS}${id}/`, data);
-  return response.data;
+export const updateStudent = async (
+  id: number,
+  data: Partial<IseopStudent>
+) => {
+  const res = await apiClient.patch(`/iseop/students/${id}/`, {
+    first_name: data.first_name,
+    last_name: data.last_name,
+    national_id: data.national_id,
+    email: data.email,
+    gender: data.gender,
+    status: data.status,
+    disability_type: data.disability_type ?? "None", // ✅ SENT TO DB
+    program: data.program ?? null,
+    enrollment_year: data.enrollment_year ?? null,
+  });
+  return res.data;
 };
 
 export const deleteStudent = async (id: number) => {
-  await apiClient.delete(`${ENDPOINTS.STUDENTS}${id}/`);
+  const res = await apiClient.delete(`/iseop/students/${id}/`);
+  return res.data;
 };
 
-// ----------------- PROGRAMS -----------------
+export const getIseopStudents = async (params: { institution_id: number }) => {
+  const res = await apiClient.get<IseopStudent[]>(
+    ENDPOINTS.STUDENTS,
+    { params }
+  );
+  return res.data;
+};
+
+/* =======================
+   PROGRAMS
+   ======================= */
 export const getPrograms = async () => {
-  const response = await apiClient.get<IseopProgram[]>(ENDPOINTS.PROGRAMS);
-  console.log(response);
-  
-  return response.data;
+  const res = await apiClient.get<IseopProgram[]>(ENDPOINTS.PROGRAMS);
+  return res.data;
 };
 
-export const createProgram = async (data: Partial<IseopProgram>) => {
-  const response = await apiClient.post<IseopProgram>(ENDPOINTS.PROGRAMS, data);
-  return response.data;
-};
-
-export const updateProgram = async (id: number, data: Partial<IseopProgram>) => {
-  const response = await apiClient.patch<IseopProgram>(`${ENDPOINTS.PROGRAMS}${id}/`, data);
-  return response.data;
-};
-
-export const deleteProgram = async (id: number) => {
-  await apiClient.delete(`${ENDPOINTS.PROGRAMS}${id}/`);
-};
-export const bulkUploadStudents = async (file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  const response = await apiClient.post(`${ENDPOINTS.STUDENTS}bulk_upload/`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-};
-// ----------------- EXPORT SERVICE OBJECT -----------------
 const iseopService = {
-  getStudents,
   createStudent,
   updateStudent,
   deleteStudent,
+  getIseopStudents,
   getPrograms,
-  createProgram,
-  updateProgram,
-  deleteProgram,
-  bulkUploadStudents,
 };
 
 export default iseopService;
