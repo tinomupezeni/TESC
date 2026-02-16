@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+from academic.models import Institution
 class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -33,6 +33,14 @@ class CustomUser(AbstractUser):
     ]
     level = models.CharField(max_length=1, choices=LEVEL_CHOICES, default='4')
     
+    # Add this line
+    institution = models.ForeignKey(
+        Institution, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="users"
+    )
     # 1. This is the login field
     USERNAME_FIELD = 'email' 
     REQUIRED_FIELDS = ['username'] 

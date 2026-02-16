@@ -1,54 +1,221 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
+from rest_framework.decorators import action, parser_classes
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
-from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.db.models import Count
+from django.http import Http404
 import csv
-import io
+
 from .models import IseopProgram, IseopStudent
 from .serializers import IseopProgramSerializer, IseopStudentSerializer
 
+
 class IseopProgramViewSet(viewsets.ModelViewSet):
+    queryset = IseopProgram.objects.all()
     serializer_class = IseopProgramSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Temporarily return ALL programs to see if they appear
-        return IseopProgram.objects.all()
-# --- ADD THIS VIEWSET ---
+
 class IseopStudentViewSet(viewsets.ModelViewSet):
     serializer_class = IseopStudentSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = "id"
 
-    print("hello")
-    print(serializer_class)
+    # -------------------------
+    # LIST QUERYSET
+    # -------------------------
     def get_queryset(self):
-        # Only show students belonging to the user's institution
-        
-        return IseopStudent.objects.all()
-    @action(detail=False, methods=['post'])
+        qs = IseopStudent.objects.all()
+        institution_id = self.request.query_params.get("institution_id")
+        print(institution_id)
+        if institution_id:
+            qs = qs.filter(institution__id=int(institution_id))
+        return qs
+
+
+    def get_object(self):
+        lookup_value = self.kwargs[self.lookup_field]
+        user = self.request.user
+
+        # 1. Superuser Override: Full access to everything
+        if user.is_superuser:
+            return get_object_or_404(IseopStudent, id=lookup_value)
+
+        # 2. Identify the Institution Context
+        # Check payload (PATCH/POST) first, then the User's database profile (DELETE/GET)
+        user_inst_id = self.request.data.get("institution") or getattr(user, "institution_id", None)
+
+        # 3. If no direct institution, check via InstitutionAdmin relationship
+        if user_inst_id is None and hasattr(user, "inst_admin"):
+            user_inst_id = user.inst_admin.institution_id
+
+        # 4. Security Guardrail
+        if user_inst_id is None:
+            print(f"DEBUG: Operation failed. User {user.email} has no institution context.")
+            # If we can't verify who the user belongs to, we deny the existence of the resource
+            raise Http404("No institution context found for this request.")
+
+        # 5. Perform the scoped lookup
+        # This ensures a user from Institution A cannot PATCH or DELETE a student from Institution B
+        obj = get_object_or_404(
+            IseopStudent,
+            id=lookup_value,
+            institution_id=user_inst_id
+        )
+
+        return obj
+    # -------------------------
+    # STATS
+    # -------------------------
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        user = request.user
+        user_institution_id = getattr(user, "institution_id", None)
+
+        students = (
+            IseopStudent.objects.all()
+            if user.is_superuser
+            else IseopStudent.objects.filter(institution__id=user_institution_id)
+        )
+
+        programs = (
+            IseopProgram.objects.all()
+            if user.is_superuser
+            else IseopProgram.objects.filter(institution__id=user_institution_id)
+        )
+
+        total_students = students.count()
+
+        # -------------------------
+        # STATUS BREAKDOWN
+        # -------------------------
+        status_breakdown = dict(
+            students.values_list("status")
+            .annotate(c=Count("status"))
+        )
+
+        # -------------------------
+        # GENDER STATS
+        # -------------------------
+        gender_counts = dict(
+            students.exclude(gender__isnull=True)
+            .exclude(gender__exact="")
+            .values_list("gender")
+            .annotate(c=Count("gender"))
+        )
+
+        male = gender_counts.get("Male", 0)
+        female = gender_counts.get("Female", 0)
+
+        male_pct = round((male / total_students) * 100, 1) if total_students else 0
+        female_pct = round((female / total_students) * 100, 1) if total_students else 0
+
+        # -------------------------
+        # DISABILITY STATS
+        # -------------------------
+        disability_qs = (
+            students
+            .exclude(disability_type__isnull=True)
+            .exclude(disability_type__exact="")
+            .exclude(disability_type__iexact="None")
+        )
+
+        disability_count = disability_qs.count()
+        disability_pct = (
+            round((disability_count / total_students) * 100, 1)
+            if total_students else 0
+        )
+
+        disability_breakdown = dict(
+            disability_qs.values_list("disability_type")
+            .annotate(c=Count("disability_type"))
+        )
+
+        # -------------------------
+        # YEAR BREAKDOWN
+        # -------------------------
+        year_breakdown = dict(
+            students.exclude(enrollment_year__isnull=True)
+            .values_list("enrollment_year")
+            .annotate(c=Count("enrollment_year"))
+        )
+
+        # -------------------------
+        # PROGRAM BREAKDOWN
+        # -------------------------
+        program_breakdown = dict(
+            students.exclude(program__isnull=True)
+            .values_list("program__name")
+            .annotate(c=Count("program__name"))
+        )
+
+        return Response({
+            "total_students": total_students,
+            "total_programs": programs.count(),
+            "status_breakdown": status_breakdown,
+            "gender_stats": {
+                "male": male,
+                "female": female,
+                "male_pct": male_pct,
+                "female_pct": female_pct,
+            },
+            "disability_stats": {
+                "with_disability": disability_count,
+                "with_disability_pct": disability_pct,
+                "by_type": disability_breakdown,
+            },
+            "year_breakdown": year_breakdown,
+            "program_breakdown": program_breakdown,
+        })
+
+    # -------------------------
+    # BULK UPLOAD
+    # -------------------------
+    @action(detail=False, methods=["post"], url_path="bulk_upload")
+    @parser_classes([MultiPartParser])
     def bulk_upload(self, request):
-        file = request.FILES.get('file')
+        file = request.FILES.get("file")
         if not file:
-            return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "No file uploaded"}, status=400)
 
-        # Assuming CSV for now
-        decoded_file = file.read().decode('utf-8')
-        io_string = io.StringIO(decoded_file)
-        reader = csv.DictReader(io_string)
+        decoded = file.read().decode("utf-8").splitlines()
+        reader = csv.DictReader(decoded)
+        created = 0
+        errors = []
 
-        print(request.user.institution)
-        
-        students_to_create = []
         for row in reader:
-            # Match CSV headers to your model fields
-            students_to_create.append(IseopStudent(
-                institution=request.user.institution,
-                student_id=row['student_id'],
-                first_name=row['first_name'],
-                last_name=row['last_name'],
-                email=row.get('email')
-            ))
+            try:
+                # Ensure program belongs to the institution
+                program = IseopProgram.objects.get(id=int(row["program"]), institution=request.user.institution)
+                enrollment_date = row.get("enrollment_date")
+                enrollment_year = (
+                    int(enrollment_date.split("-")[0])
+                    if enrollment_date else None
+                )
 
-        IseopStudent.objects.bulk_create(students_to_create)
-        return Response({"message": "Bulk upload successful"}, status=status.HTTP_201_CREATED)
+                IseopStudent.objects.update_or_create(
+                    student_id=row["student_id"],
+                    institution=request.user.institution,
+                    defaults={
+                        "first_name": row["first_name"],
+                        "last_name": row["last_name"],
+                        "national_id": row["national_id"],
+                        "email": row.get("email"),
+                        "gender": row.get("gender", "Male"),
+                        "status": row.get("status", "Active/Enrolled"),
+                        "disability_type": row.get("disability_type", "None"),
+                        "program": program,
+                        "enrollment_year": enrollment_year,
+                    },
+                )
+                created += 1
+
+            except Exception as e:
+                errors.append({"row": row, "error": str(e)})
+
+        return Response({
+            "created": created,
+            "errors": errors
+        })

@@ -20,6 +20,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 _crypto_keys = os.getenv("CRYPTOGRAPHY_KEYS") or os.getenv("CRYPTOGRAPHY_KEY") or ""
 FERNET_KEYS = [k.strip() for k in _crypto_keys.split(",") if k.strip()]
 
+print(FERNET_KEYS)
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

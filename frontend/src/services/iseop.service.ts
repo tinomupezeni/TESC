@@ -1,74 +1,52 @@
 // services/iseop.service.ts
-
 import apiClient from "./api";
+import { IseopStudent, IseopStats } from "@/lib/types/iseop.types"; // Assuming this is where your types are
 
-// --- Types ---
-export interface IseopStudent {
-  id: number;
-  institution: number;
-  institution_name: string;
-  student_id: string;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-  email: string | null;
-  status: "Active/Enrolled" | "Deferred" | "Completed";
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IseopProgram {
-  id: number;
-  institution: number;
-  institution_name: string;
-  name: string;
-  capacity: number;
-  occupied: number;
-  status: "Active" | "Full" | "Closed";
-  activity_level: string | null;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-const STUDENTS_PATH = "/iseop/students/";
-const PROGRAMS_PATH = "/iseop/programs/";
+const ENDPOINTS = {
+  STUDENTS: "/iseop/students/",
+};
 
 /**
  * Fetch all ISEOP students
  */
-export const getAllIseopStudents = async (): Promise<IseopStudent[]> => {
-  const response = await apiClient.get<IseopStudent[]>(STUDENTS_PATH);
+export const getIseopStudents = async (): Promise<IseopStudent[]> => {
+  const response = await apiClient.get<IseopStudent[]>(ENDPOINTS.STUDENTS);
   return response.data;
 };
 
 /**
- * Fetch a single ISEOP student by ID
+ * Fetch aggregated statistics for ISEOP programs and students
+ * URL: /api/iseop/students/stats/
  */
-export const getIseopStudentById = async (id: number): Promise<IseopStudent> => {
-  const response = await apiClient.get<IseopStudent>(`${STUDENTS_PATH}${id}/`);
+export const getIseopStats = async (): Promise<IseopStats> => {
+  const response = await apiClient.get<IseopStats>(`${ENDPOINTS.STUDENTS}stats/`);
   return response.data;
 };
 
 /**
- * Fetch all ISEOP programs
+ * Upload student data via CSV for bulk creation
+ * URL: /api/iseop/students/bulk_upload/
  */
-export const getAllIseopPrograms = async (): Promise<IseopProgram[]> => {
-  const response = await apiClient.get<IseopProgram[]>(PROGRAMS_PATH);
+export const uploadIseopStudentsCSV = async (file: File): Promise<{ message: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await apiClient.post<{ message: string }>(
+    `${ENDPOINTS.STUDENTS}bulk_upload/`, 
+    formData, 
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
   return response.data;
 };
 
-/**
- * Fetch a single ISEOP program by ID
- */
-export const getIseopProgramById = async (id: number): Promise<IseopProgram> => {
-  const response = await apiClient.get<IseopProgram>(`${PROGRAMS_PATH}${id}/`);
-  return response.data;
+const iseopService = {
+  getIseopStudents,
+  getIseopStats,
+  uploadIseopStudentsCSV,
 };
 
-export default {
-  getAllIseopStudents,
-  getIseopStudentById,
-  getAllIseopPrograms,
-  getIseopProgramById,
-};
+export default iseopService;

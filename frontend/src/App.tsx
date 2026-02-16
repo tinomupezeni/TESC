@@ -10,6 +10,7 @@ import { PermissionGuard } from "./components/layout/PermissionGuard";
 // Pages
 import Index from "./pages/Index";
 import Students from "./pages/Students";
+import ISEOPStudents from "./pages/ISEOP";
 import Institutions from "./pages/Institutions";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -24,6 +25,7 @@ import Innovation from "./pages/Innovation";
 import Industrialisation from "./pages/Industrialisation";
 import Regional from "./pages/Regional";
 import Setting from "./pages/Settings";
+
 
 import Help from "./pages/Help";
 import Admissions from "./pages/Admissions";
@@ -85,7 +87,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-
+              
               <Route
                 path="/staff"
                 element={
@@ -232,7 +234,16 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-
+              <Route
+                path="/ISEOP"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <ISEOPStudents />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
               {/* User & Support */}
               <Route
                 path="/profile"

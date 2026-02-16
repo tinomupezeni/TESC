@@ -38,6 +38,7 @@ const mainNavigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Institutions", url: "/institutions", icon: Building },
   { title: "Student Records", url: "/students", icon: GraduationCap },
+  { title: "ISEOP Student Records", url: "/ISEOP", icon: GraduationCap },
   { title: "Staff Records", url: "/staff", icon: User },
   { title: "Statistics", url: "/statistics", icon: BarChart3 },
   { title: "Graduation Records", url: "/graduates", icon: GraduationCap },
@@ -56,7 +57,7 @@ const admissionsCategory = [
   { title: "Admissions Dashboard", url: "/admissions", icon: GraduationCap },
   { title: "Dropout Analysis", url: "/admissions/dropouts", icon: UserX },
   { title: "Special Enrollments", url: "/admissions/special", icon: User },
-  { title: "ISEOP Students", url: "/iseop", icon: Users },
+  // { title: "ISEOP Students", url: "/iseop", icon: Users },
 ];
 
 const systemItems = [
