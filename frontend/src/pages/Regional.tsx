@@ -40,7 +40,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function Regional() {
   const [data, setData] = useState<RegionalStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,37 +57,44 @@ export default function Regional() {
     fetchData();
   }, []);
 
-  // --- DATA AGGREGATION LOGIC ---
-  // This groups the data so that each location appears only once
+  /**
+   * AGGREGATION LOGIC
+   * Groups the raw institution-level data into location-level data
+   */
   const distinctChartData = useMemo(() => {
     if (!data?.chart_data) return [];
 
     const grouped = data.chart_data.reduce((acc: any, curr) => {
       const loc = curr.location || "Unknown";
+      
       if (!acc[loc]) {
         acc[loc] = {
           location: loc,
           students: 0,
           hubs: 0,
-          institutions: [], // We'll store names as an array to list them
+          institutionNames: [], 
         };
       }
+
       acc[loc].students += curr.students;
-      acc[loc].hubs += curr.hubs;
-      // Prevent duplicate institution names in the list
-      if (!acc[loc].institutions.includes(curr.institutions)) {
-        acc[loc].institutions.push(curr.institutions);
+      // We sum the hubs count provided by the backend annotate query
+      acc[loc].hubs += curr.hubs || 0;
+
+      // Add unique institution names to the list for the table UI
+      if (!acc[loc].institutionNames.includes(curr.institution_name)) {
+        acc[loc].institutionNames.push(curr.institution_name);
       }
+      
       return acc;
     }, {});
 
-    // Convert the object back into an array and join institution names into a string
     return Object.values(grouped)
       .map((item: any) => ({
         ...item,
-        institutions: item.institutions.join(", "),
+        // Join institution names for the subtitle display
+        institutions: item.institutionNames.join(", "),
       }))
-      .sort((a: any, b: any) => b.students - a.students); // Sort by highest enrollment
+      .sort((a: any, b: any) => b.students - a.students);
   }, [data]);
 
   if (loading) {
@@ -142,7 +149,7 @@ export default function Regional() {
           />
           <StatsCard
             title="Innovation Hubs"
-            value={distinctChartData.reduce((acc, curr) => acc + curr.hubs, 0)}
+            value={stats.total_hubs || 0}
             description="Active centers"
             icon={Beaker}
             variant="success"
@@ -216,7 +223,9 @@ export default function Regional() {
                         {item.students.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-center text-xs">
-                        {item.hubs}
+                        <span className={`px-2 py-0.5 rounded-full ${item.hubs > 0 ? 'bg-green-100 text-green-700 font-bold' : 'bg-slate-100 text-slate-400'}`}>
+                           {item.hubs}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -119,6 +119,7 @@ class Student(models.Model):
         ('Personal', 'Personal/Family Issues'),
         ('Transfer', 'Transfer'),
         ('Other', 'Other'),
+        ('Unspecified','Unspecified'),
     ]
 
     user = models.OneToOneField(
@@ -156,28 +157,103 @@ class Student(models.Model):
         related_name='students'
     )
 
-    is_iseop = models.BooleanField(default=False)
+    
     is_work_for_fees = models.BooleanField(default=False)
 
     WORK_AREAS = [
-        ('Library', 'Library Assistant'),
-        ('Grounds', 'Grounds Maintenance'),
-        ('Labs', 'Labs Assistant'),
-        ('Admin', 'Admin Support'),
-    ]
+    # Academic / Learning Support
+    ('Library', 'Library Assistant'),
+    ('Labs', 'Laboratory Assistant'),
+    ('Tutorials', 'Tutorial / Peer Learning Support'),
+    ('E_Learning', 'E-Learning Support'),
+    ('Research', 'Research Assistant'),
+    ('Kitchen','Kitchen'),
+    # Administrative / Office
+    ('Admin', 'Administrative Support'),
+    ('Registry', 'Registry / Records Office'),
+    ('Admissions', 'Admissions Office'),
+    ('Exams', 'Examinations Office'),
+    ('Finance', 'Finance / Accounts Office'),
+    ('HR', 'Human Resources Support'),
+
+    # Technical / ICT
+    ('ICT', 'ICT / IT Support'),
+    ('Systems', 'Systems Administration Support'),
+    ('Data', 'Data Entry / Data Support'),
+    ('Media', 'Media & Communications Support'),
+
+    # Facilities / Operations
+    ('Grounds', 'Grounds Maintenance'),
+    ('Maintenance', 'General Maintenance'),
+    ('Electrical', 'Electrical Maintenance'),
+    ('Plumbing', 'Plumbing Maintenance'),
+    ('Cleaning', 'Cleaning / Janitorial Services'),
+
+    # Student & Community Services
+    ('DisabilitySupport', 'Disability Support Services'),
+    ('Counselling', 'Counselling & Wellness Support'),
+    ('Health', 'Health Services Support'),
+    ('Sports', 'Sports & Recreation Support'),
+    ('StudentAffairs', 'Student Affairs Office'),
+
+    # Security & Logistics
+    ('Security', 'Security Services'),
+    ('Transport', 'Transport & Logistics'),
+    ('Tuckshop', 'Tuckshop,Stores & Inventory Management'),
+
+    # Innovation & Industry
+    ('Innovation', 'Innovation & Entrepreneurship Hub'),
+    ('Industry', 'Industry Liaison / Attachment Support'),
+    ('Incubation', 'Business Incubation Support'),
+
+    # Misc / Flexible
+    ('FieldWork', 'Field Work / Outreach'),
+    ('Multiple', 'Multiple Work Areas'),
+    ('Other', 'Other (Specify)'),
+]
+
 
     work_area = models.CharField(max_length=50, choices=WORK_AREAS, null=True, blank=True)
     hours_pledged = models.PositiveIntegerField(default=0)
 
     DISABILITY_TYPES = [
-        ('None', 'None'),
-        ('Physical', 'Physically Disabled'),
-        ('Albino', 'Albino'),
-        ('Hearing', 'Hearing Impaired'),
-        ('Visual', 'Visually Impaired'),
-    ]
+    ('None', 'None'),
 
-    disability_type = models.CharField(max_length=50, choices=DISABILITY_TYPES, default='None')
+    # Physical / Mobility
+    ('Physical', 'Physical / Mobility Impairment'),
+    ('Amputation', 'Amputation'),
+    ('Paralysis', 'Paralysis'),
+    ('CerebralPalsy', 'Cerebral Palsy'),
+    ('SpinalCord', 'Spinal Cord Injury'),
+
+    # Sensory
+    ('Visual', 'Visual Impairment'),
+    ('Hearing', 'Hearing Impairment'),
+    ('Speech', 'Speech Impairment'),
+    ('DeafBlind', 'Deaf-Blindness'),
+
+    # Neurological / Cognitive
+    ('Intellectual', 'Intellectual Disability'),
+    ('Learning', 'Learning Disability'),
+    ('Autism', 'Autism Spectrum Disorder'),
+    ('ADHD', 'Attention Deficit Hyperactivity Disorder'),
+    ('Epilepsy', 'Epilepsy'),
+
+    # Mental / Psychosocial
+    ('MentalHealth', 'Mental / Psychosocial Disability'),
+
+    # Genetic / Chronic
+    ('Albino', 'Albinism'),
+    ('DownSyndrome', 'Down Syndrome'),
+    ('SickleCell', 'Sickle Cell Disease'),
+    ('ChronicIllness', 'Chronic Illness'),
+
+    # Multiple / Other
+    ('Multiple', 'Multiple Disabilities'),
+    ('Other', 'Other (Specify)'),
+]
+
+    disability_type = models.CharField(max_length=100, choices=DISABILITY_TYPES, default='None')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

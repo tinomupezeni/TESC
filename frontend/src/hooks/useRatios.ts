@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { analysisService } from "@/services/analysis.services";
+// 1. UPDATED: Import the function directly
+import { getStudentTeacherRatio } from "@/services/analysis.services"; 
 import type { StudentTeacherRatioItem } from "@/lib/types/dashboard.types";
 
 export function useStudentTeacherRatio() {
@@ -11,7 +12,8 @@ export function useStudentTeacherRatio() {
     let mounted = true;
     async function load() {
       try {
-        const stats = await analysisService.getStudentTeacherRatio();
+        // 2. UPDATED: Call the function directly
+        const stats = await getStudentTeacherRatio();
         if (!mounted) return;
         setData(stats);
       } catch (err) {
