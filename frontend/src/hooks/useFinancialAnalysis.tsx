@@ -1,4 +1,6 @@
+// hooks/useFinancialAnalysis.ts
 import { useState, useEffect, useCallback } from "react";
+// 1. UPDATED: Import the function directly
 import { getFinancialStats, FinancialStats } from "@/services/analysis.services";
 
 export const useFinancialAnalysis = () => {
@@ -16,6 +18,7 @@ export const useFinancialAnalysis = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // 2. UPDATED: Call the function directly
       const data: FinancialStats = await getFinancialStats();
       setStats(data.stats);
       setFeeStructure(data.fee_structure);

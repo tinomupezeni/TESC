@@ -187,7 +187,8 @@ class StudentViewSet(viewsets.ModelViewSet):
             distinctions=Count('id', filter=Q(final_grade='Distinction')),
             credits=Count('id', filter=Q(final_grade='Credit')),
             passes=Count('id', filter=Q(final_grade='Pass')),
-            disabilities=Count('id', filter=~Q(disability_type='None'))
+            disabilities=Count('id', filter=~Q(disability_type__in=['None', '', None]))
+
         ).order_by('-graduation_year', 'program__name')
 
         # 2. FIX: Map the raw code to the human-readable label

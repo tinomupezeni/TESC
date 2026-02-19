@@ -1,6 +1,7 @@
 // src/hooks/useStatistics.ts
 import { useState, useEffect } from "react";
-import { analysisService } from "@/services/analysis.services";
+// 1. UPDATED: Import the function directly
+import { getAnalysisStats } from "@/services/analysis.services"; 
 import type { DashboardStats } from "@/lib/types/dashboard.types";
 
 export function useStatistics() {
@@ -9,28 +10,29 @@ export function useStatistics() {
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-  let mounted = true;
+    let mounted = true;
 
-  async function load() {
-    try {
-      const stats = await analysisService.getAnalysisStats();
-      if (!mounted) return;
-      setData(stats);
-    } catch (err) {
-      if (!mounted) return;
-      setError(err);
-    } finally {
-      if (!mounted) return;
-      setLoading(false);
+    async function load() {
+      try {
+        // 2. UPDATED: Call the function directly
+        const stats = await getAnalysisStats();
+        if (!mounted) return;
+        setData(stats);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err);
+      } finally {
+        if (!mounted) return;
+        setLoading(false);
+      }
     }
-  }
 
-  load();
+    load();
 
-  return () => {
-    mounted = false;
-  };
-}, []);
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-return { data, loading, error }
+  return { data, loading, error };
 }

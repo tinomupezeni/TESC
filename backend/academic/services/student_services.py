@@ -3,15 +3,38 @@ from django.core.exceptions import ValidationError
 from ..models import Student
 import pandas as pd
 from faculties.models import Department, Faculty, Program
+from django.forms.models import model_to_dict
 
 
 class StudentService:
+    @staticmethod
+    def _validate_student_data(data):
+        """Helper to validate conditional fields based on model constraints"""
+        if data.get('is_work_for_fees'):
+            # 1. Validate work_area is present
+            if not data.get('work_area'):
+                raise ValidationError("Work area is required if student is working for fees.")
+            
+            # 2. VALIDATION FIX: Ensure the work_area is a valid choice
+            # Using dict to get the first element of the tuple in WORK_AREAS
+            valid_work_areas = [choice[0] for choice in Student.WORK_AREAS]
+            if data.get('work_area') not in valid_work_areas:
+                raise ValidationError(f"Invalid work area: {data.get('work_area')}")
+
+            # 3. Validate hours (removed the explicit 'not None' check here 
+            # to rely on Django's model validation for PositveIntegerField)
+            if data.get('hours_pledged', 0) <= 0:
+                raise ValidationError("Valid pledged hours are required if student is working for fees.")
+
     @staticmethod
     def create_student(validated_data):
         """
         Creates a new Student instance.
         Ensures graduation info is present if status is Graduated.
         """
+        # Run custom validation first
+        StudentService._validate_student_data(validated_data)
+
         if validated_data.get('status') == 'Graduated':
             if not validated_data.get('graduation_year'):
                 raise ValidationError("Graduation year is required for graduated students.")
@@ -39,6 +62,9 @@ class StudentService:
                 for attr, value in validated_data.items():
                     if attr not in protected_fields:
                         setattr(instance, attr, value)
+                
+                # New validation check
+                StudentService._validate_student_data(model_to_dict(instance))
 
                 # Validate graduation info
                 status = validated_data.get('status', instance.status)
@@ -46,9 +72,9 @@ class StudentService:
                 final_grade = validated_data.get('final_grade', instance.final_grade)
 
                 if status == 'Graduated':
-                    if not grad_year and not instance.graduation_year:
+                    if not grad_year:
                         raise ValidationError("Graduation year is required for graduated students.")
-                    if not final_grade and not instance.final_grade:
+                    if not final_grade:
                         raise ValidationError("Final grade is required for graduated students.")
 
                 instance.full_clean()
@@ -74,7 +100,6 @@ class StudentService:
     def bulk_create_from_file(file, institution_id):
         """
         Parses an Excel/CSV file and enrolls students.
-        Ensures graduation info is present if status is Graduated.
         """
         try:
             # ---------------- READ FILE ----------------
@@ -177,16 +202,10 @@ class StudentService:
                     raw_grade = str(row.get('final_grade', '')).strip().lower()
                     final_grade = GRADE_MAP.get(raw_grade) if raw_grade else None
 
-                    # -------- Validation for Graduated --------
-                    if status == 'Graduated':
-                        if not grad_year:
-                            raise ValidationError(
-                                f"Row {row_num}: Graduation year is required for graduated students."
-                            )
-                        if not final_grade:
-                            raise ValidationError(
-                                f"Row {row_num}: Final grade is required for graduated students."
-                            )
+                    # -------- Work for Fees Fields --------
+                    is_work_for_fees = bool(row.get('is_work_for_fees', False))
+                    work_area = row.get('work_area')
+                    hours_pledged = row.get('hours_pledged') or 0
 
                     # -------- Create Student --------
                     student = Student(
@@ -202,7 +221,13 @@ class StudentService:
                         dropout_reason=dropout_reason,
                         graduation_year=grad_year,
                         final_grade=final_grade,
+                        is_work_for_fees=is_work_for_fees,
+                        work_area=work_area,
+                        hours_pledged=hours_pledged,
                     )
+
+                    # Run custom validation on the temporary object
+                    StudentService._validate_student_data(model_to_dict(student))
 
                     students_to_create.append(student)
                     existing_ids.add(student_id)

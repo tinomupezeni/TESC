@@ -37,7 +37,7 @@ class HubAnalysisView(APIView):
 class StartupAnalysisView(APIView):
     def get(self, request):
         # Filter for Startups only
-        qs = Project.objects.filter(stage='scaling') 
+        qs = Project.objects.filter(stage='industrial') 
         
         stats = {
             "activeStartups": qs.count(),
@@ -63,7 +63,7 @@ class IndustrialAnalysisView(APIView):
     def get(self, request):
         # Projects
         industrial_qs = Project.objects.filter(stage='industrial')
-        startup_qs = Project.objects.filter(stage='scaling')
+        startup_qs = Project.objects.filter(stage='industrial')
         
         # Partnerships
         partners = Partnership.objects.all()

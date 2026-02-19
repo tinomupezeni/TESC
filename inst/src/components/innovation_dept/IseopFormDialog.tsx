@@ -84,10 +84,10 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
         ...student,
         program: student.program ?? null,
         national_id: (student as any).national_id ?? "",
-        enrollment_date: student.enrollment_year
-          ? `${student.enrollment_year}-01-01`
+        enrollment_date: student.enrollment_date
+          ? `${student.enrollment_date}-01-01`
           : null,
-        enrollment_year: student.enrollment_year ?? null,
+        enrollment_year: student.enrollment_date ?? null,
         disability_type: (student as any).disability_type ?? "None",
         disability_other_text: "",
       });
@@ -141,18 +141,22 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
       return toast.error("Please specify the disability");
     }
 
+    // Ensure we send the enrollment_year extracted from the date
+    const finalYear = formData.enrollment_date 
+        ? new Date(formData.enrollment_date).getFullYear() 
+        : formData.enrollment_year;
+
     const payload = {
       ...formData,
-      disability_type: formData.disability_type, // keep enum intact
+      enrollment_date: finalYear, // Ensure backend receives the year as required
+      disability_type: formData.disability_type,
     };
-
-    console.log("Submitting payload:", payload);
 
     setLoading(true);
     try {
       if (isEditing && student?.id) {
         await iseopService.updateStudent(student.id, payload);
-        toast.success("Student updated");
+        toast.success(`Student marked as ${formData.status}`);
       } else {
         await iseopService.createStudent(payload);
         toast.success("Student enrolled");
@@ -191,7 +195,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-6">
-          {/* Names */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>First Name</Label>
@@ -215,7 +218,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             </div>
           </div>
 
-          {/* Student ID + National ID */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Student ID</Label>
@@ -239,7 +241,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <Label>Email</Label>
             <Input
@@ -251,7 +252,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             />
           </div>
 
-          {/* Program */}
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Program Information</CardTitle>
@@ -277,7 +277,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             </CardContent>
           </Card>
 
-          {/* Gender + Status */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Gender</Label>
@@ -314,7 +313,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             </div>
           </div>
 
-          {/* Disability */}
           <div>
             <Label>Disability</Label>
             <Select
@@ -351,7 +349,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             </Select>
           </div>
 
-          {/* Other Disability Text */}
           {formData.disability_type === "Other" && (
             <div>
               <Label>Please specify</Label>
@@ -365,7 +362,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             </div>
           )}
 
-          {/* Enrollment Date */}
           <div>
             <Label>Enrollment Date</Label>
             <Input
@@ -378,9 +374,9 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             />
           </div>
 
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="w-full">
             {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {isEditing ? "Update Student" : "Enroll Student"}
+            {isEditing ? "Update Enrollment Status" : "Enroll Student"}
           </Button>
         </form>
       </DialogContent>
