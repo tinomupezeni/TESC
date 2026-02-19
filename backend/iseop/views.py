@@ -180,28 +180,49 @@ class IseopStudentViewSet(viewsets.ModelViewSet):
         if not file:
             return Response({"detail": "No file uploaded"}, status=400)
 
+        # 1. Identify Institution
+        user = request.user
+        user_inst = getattr(user, "institution", None)
+        if not user_inst and hasattr(user, "inst_admin"):
+            user_inst = user.inst_admin.institution
+            
+        if not user_inst:
+            return Response({"detail": "User has no institution context."}, status=403)
+
         decoded = file.read().decode("utf-8").splitlines()
         reader = csv.DictReader(decoded)
-        created = 0
+        created_count = 0
         errors = []
 
         for row in reader:
             try:
-                # Ensure program belongs to the institution
-                program = IseopProgram.objects.get(id=int(row["program"]), institution=request.user.institution)
-                enrollment_date = row.get("enrollment_date")
-                enrollment_year = (
-                    int(enrollment_date.split("-")[0])
-                    if enrollment_date else None
+                # 2. Handle Program: Get or Create by Name
+                program_name = row.get("program", "").strip()
+                if not program_name:
+                    raise ValueError("Program name is missing in CSV row")
+
+                # This will find the program or create it if it doesn't exist for this institution
+                program, _ = IseopProgram.objects.get_or_create(
+                    name=program_name,
+                    institution=user_inst,
+                    defaults={'status': 'Active', 'capacity': 0}
                 )
 
-                IseopStudent.objects.update_or_create(
+                enrollment_date = row.get("enrollment_date")
+                enrollment_year = None
+                if enrollment_date and "-" in enrollment_date:
+                    enrollment_year = int(enrollment_date.split("-")[0])
+                elif row.get("enrollment_year"):
+                    enrollment_year = int(row.get("enrollment_year"))
+
+                # 3. Create or Update Student
+                student, created_bool = IseopStudent.objects.update_or_create(
                     student_id=row["student_id"],
-                    institution=request.user.institution,
+                    institution=user_inst,
                     defaults={
-                        "first_name": row["first_name"],
-                        "last_name": row["last_name"],
-                        "national_id": row["national_id"],
+                        "first_name": row.get("first_name", ""),
+                        "last_name": row.get("last_name", ""),
+                        "national_id": row.get("national_id", ""),
                         "email": row.get("email"),
                         "gender": row.get("gender", "Male"),
                         "status": row.get("status", "Active/Enrolled"),
@@ -210,12 +231,20 @@ class IseopStudentViewSet(viewsets.ModelViewSet):
                         "enrollment_year": enrollment_year,
                     },
                 )
-                created += 1
+                
+                # 4. Update Program Occupancy
+                # Recalculate occupied count for this program
+                program.occupied = IseopStudent.objects.filter(program=program).count()
+                program.save()
+
+                created_count += 1
 
             except Exception as e:
-                errors.append({"row": row, "error": str(e)})
+                errors.append({"student_id": row.get("student_id", "Unknown"), "error": str(e)})
 
         return Response({
-            "created": created,
+            "success": True,
+            "created_count": created_count,
+            "error_count": len(errors),
             "errors": errors
-        })
+        }, status=status.HTTP_200_OK)

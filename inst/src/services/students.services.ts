@@ -11,13 +11,22 @@ export interface Student {
   gender: "Male" | "Female" | "Other";
   date_of_birth?: string;
   enrollment_year: number;
-  status: "Active" | "Attachment" | "Graduated" | "Suspended" | "Deferred";
+  status: "Active" | "Attachment" | "Graduated" | "Suspended" | "Deferred" | "Dropout";
   institution: number;
   institution_name?: string;
   program: number;
   program_name?: string;
+  
+  // New Fields
+  is_work_for_fees: boolean;
+  work_area?: string | null;
+  hours_pledged: number;
+  disability_type: string;
+  
   created_at: string;
   updated_at: string;
+  graduation_year?: number | null;
+  final_grade?: string | null;
 }
 
 export interface CreateStudentData {
@@ -29,8 +38,14 @@ export interface CreateStudentData {
   date_of_birth?: string;
   enrollment_year: number;
   status?: string;
-  institution: number; // We will pass this from the component
+  institution: number;
   program: number;
+  
+  // New Fields
+  is_work_for_fees?: boolean;
+  work_area?: string | null;
+  hours_pledged?: number;
+  disability_type?: string;
 }
 
 export interface GraduationStat {
@@ -41,6 +56,7 @@ export interface GraduationStat {
   distinctions: number;
   credits: number;
   passes: number;
+  disabilities: number;
 }
 
 export interface StudentFilters {
@@ -49,19 +65,12 @@ export interface StudentFilters {
   search?: string;
 }
 
+// Updated Update type to include new fields
 export type UpdateStudentData = Partial<CreateStudentData> & {
   graduation_year?: number | null;
   final_grade?: string | null;
   dropout_reason?: string | null;
 };
-
-export interface SupportUpdateData {
-    is_iseop: boolean;
-    is_work_for_fees: boolean;
-    work_area?: 'Library' | 'Grounds' | 'Labs' | 'Admin' | null;
-    hours_pledged?: number;
-    disability_type: 'None' | 'Physical' | 'Albino' | 'Hearing' | 'Visual';
-}
 
 const END_POINT = "/academic/students/";
 
@@ -69,7 +78,6 @@ const END_POINT = "/academic/students/";
 
 export const getStudents = async (filters?: StudentFilters) => {
   try {
-    // We simply pass the filters provided by the component
     const response = await apiClient.get<Student[]>(END_POINT, {
       params: filters,
     });
@@ -107,7 +115,6 @@ export const updateStudent = async (
   data: UpdateStudentData
 ): Promise<Student> => {
   try {
-    // FIX: Append the ID to the endpoint
     const response = await apiClient.patch<Student>(`${END_POINT}${id}/`, data);
     return response.data;
   } catch (error) {
@@ -116,14 +123,8 @@ export const updateStudent = async (
   }
 };
 
-export const updateStudentSupport = async (id: number, data: Partial<SupportUpdateData>) => {
-    const response = await apiClient.patch(`/academic/students/${id}/`, data);
-    return response.data;
-};
-
 export const bulkUploadStudents = async (formData: FormData): Promise<any> => {
   try {
-    // Post to /academic/students/bulk_upload/
     const response = await apiClient.post(
       `${END_POINT}bulk_upload/`,
       formData,
@@ -146,16 +147,23 @@ export const getGraduationStats = async (institutionId: number) => {
   return response.data;
 };
 
-// ... updateStudent and deleteStudent remain the same ...
+export const deleteStudent = async (id: number): Promise<void> => {
+    try {
+      await apiClient.delete(`${END_POINT}${id}/`);
+    } catch (error) {
+      console.error(`Error deleting student ${id}:`, error);
+      throw error;
+    }
+  };
 
 const studentService = {
   getStudents,
   getStudentById,
   createStudent,
+  updateStudent,
+  deleteStudent,
   bulkUploadStudents,
   getGraduationStats,
-  updateStudent,
-  // ...
 };
 
 export default studentService;

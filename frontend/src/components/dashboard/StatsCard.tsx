@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { info } from "console";
 
 interface StatsCardProps {
   title: string;
@@ -11,7 +12,7 @@ interface StatsCardProps {
     value: number;
     label: string;
   };
-  variant?: "default" | "success" | "warning" | "accent";
+  variant?: "default" | "success" | "warning" | "accent" | 'info';
   onClick?: () => void; // ✅ ADD THIS
 }
 
@@ -29,6 +30,7 @@ export function StatsCard({
     success: "bg-success-light border-success",
     warning: "bg-warning-light border-warning",
     accent: "bg-accent-light border-accent",
+    info:'bg-info-light border-info'
   };
 
   return (

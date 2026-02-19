@@ -73,7 +73,7 @@ export const getAdmissionStats = async () => {
   return res.data;
 };
 
-export interface SpecialStats {
+export interface StudentGroupStats {
   special_students: { disability_type: string; value: number }[];
   work_for_fees: { work_area: string; students: number; hours: number }[];
   counts: {
@@ -82,6 +82,12 @@ export interface SpecialStats {
     disabled: number;
   };
 }
+
+export interface SpecialStats {
+  students: StudentGroupStats; // normal students
+  iseop: StudentGroupStats;    // ISEOP students
+}
+
 
 export const getSpecialEnrollmentStats = async (): Promise<SpecialStats> => {
   // Call the endpoint without institution_id params

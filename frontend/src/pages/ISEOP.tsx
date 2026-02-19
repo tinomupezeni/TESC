@@ -1,5 +1,3 @@
-
-
 import { useState, useMemo, useEffect } from "react";
 import { getIseopStudents } from "@/services/iseop.service";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -49,7 +47,7 @@ import {
 } from "lucide-react";
 import { StudentView } from "@/components/student view";
 import { IseopStudent } from "@/lib/types/iseop.types";
-import { exportToExcel } from "@/lib/export-utils"; 
+import { exportToExcel } from "@/lib/export-utils";
 
 const TableRowSkeleton = () => (
   <TableRow>
@@ -123,7 +121,7 @@ export default function ISEOPStudents() {
   }, [allStudents, searchTerm, selectedStatus, selectedInstitution, selectedYear, selectedGender]);
 
   // =======================
-  // STATS (INCLUDING GENDER & DISABILITY)
+  // STATS
   // =======================
   const stats = useMemo(() => {
     const total = filteredStudents.length;
@@ -164,16 +162,27 @@ export default function ISEOPStudents() {
   }, [filteredStudents]);
 
   // =======================
-  // CHART DATA
+  // CHART DATA (FIXED LOGIC)
   // =======================
   const chartData = useMemo(() => {
     const temp: Record<string, { year: string; Enrolled: number; Completed: number }> = {};
+    
     filteredStudents.forEach((s: any) => {
       const year = s.enrollment_year?.toString();
       if (!year || (selectedProgram !== "all" && s.program_name !== selectedProgram)) return;
+      
       if (!temp[year]) temp[year] = { year, Enrolled: 0, Completed: 0 };
-      if (s.status === "Active/Enrolled") temp[year].Enrolled++;
-      if (s.status === "Completed") temp[year].Completed++;
+      
+      /** * FIX: We count EVERY record as an enrollment for its respective year.
+       * If we only counted "Active/Enrolled", students would disappear from 
+       * the blue line as soon as they graduated.
+       */
+      temp[year].Enrolled++;
+
+      // Count only those who have actually completed
+      if (s.status === "Completed") {
+        temp[year].Completed++;
+      }
     });
     return Object.values(temp).sort((a, b) => Number(a.year) - Number(b.year));
   }, [filteredStudents, selectedProgram]);
@@ -181,7 +190,6 @@ export default function ISEOPStudents() {
   // =======================
   // PAGINATION
   // =======================
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   const paginatedStudents = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredStudents.slice(start, start + itemsPerPage);
@@ -202,9 +210,6 @@ export default function ISEOPStudents() {
   const uniqueYears = Array.from(new Set(allStudents.map(s => s.enrollment_year).filter(Boolean).map(String))).sort();
   const uniquePrograms = Array.from(new Set(allStudents.map(s => s.program_name).filter(Boolean)));
 
-  // =======================
-  // EXPORT FUNCTIONS
-  // =======================
   const handleExcelExport = () => exportToExcel(filteredStudents, `ISEOP_Report_${new Date().toLocaleDateString()}`);
 
   const handleCSVExport = () => {
@@ -222,9 +227,6 @@ export default function ISEOPStudents() {
 
   const handlePDFExport = () => window.print();
 
-  // =======================
-  // RENDER
-  // =======================
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -313,7 +315,7 @@ export default function ISEOPStudents() {
           </div>
         </Card>
 
-        {/* TABLE WITH EXPORT */}
+        {/* TABLE */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Students ({filteredStudents.length})</CardTitle>
