@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { analysisService } from "@/services/analysis.services";
+// 1. UPDATED: Import the function directly
+import { getStudentDistribution } from "@/services/analysis.services"; 
 import type { StudentDistribution } from "@/lib/types/dashboard.types";
 
 // Named export for hook
@@ -13,7 +14,8 @@ export function useStudentDistribution() {
 
     async function load() {
       try {
-        const distribution = await analysisService.getStudentDistribution();
+        // 2. UPDATED: Call the function directly
+        const distribution = await getStudentDistribution();
         if (!mounted) return;
         setData(distribution);
       } catch (err) {

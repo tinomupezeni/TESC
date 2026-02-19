@@ -3,9 +3,7 @@ import iseopService, { IseopStudent } from "@/services/iseop.services";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UploadCloud } from "lucide-react"; 
-// --- IMPORT THE DIALOG ---
-// Adjust the path to where your dialog component is located
+import { UploadCloud, FileDown } from "lucide-react"; 
 import { IseopStudentFormDialog } from "@/components/innovation_dept/IseopFormDialog"; 
 
 interface IseopStudentManagerProps {
@@ -21,12 +19,9 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
     setLoading(true);
     try {
       const data = await iseopService.getStudents();
-      console.log("Raw API Student Response:", data);
-      
       if (Array.isArray(data)) {
         setStudents(data);
       } else {
-        console.error("Expected array, got:", data);
         setStudents([]);
       }
     } catch (err) {
@@ -49,7 +44,6 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
       fetchStudents();
       if (onRefresh) onRefresh();
     } catch (err) {
-      console.error(err);
       toast.error("Failed to delete student.");
     }
   };
@@ -60,26 +54,57 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
 
     try {
       setLoading(true);
-      await iseopService.bulkUploadStudents(file);
-      toast.success("Students uploaded successfully!");
-      fetchStudents();
+      const response = await iseopService.bulkUploadStudents(file);
+      
+      // Handle response from the new backend logic
+      if (response.error_count > 0) {
+        toast.warning(`Uploaded ${response.created_count} students. ${response.error_count} rows failed.`);
+        console.error("Bulk upload errors:", response.errors);
+      } else {
+        toast.success(`Successfully uploaded ${response.created_count} students!`);
+      }
+
+      // Refresh local table
+      await fetchStudents();
+      
+      // Trigger parent refresh (updates Program Manager tab/page)
       if (onRefresh) onRefresh();
+
     } catch (err) {
       console.error(err);
-      toast.error("Failed to upload students. Please check file format.");
+      toast.error("Upload failed. Ensure CSV headers are correct: student_id, first_name, last_name, national_id, program, status");
     } finally {
       setLoading(false);
-      // Reset input
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const downloadTemplate = () => {
+    const headers = "student_id,first_name,last_name,national_id,email,gender,program,status,enrollment_date\n";
+    const blob = new Blob([headers], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.setAttribute("hidden", "");
+    a.setAttribute("href", url);
+    a.setAttribute("download", "iseop_student_template.csv");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold">ISEOP Students</h2>
+        <div>
+          <h2 className="text-lg font-bold">ISEOP Students</h2>
+          <p className="text-sm text-muted-foreground">Manage and bulk import students via CSV.</p>
+        </div>
         <div className="flex gap-2">
-            {/* --- BULK UPLOAD INPUT & BUTTON --- */}
+            <Button variant="ghost" size="sm" onClick={downloadTemplate}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Template
+            </Button>
+            
             <input 
                 type="file" 
                 accept=".csv" 
@@ -94,27 +119,25 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
                 disabled={loading}
             >
                 <UploadCloud className="mr-2 h-4 w-4" />
-                Bulk Upload CSV
+                Bulk Upload
             </Button>
             
-            {/* --- ADD STUDENT DIALOG --- */}
             <IseopStudentFormDialog 
-                onSuccess={fetchStudents} 
+                onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }} 
                 trigger={<Button size="sm">Add Student</Button>} 
             />
         </div>
       </div>
 
       {loading ? (
-        <p>Loading students...</p>
+        <div className="py-10 text-center text-muted-foreground">Loading student records...</div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="border rounded-lg bg-white">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Student ID</TableHead>
-                <TableHead>First Name</TableHead>
-                <TableHead>Last Name</TableHead>
+                <TableHead>Full Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Program</TableHead>
                 <TableHead>Status</TableHead>
@@ -125,23 +148,31 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
               {students.length > 0 ? (
                 students.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.student_id}</TableCell>
-                    {/* Correctly mapping to the fields in IseopStudent interface */}
-                    <TableCell>{student.first_name}</TableCell>
-                    <TableCell>{student.last_name}</TableCell>
-                    <TableCell>{student.email || "N/A"}</TableCell>
-                    <TableCell>{student.program_name || 'N/A' }</TableCell>
-                    <TableCell className="capitalize">{student.status}</TableCell>
+                    <TableCell className="font-medium text-blue-600">{student.student_id}</TableCell>
+                    <TableCell>{`${student.first_name} ${student.last_name}`}</TableCell>
+                    <TableCell className="text-muted-foreground">{student.email || "—"}</TableCell>
+                    <TableCell>
+                        <span className="px-2 py-1 rounded-md bg-slate-100 text-xs font-medium">
+                            {student.program_name || 'Unassigned'}
+                        </span>
+                    </TableCell>
+                    <TableCell>
+                        <span className={`capitalize px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                            student.status === 'Active/Enrolled' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                            {student.status}
+                        </span>
+                    </TableCell>
                     <TableCell className="text-right flex gap-2 justify-end">
-                      {/* --- EDIT STUDENT DIALOG --- */}
                       <IseopStudentFormDialog
                         student={student}
-                        onSuccess={fetchStudents}
-                        trigger={<Button size="sm" variant="outline">Edit</Button>}
+                        onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }}
+                        trigger={<Button size="sm" variant="ghost">Edit</Button>}
                       />
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={() => handleDelete(student.id)}
                       >
                         Delete
@@ -151,8 +182,8 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
-                    No students found.
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                    No student records found. Start by adding one or uploading a CSV.
                   </TableCell>
                 </TableRow>
               )}

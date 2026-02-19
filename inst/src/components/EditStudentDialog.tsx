@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -65,7 +66,6 @@ const FINAL_GRADE_CHOICES = [
   { value: "Fail", label: "Fail" },
 ];
 
-// --- Added Program Category Choices Mapping ---
 const PROGRAM_CATEGORIES = [
   { value: "STEM", label: "STEM (Science, Tech, Engineering, Math)" },
   { value: "HEALTH", label: "Health Sciences & Medicine" },
@@ -76,6 +76,70 @@ const PROGRAM_CATEGORIES = [
   { value: "LAW", label: "Law & Legal Studies" },
   { value: "VOCATIONAL", label: "Vocational & Technical Training" },
   { value: "INTERDISCIPLINARY", label: "Interdisciplinary Studies" },
+];
+
+// --- Updated Disability & Work Options ---
+const DISABILITY_OPTIONS = [
+  { value: "None", label: "None" },
+  { value: "Physical", label: "Physical / Mobility Impairment" },
+  { value: "Amputation", label: "Amputation" },
+  { value: "Paralysis", label: "Paralysis" },
+  { value: "CerebralPalsy", label: "Cerebral Palsy" },
+  { value: "SpinalCord", label: "Spinal Cord Injury" },
+  { value: "Visual", label: "Visual Impairment" },
+  { value: "Hearing", label: "Hearing Impairment" },
+  { value: "Speech", label: "Speech Impairment" },
+  { value: "DeafBlind", label: "Deaf-Blindness" },
+  { value: "Intellectual", label: "Intellectual Disability" },
+  { value: "Learning", label: "Learning Disability" },
+  { value: "Autism", label: "Autism Spectrum Disorder" },
+  { value: "ADHD", label: "Attention Deficit Hyperactivity Disorder" },
+  { value: "Epilepsy", label: "Epilepsy" },
+  { value: "MentalHealth", label: "Mental / Psychosocial Disability" },
+  { value: "Albino", label: "Albinism" },
+  { value: "DownSyndrome", label: "Down Syndrome" },
+  { value: "SickleCell", label: "Sickle Cell Disease" },
+  { value: "ChronicIllness", label: "Chronic Illness" },
+  { value: "Multiple", label: "Multiple Disabilities" },
+  { value: "Other", label: "Other (Specify)" },
+];
+
+const WORK_AREA_OPTIONS = [
+  { value: "Library", label: "Library Assistant" },
+  { value: "Labs", label: "Laboratory Assistant" },
+  { value: "Tutorials", label: "Tutorial / Peer Learning Support" },
+  { value: "E_Learning", label: "E-Learning Support" },
+  { value: "Research", label: "Research Assistant" },
+  { value: "Kitchen", label: "Kitchen" },
+  { value: "Admin", label: "Administrative Support" },
+  { value: "Registry", label: "Registry / Records Office" },
+  { value: "Admissions", label: "Admissions Office" },
+  { value: "Exams", label: "Examinations Office" },
+  { value: "Finance", label: "Finance / Accounts Office" },
+  { value: "HR", label: "Human Resources Support" },
+  { value: "ICT", label: "ICT / IT Support" },
+  { value: "Systems", label: "Systems Administration Support" },
+  { value: "Data", label: "Data Entry / Data Support" },
+  { value: "Media", label: "Media & Communications Support" },
+  { value: "Grounds", label: "Grounds Maintenance" },
+  { value: "Maintenance", label: "General Maintenance" },
+  { value: "Electrical", label: "Electrical Maintenance" },
+  { value: "Plumbing", label: "Plumbing Maintenance" },
+  { value: "Cleaning", label: "Cleaning / Janitorial Services" },
+  { value: "DisabilitySupport", label: "Disability Support Services" },
+  { value: "Counselling", label: "Counselling & Wellness Support" },
+  { value: "Health", label: "Health Services Support" },
+  { value: "Sports", label: "Sports & Recreation Support" },
+  { value: "StudentAffairs", label: "Student Affairs Office" },
+  { value: "Security", label: "Security Services" },
+  { value: "Transport", label: "Transport & Logistics" },
+  { value: "Tuckshop", label: "Tuckshop,Stores & Inventory Management" },
+  { value: "Innovation", label: "Innovation & Entrepreneurship Hub" },
+  { value: "Industry", label: "Industry Liaison / Attachment Support" },
+  { value: "Incubation", label: "Business Incubation Support" },
+  { value: "FieldWork", label: "Field Work / Outreach" },
+  { value: "Multiple", label: "Multiple Work Areas" },
+  { value: "Other", label: "Other (Specify)" },
 ];
 
 interface EditStudentDialogProps {
@@ -103,13 +167,18 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
   const [selectedFacultyId, setSelectedFacultyId] = useState<string>("");
   const [selectedDeptId, setSelectedDeptId] = useState<string>("");
 
-  // Local state for fee status
-  const [feeStatus, setFeeStatus] = useState<string>("PartiallyPaid");
+  // --- Local State for New Fields ---
+  const [isWorkForFees, setIsWorkForFees] = useState(false);
+  const [selectedDisability, setSelectedDisability] = useState<string>("None");
+  const [selectedWorkArea, setSelectedWorkArea] = useState<string>("");
 
   // --- 1. Load data and Initialize form state ---
   useEffect(() => {
     if (student) {
-      // Reset and populate form data from student prop
+      // Type casting to handle extended fields not in base Student type
+      const studentExt = student as any;
+
+      // Reset and populate form data
       setFormData({
         first_name: student.first_name,
         last_name: student.last_name,
@@ -121,10 +190,32 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
         status: student.status,
         program: student.program, // This is the Program ID
         institution: student.institution,
-        graduation_year: (student as any).graduation_year || null,
-        final_grade: (student as any).final_grade || null,
-        dropout_reason: (student as any).dropout_reason || null,
+        graduation_year: studentExt.graduation_year || null,
+        final_grade: studentExt.final_grade || null,
+        dropout_reason: studentExt.dropout_reason || null,
+        // New fields
+        hours_pledged: studentExt.hours_pledged || 0,
+        fee_status: studentExt.fee_status || "PartiallyPaid"
       });
+
+      // Initialize local states for dropdowns/switches
+      setIsWorkForFees(studentExt.is_work_for_fees || false);
+      
+      // Handle "Other" case for disability
+      if (studentExt.disability_type && !DISABILITY_OPTIONS.some(o => o.value === studentExt.disability_type)) {
+          setSelectedDisability("Other");
+          setFormData(prev => ({...prev, disability_other: studentExt.disability_type}));
+      } else {
+          setSelectedDisability(studentExt.disability_type || "None");
+      }
+
+      // Handle "Other" case for work area
+      if (studentExt.work_area && !WORK_AREA_OPTIONS.some(o => o.value === studentExt.work_area)) {
+          setSelectedWorkArea("Other");
+          setFormData(prev => ({...prev, work_area_other: studentExt.work_area}));
+      } else {
+          setSelectedWorkArea(studentExt.work_area || "");
+      }
 
       // Fetch all academic data
       const loadAcademicData = async (instId: number) => {
@@ -140,18 +231,13 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
           setDepartments(deptData || []);
           setPrograms(progData || []);
 
-          // --- FIX: Retain previously saved values for dropdowns ---
+          // Retain previously saved values for dropdowns
           const currentProgram = progData?.find(
             (p) => p.id === student.program
           );
           if (currentProgram) {
-            // Set Program
-            handleSelectChange("program", currentProgram.id.toString());
-            
-            // Set Department
             setSelectedDeptId(currentProgram.department.toString());
             
-            // Set Faculty
             const currentDept = deptData?.find(
               (d) => d.id === currentProgram.department
             );
@@ -224,23 +310,53 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
     e.preventDefault();
     if (!student?.id || !student.institution) return;
 
+    // Validate work for fees
+    if (isWorkForFees && (!selectedWorkArea || !formData.hours_pledged)) {
+        toast.error("Please specify work area and hours pledged");
+        return;
+    }
+
     setIsLoading(true);
 
     try {
-      const dataToSend: UpdateStudentData = {
+      // --- CRITICAL: Data Mapping & Cleanup for Backend ---
+      const dataToSend: any = {
         ...formData,
         date_of_birth: formData.date_of_birth && formData.date_of_birth.trim() !== "" 
-        ? formData.date_of_birth 
-        : null,
+          ? formData.date_of_birth 
+          : null,
         program: parseInt(formData.program as any, 10),
         institution: student.institution,
-        graduation_year:
-          formData.status === "Graduated" ? formData.graduation_year : null,
-        final_grade:
-          formData.status === "Graduated" ? formData.final_grade : null,
-        dropout_reason:
-          formData.status === "Dropout" ? formData.dropout_reason : null,
+        graduation_year: formData.status === "Graduated" ? formData.graduation_year : null,
+        final_grade: formData.status === "Graduated" ? formData.final_grade : null,
+        dropout_reason: formData.status === "Dropout" ? formData.dropout_reason : null,
+        
+        // --- Mapping New Fields ---
+        is_work_for_fees: isWorkForFees,
+        hours_pledged: isWorkForFees ? parseInt(formData.hours_pledged as any, 10) : 0,
       };
+
+      // Handle Disability Mapping
+      if (selectedDisability === "Other" && formData.disability_other) {
+          dataToSend.disability_type = formData.disability_other;
+      } else {
+          dataToSend.disability_type = selectedDisability;
+      }
+
+      // Handle Work Area Mapping
+      if (isWorkForFees) {
+          if (selectedWorkArea === "Other" && formData.work_area_other) {
+              dataToSend.work_area = formData.work_area_other;
+          } else {
+              dataToSend.work_area = selectedWorkArea;
+          }
+      } else {
+          dataToSend.work_area = null;
+      }
+
+      // Remove temporary fields not expected by backend
+      delete dataToSend.disability_other;
+      delete dataToSend.work_area_other;
 
       await updateStudent(student.id, dataToSend);
 
@@ -296,7 +412,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Label htmlFor="first_name">First Name *</Label>
                 <Input
                   id="first_name"
-                  value={formData.first_name}
+                  value={formData.first_name || ""}
                   required
                   onChange={handleInputChange}
                   disabled={isLoading}
@@ -306,7 +422,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Label htmlFor="last_name">Last Name *</Label>
                 <Input
                   id="last_name"
-                  value={formData.last_name}
+                  value={formData.last_name || ""}
                   required
                   onChange={handleInputChange}
                   disabled={isLoading}
@@ -317,7 +433,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Label htmlFor="student_id">Student ID *</Label>
                 <Input
                   id="student_id"
-                  value={formData.student_id}
+                  value={formData.student_id || ""}
                   required
                   onChange={handleInputChange}
                   disabled={isLoading}
@@ -327,7 +443,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Label htmlFor="national_id">National ID</Label>
                 <Input
                   id="national_id"
-                  value={formData.national_id}
+                  value={formData.national_id || ""}
                   onChange={handleInputChange}
                   disabled={isLoading}
                 />
@@ -337,7 +453,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Label htmlFor="gender">Gender *</Label>
                 <Select
                   onValueChange={(val) => handleSelectChange("gender", val)}
-                  value={formData.gender}
+                  value={formData.gender || ""}
                   required
                   disabled={isLoading}
                 >
@@ -356,7 +472,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Input
                   id="date_of_birth"
                   type="date"
-                  value={formData.date_of_birth}
+                  value={formData.date_of_birth || ""}
                   onChange={handleInputChange}
                   disabled={isLoading}
                 />
@@ -444,7 +560,6 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
               </div>
             </div>
             
-            {/* --- Added Program Category Display --- */}
             <div className="space-y-2">
               <Label>Program Category</Label>
               <Input 
@@ -460,7 +575,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Input
                   id="enrollment_year"
                   type="number"
-                  value={formData.enrollment_year}
+                  value={formData.enrollment_year || ""}
                   onChange={handleInputChange}
                   disabled={isLoading}
                 />
@@ -479,7 +594,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Label htmlFor="status">Student Status *</Label>
                 <Select
                   onValueChange={(val) => handleSelectChange("status", val)}
-                  value={formData.status}
+                  value={formData.status || ""}
                   required
                   disabled={isLoading}
                 >
@@ -498,10 +613,10 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
 
               {/* Financial Status */}
               <div className="space-y-2">
-                <Label htmlFor="feeStatus">Fees Payment Status</Label>
+                <Label htmlFor="fee_status">Fees Payment Status</Label>
                 <Select
-                  onValueChange={setFeeStatus}
-                  value={feeStatus}
+                  onValueChange={(val) => handleSelectChange("fee_status", val)}
+                  value={formData.fee_status || ""}
                   disabled={isLoading}
                 >
                   <SelectTrigger>
@@ -517,6 +632,93 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 </Select>
               </div>
             </div>
+
+            {/* --- Disability & Work for Fees Fields --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                    <Label htmlFor="disability_type">Disability Status</Label>
+                    <Select
+                        onValueChange={setSelectedDisability}
+                        value={selectedDisability}
+                        disabled={isLoading}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select disability" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                            {DISABILITY_OPTIONS.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>
+                                    {c.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {selectedDisability === "Other" && (
+                        <Input
+                            id="disability_other"
+                            placeholder="Specify disability"
+                            value={formData.disability_other || ""}
+                            onChange={handleInputChange}
+                            className="mt-2"
+                        />
+                    )}
+                </div>
+
+                <div className="flex items-center gap-4 pt-8">
+                    <Switch
+                        id="is_work_for_fees"
+                        checked={isWorkForFees}
+                        onCheckedChange={setIsWorkForFees}
+                        disabled={isLoading}
+                    />
+                    <Label htmlFor="is_work_for_fees">Participating in Work for Fees</Label>
+                </div>
+            </div>
+
+            {isWorkForFees && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 border rounded-md bg-muted/30">
+                    <div className="space-y-2">
+                        <Label htmlFor="work_area">Work Area</Label>
+                        <Select
+                            onValueChange={setSelectedWorkArea}
+                            value={selectedWorkArea}
+                            disabled={isLoading}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select work area" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                                {WORK_AREA_OPTIONS.map((c) => (
+                                    <SelectItem key={c.value} value={c.value}>
+                                        {c.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {selectedWorkArea === "Other" && (
+                            <Input
+                                id="work_area_other"
+                                placeholder="Specify work area"
+                                value={formData.work_area_other || ""}
+                                onChange={handleInputChange}
+                                className="mt-2"
+                            />
+                        )}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="hours_pledged">Hours Pledged</Label>
+                        <Input
+                            id="hours_pledged"
+                            type="number"
+                            placeholder="E.g. 50"
+                            value={formData.hours_pledged || ""}
+                            onChange={handleInputChange}
+                            disabled={isLoading}
+                        />
+                    </div>
+                </div>
+            )}
+            {/* ----------------------------------------------- */}
 
             {/* Conditional Fields: GRADUATED */}
             {formData.status === "Graduated" && (

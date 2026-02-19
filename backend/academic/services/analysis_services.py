@@ -1,67 +1,66 @@
 # academic/services/analysis_services.py
 from django.db.models import Sum, Count
-from ..models import Student, Payment, FeeStructure
+from ..models import Student
+from iseop.models import IseopStudent
 
 class AnalysisService:
     @staticmethod
     def get_special_enrollment_stats(institution_id=None):
-        # Build dynamic filter
-        filters = {}
+        # -----------------------------
+        # NORMAL STUDENTS
+        # -----------------------------
+        student_filters = {}
         if institution_id:
-            filters['institution_id'] = institution_id
-            
-        students = Student.objects.filter(**filters)
-        
-        # Aggregate Data
-        disability_data = students.exclude(disability_type='None').values('disability_type').annotate(
+            student_filters['institution_id'] = institution_id
+
+        students = Student.objects.filter(**student_filters)
+
+        # Disabled students (excluding None, 'None', 'none', or null)
+        disabled_students = students.exclude(disability_type__isnull=True).exclude(disability_type__iexact='none')
+
+        disability_data = disabled_students.values('disability_type').annotate(
             value=Count('id')
         )
-        
+
         work_data = students.filter(is_work_for_fees=True).values('work_area').annotate(
             students=Count('id'),
             hours=Sum('hours_pledged')
         )
 
-        return {
-            "special_students": list(disability_data),
-            "work_for_fees": list(work_data),
-            "counts": {
-                "iseop": students.filter(is_iseop=True).count(),
-                "work_for_fees": students.filter(is_work_for_fees=True).count(),
-                "disabled": students.exclude(disability_type='None').count()
-            }
+        normal_counts = {
+            "work_for_fees": students.filter(is_work_for_fees=True).count(),
+            "disabled": disabled_students.count()
         }
 
-    @staticmethod
-    def get_financial_stats(institution_id=None):
-        filters = {}
+        # -----------------------------
+        # ISEOP STUDENTS
+        # -----------------------------
+        iseop_filters = {}
         if institution_id:
-            filters['institution_id'] = institution_id
-            
-        # 1. Total Collected (from all payments)
-        total_collected = Payment.objects.filter(
-            **({'student__institution_id': institution_id} if institution_id else {})
-        ).aggregate(Sum('amount'))['amount__sum'] or 0
-        
-        # 2. Expected Revenue (ONLY for Active students, per semester)
-        # We look at the semester_fee defined for the program each active student is in
-        active_students = Student.objects.filter(status='Active', **filters)
-        
-        expected_semester_revenue = active_students.aggregate(
-            total=Sum('program__fees__semester_fee')
-        )['total'] or 0
+            iseop_filters['institution_id'] = institution_id
 
-        # 3. Stats Calculation
-        compliance = (total_collected / expected_semester_revenue * 100) if expected_semester_revenue > 0 else 0
+        iseop_students = IseopStudent.objects.filter(**iseop_filters)
+
+        # Disabled ISEOP students (excluding None, 'None', 'none', or null)
+        iseop_disabled = iseop_students.exclude(disability_type__isnull=True).exclude(disability_type__iexact='none')
+
+        iseop_disability_data = iseop_disabled.values('disability_type').annotate(
+            value=Count('id')
+        )
+
+        iseop_counts = {
+            "disabled": iseop_disabled.count(),
+            "total": iseop_students.count()
+        }
 
         return {
-            "stats": {
-                "totalCollectedYTD": total_collected,
-                "totalPending": max(0, expected_semester_revenue - total_collected),
-                "complianceRate": round(compliance, 1),
-                "studentsWithPending": active_students.count() # Count of active students
+            "students": {
+                "special_students": list(disability_data),
+                "work_for_fees": list(work_data),
+                "counts": normal_counts
             },
-            "fee_structure": FeeStructure.objects.filter(
-                **({'program__department__faculty__institution_id': institution_id} if institution_id else {})
-            ).values('program_id', 'program__name', 'semester_fee')[:10]
+            "iseop": {
+                "special_students": list(iseop_disability_data),
+                "counts": iseop_counts
+            }
         }
