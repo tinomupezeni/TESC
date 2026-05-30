@@ -10,6 +10,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['first_name'] = user.first_name
         token['last_name'] = user.last_name
         token['level'] = user.level
+        token['must_change_password'] = user.must_change_password
         
         # Add Department and Permissions
         if user.department:
@@ -41,6 +42,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'level': user.level,
+            'must_change_password': user.must_change_password,
             'role': {'name': user.role.name} if user.role else None,
             'department': {
                 'name': user.department.name,

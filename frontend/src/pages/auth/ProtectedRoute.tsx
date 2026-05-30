@@ -8,12 +8,17 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   
 
   if (!accessToken) {
     // If the user is not authenticated, redirect them to the login page
     return <Navigate to="/" replace />;
+  }
+
+  // If the user must change their password, redirect to the force-change page
+  if (user?.must_change_password) {
+    return <Navigate to="/change-password" replace />;
   }
 
   // If the user is authenticated, render the child components

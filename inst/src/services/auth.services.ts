@@ -6,8 +6,12 @@ interface LoginData {
 }
 
 interface LoginResponse {
-  access: string;
-  refresh: string;
+  tokens: {
+    access: string;
+    refresh: string;
+  };
+  must_change_password: boolean;
+  institution_id: number;
 }
 
 /**

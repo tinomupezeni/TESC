@@ -57,7 +57,7 @@ export default function Statistics() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <BarChart3 className="h-7 w-7" />
-              TESC Statistics
+              ScalarEye Statistics
             </h1>
             <p className="text-muted-foreground">
               Overall insights and analytics for all institutions

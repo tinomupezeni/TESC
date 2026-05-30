@@ -64,7 +64,7 @@ const Index = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-primary rounded-lg p-6 text-white shadow-lg">
-          <h1 className="text-3xl font-bold mb-2">TESC Student Records & Statistics</h1>
+          <h1 className="text-3xl font-bold mb-2">ScalarEye Student Records & Statistics</h1>
           <p className="text-lg opacity-90">
             Zimbabwe Human Capital Planning and Skills Development Department
           </p>
@@ -92,7 +92,7 @@ const Index = () => {
           <StatsCard
             title="Graduates"
             value={stats?.graduates_year || 0}
-            description="Across all institutions over the years"
+            description="Across all institutions this year"
             icon={GraduationCap}
             variant="default"
           />

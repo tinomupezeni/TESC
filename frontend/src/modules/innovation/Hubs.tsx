@@ -57,7 +57,7 @@ export default function Hubs() {
             Incubation Hubs Management
           </h1>
           <p className="text-muted-foreground">
-            Statistics and occupancy tracking for TESC Incubation Hubs.
+            Statistics and occupancy tracking for ScalarEye Incubation Hubs.
           </p>
         </div>
 

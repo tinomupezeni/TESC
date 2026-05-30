@@ -33,6 +33,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'level', 
             'role', 
             'department', 
+            'must_change_password',
         ]
         read_only_fields = fields
 # --- 2. User Registration Serializer (For POST /api/users/register/) ---

@@ -15,7 +15,7 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl font-bold text-foreground mb-4">
-            TESC Institution Portal
+            ScalarEye Institution Portal
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Comprehensive management system for educational institutions in Zimbabwe

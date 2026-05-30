@@ -34,6 +34,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             
             # 2. Set and hash the new password
             user.set_password(data.get('new_password'))
+            user.must_change_password = False
             user.save()
             
             return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)

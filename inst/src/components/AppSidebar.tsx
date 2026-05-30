@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Assuming you have shadcn Avatar
 import { useAuth } from "@/context/AuthContext";
+import { ScalarEyeLogo } from "./layout/ScalarEyeLogo";
 
 // Grouped Menu Items for better organization
 const menuGroups = [
@@ -70,6 +71,7 @@ const menuGroups = [
   {
     label: "System",
     items: [
+      { title: "User Management", url: "/dashboard/users", icon: Users },
       { title: "Settings", url: "/dashboard/settings", icon: Settings2 },
       { title: "Help", url: "#", icon: Lightbulb },
       
@@ -99,8 +101,8 @@ export default function AppSidebar() {
       {/* --- HEADER: Institution Branding --- */}
       <SidebarHeader>
         <div className="flex items-center gap-3 p-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="size-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary/10">
+            <ScalarEyeLogo className="size-8" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold text-white">
