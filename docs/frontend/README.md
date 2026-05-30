@@ -2,7 +2,7 @@
 
 ## Overview
 
-The TESC frontend is built using React with TypeScript, following modern web development best practices. It features a component-based architecture with a focus on reusability, maintainability, and performance.
+The ScalarEye frontend is built using React with TypeScript, following modern web development best practices. It features a component-based architecture with a focus on reusability, maintainability, and performance.
 
 ## Project Structure
 

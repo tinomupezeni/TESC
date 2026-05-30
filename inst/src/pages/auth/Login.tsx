@@ -18,8 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Loader2, Mail, Lock } from "lucide-react";
-import { bg_image, tesc_logo } from "@/constants/images";
+import { AlertCircle, Building2, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { bg_image } from "@/components/layout/ScalarEyeLogo";
+import { ScalarEyeLogo } from "@/components/layout/ScalarEyeLogo";
 import {
   getInstitutionAdminProfile,
   loginInstitutionAdmin,
@@ -36,6 +37,7 @@ const Login = () => {
   const [selectedInstId, setSelectedInstId] = useState<string>("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   // UI States
   const [error, setError] = useState("");
@@ -86,11 +88,9 @@ const Login = () => {
       
       <Card className="w-full max-w-md shadow-2xl rounded-xl relative z-10 border-white/10 bg-white/95 dark:bg-slate-950/95">
         <CardHeader className="space-y-1 text-center pb-6">
-          <img
-            src={tesc_logo}
-            alt="TESC Logo"
-            className="h-24 mx-auto mb-4 drop-shadow-md rounded-full"
-          />
+          <div className="flex justify-center mb-4">
+            <ScalarEyeLogo className="h-24 w-24" />
+          </div>
 
           <CardTitle className="text-2xl font-bold tracking-tight">
             Institution Portal
@@ -168,14 +168,20 @@ const Login = () => {
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className="pl-9 h-11 transition-all"
+                  className="pl-9 pr-10 h-11 transition-all"
                   required
                 />
+                <div 
+                  className="absolute right-3 top-3 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </div>
               </div>
             </div>
 

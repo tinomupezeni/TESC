@@ -17,9 +17,11 @@ import Graduates from "./pages/Graduates";
 import Facilities from "./pages/Facilities";
 import Reports from "./pages/Reports";
 import Innovation from "./pages/Innovation";
+import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Faculties from "./pages/Faculties";
 import EnrolmentSupport from "./pages/IseopEnrolment";
 
@@ -41,94 +43,126 @@ const App = () => {
             element={<ForcePasswordChange />}
           />
 
-          {/* Dashboard routes wrapped with DashboardLayout */}
+          {/* Dashboard routes wrapped with DashboardLayout and ProtectedRoute */}
           <Route
             path="/dashboard"
             element={
-              <DashboardLayout>
-                <Dashboard />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Dashboard />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/students"
             element={
-              <DashboardLayout>
-                <Students />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Students />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/staff"
             element={
-              <DashboardLayout>
-                <Staff />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Staff />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
          
           <Route
             path="/dashboard/programs"
             element={
-              <DashboardLayout>
-                <Programs />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Programs />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/graduates"
             element={
-              <DashboardLayout>
-                <Graduates />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Graduates />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/special-enrollment"
             element={
-              <DashboardLayout>
-                <EnrolmentSupport />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <EnrolmentSupport />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/facilities"
             element={
-              <DashboardLayout>
-                <Facilities />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Facilities />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/faculties"
             element={
-              <DashboardLayout>
-                <Faculties />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Faculties />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/reports"
             element={
-              <DashboardLayout>
-                <Reports />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Reports />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/innovation"
             element={
-              <DashboardLayout>
-                <Innovation />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Innovation />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/settings"
             element={
-              <DashboardLayout>
-                <Settings />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Settings />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/users"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Users />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 

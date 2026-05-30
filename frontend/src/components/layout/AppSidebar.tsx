@@ -32,7 +32,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { tesc_logo } from "./logo";
+import { ScalarEyeLogo } from "./ScalarEyeLogo";
 
 const mainNavigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -90,14 +90,14 @@ export function AppSidebar() {
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/20">
           {!isCollapsed ? (
             <div className="flex items-center">
-              <img src={tesc_logo} className="w-10 mr-3 rounded-full bg-white" alt="TESC Logo" />
+              <ScalarEyeLogo className="w-10 h-10 mr-3" />
               <div>
-                <h1 className="text-sm font-black text-blue-700 dark:text-blue-400 leading-none">TESC SRS</h1>
+                <h1 className="text-sm font-black text-blue-700 dark:text-blue-400 leading-none">ScalarEye SRS</h1>
                 <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase mt-1">Data Systems</p>
               </div>
             </div>
           ) : (
-            <div className="text-blue-700 dark:text-blue-400 font-black text-xl text-center">T</div>
+            <div className="text-blue-700 dark:text-blue-400 font-black text-xl text-center">S</div>
           )}
         </div>
 

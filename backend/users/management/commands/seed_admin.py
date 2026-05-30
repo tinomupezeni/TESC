@@ -27,7 +27,7 @@ class Command(BaseCommand):
             self.stdout.write(f'Created Department: {admin_dept.name}')
 
         # 3. Create Superuser
-        email = 'admin@tesc.com'
+        email = 'admin@scalareye.com'
         password = 'admin@123'
 
         if not User.objects.filter(email=email).exists():
