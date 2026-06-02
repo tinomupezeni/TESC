@@ -52,6 +52,7 @@ class CustomUser(AbstractUser):
         ('4', 'Level 4 - Staff Only'),
     ]
     level = models.CharField(max_length=1, choices=LEVEL_CHOICES, default='4')
+    must_change_password = models.BooleanField(default=True)
     
     # Add this line
     institution = models.ForeignKey(

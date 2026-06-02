@@ -1,12 +1,12 @@
-# TESC System Overview
+# ScalarEye System Overview
 
-## Introduction
+# System Overview
 
-The Tertiary Education Support Center (TESC) is a comprehensive educational management system designed to streamline academic processes, student management, and institutional operations. This document provides a high-level overview of the system architecture and its components.
+The ScalarEye Central Data System (ScalarEye) is a comprehensive educational management system designed to streamline academic processes, student management, and institutional operations. This document provides a high-level overview of the system architecture and its components.
 
 ## System Architecture
 
-The TESC system follows a modern, modular architecture with clear separation of concerns:
+The ScalarEye system follows a modern, modular architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

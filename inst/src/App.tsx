@@ -15,9 +15,11 @@ import Programs from "./pages/Programs";
 import Graduates from "./pages/Graduates";
 import Facilities from "./pages/Facilities";
 import Innovation from "./pages/Innovation";
+import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Faculties from "./pages/Faculties";
 import EnrolmentSupport from "./pages/IseopEnrolment";
 import { PermissionGuard } from "./components/PermissionGuard";
@@ -150,6 +152,16 @@ const App = () => {
                   <Settings />
                 </DashboardLayout>
               </PermissionGuard>
+            }
+          />
+          <Route
+            path="/dashboard/users"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Users />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 

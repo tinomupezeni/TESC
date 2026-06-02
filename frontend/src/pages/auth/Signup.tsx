@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Mail, Lock, AlertCircle, Eye, EyeOff, Building } from "lucide-react";
-import { bg_image } from "@/components/layout/logo";
+import { bg_image } from "@/components/layout/ScalarEyeLogo";
 import apiClient from "@/services/api";
 
 // Define types for better code quality
@@ -101,7 +101,7 @@ const Signup = () => {
         <CardContent className="p-8 space-y-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800">Create an Account</h1>
-            <p className="text-gray-500 text-sm">TESC Student Records & Statistics</p>
+            <p className="text-gray-500 text-sm">ScalarEye Student Records & Statistics</p>
           </div>
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (

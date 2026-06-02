@@ -1,6 +1,6 @@
-# TESC - Technical Documentation
+# ScalarEye - Technical Documentation
 
-Welcome to the TESC (Tertiary Education Support Center) system documentation. This documentation provides a comprehensive overview of the system architecture, components, and their interactions.
+Welcome to the ScalarEye (ScalarEye Central Data System) system documentation. This documentation provides a comprehensive overview of the system architecture, components, and their interactions.
 
 ## Documentation Structure
 
@@ -15,7 +15,7 @@ Welcome to the TESC (Tertiary Education Support Center) system documentation. Th
 
 ## Getting Started
 
-To get started with the TESC system, please refer to the [Development Guide](./development/DEVELOPMENT.md) for setting up your development environment.
+To get started with the ScalarEye system, please refer to the [Development Guide](./development/DEVELOPMENT.md) for setting up your development environment.
 
 ## Contributing
 

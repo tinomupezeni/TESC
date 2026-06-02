@@ -48,6 +48,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "institution",
+            "must_change_password",
             "is_active",
             "date_joined",
         ]

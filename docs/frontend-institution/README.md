@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Institution Frontend is a dedicated React application designed specifically for institutional users of the TESC system. It provides a tailored interface for institutions to manage their academic programs, students, and other institutional data. This frontend shares the same backend as the Admin Dashboard but serves a different user base with institution-specific functionality.
+The Institution Frontend is a dedicated React application designed specifically for institutional users of the ScalarEye system. It provides a tailored interface for institutions to manage their academic programs, students, and other institutional data. This frontend shares the same backend as the Admin Dashboard but serves a different user base with institution-specific functionality.
 
 ## Key Differences from Admin Dashboard
 
@@ -99,7 +99,7 @@ npm run build
 ### Environment Variables
 ```
 VITE_API_BASE_URL=http://localhost:8000/api
-VITE_APP_NAME=TESC Institution Portal
+VITE_APP_NAME=ScalarEye Institution Portal
 # Other environment-specific variables
 ```
 

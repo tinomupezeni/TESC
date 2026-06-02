@@ -15,6 +15,7 @@ import Institutions from "./pages/Institutions";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import ForcePasswordChange from "./pages/auth/ForcePasswordChange";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/change-password" element={<ForcePasswordChange />} />
 
               {/* Protected Main Routes */}
               <Route

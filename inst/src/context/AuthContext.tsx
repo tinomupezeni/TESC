@@ -17,6 +17,7 @@ interface User {
   first_name: string;
   last_name: string;
   role: string;
+  must_change_password: boolean;
   institution: Institution; // Changed from institution_id to object
 }
 

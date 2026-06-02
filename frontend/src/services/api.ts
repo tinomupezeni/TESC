@@ -1,8 +1,21 @@
 import axios from "axios";
 
-// Local Django server address
-export const baseURL = "http://127.0.0.1:8000/api";
-// export const baseURL = "https://tesc.zchpc.ac.zw/api";
+// Resolve baseURL dynamically
+const getBaseURL = () => {
+  if (typeof window !== "undefined") {
+    const { hostname, protocol } = window.location;
+    // If accessing via IP or localhost directly on port 8081/8082, 
+    // the backend is likely on 8000
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.50.")) {
+      return `${protocol}//${hostname}:8000/api`;
+    }
+    // Otherwise assume standard production routing (/api proxied by nginx)
+    return `${protocol}//${hostname}/api`;
+  }
+  return "https://tesc.zchpc.ac.zw/api";
+};
+
+export const baseURL = getBaseURL();
 const apiClient = axios.create({
   baseURL: baseURL,
   headers: {
@@ -46,7 +59,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       
       // Safety: If the refresh request itself fails, clear storage and redirect
-      if (originalRequest.url === "/users/token/refresh/") {
+      if (originalRequest.url?.includes("/users/token/refresh/")) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/";
