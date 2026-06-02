@@ -1,6 +1,6 @@
-# TESC CI/CD Deployment Guide
+# ScalarEye CI/CD Deployment Guide
 
-This guide explains how to set up automatic deployment for TESC using GitHub Actions with a self-hosted runner on your ZCHPC VM.
+This guide explains how to set up automatic deployment for ScalarEye using GitHub Actions with a self-hosted runner on your ZCHPC VM.
 
 ## Architecture Overview
 
@@ -196,7 +196,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
 ## File Structure
 
 ```
-TESC/
+ScalarEye/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml          # CI/CD pipeline

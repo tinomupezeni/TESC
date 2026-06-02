@@ -2,7 +2,7 @@
 Professional PDF Report Generator
 
 Creates professional PDF reports with:
-- TESC branding header with logo
+- SCALAREYE branding header with logo
 - Dynamic data tables with styling
 - Pagination with footer
 - Support for both detailed and aggregated reports
@@ -28,40 +28,40 @@ from reportlab.platypus import (
 from reportlab.pdfgen import canvas
 
 
-# TESC Brand Colors - Blue theme to match TESC logo
-TESC_BLUE = colors.HexColor('#1e3a5f')  # Dark blue for headers
-TESC_BLUE_LIGHT = colors.HexColor('#3b82f6')  # Lighter blue for accents
-TESC_BLUE_ACCENT = colors.HexColor('#0ea5e9')  # Sky blue for highlights
+# SCALAREYE Brand Colors - Blue theme to match SCALAREYE logo
+SCALAREYE_BLUE = colors.HexColor('#1e3a5f')  # Dark blue for headers
+SCALAREYE_BLUE_LIGHT = colors.HexColor('#3b82f6')  # Lighter blue for accents
+SCALAREYE_BLUE_ACCENT = colors.HexColor('#0ea5e9')  # Sky blue for highlights
 HEADER_BG = colors.HexColor('#1e3a5f')  # Dark blue header background
 ROW_ALT = colors.HexColor('#f0f9ff')  # Light blue tint for alternating rows
 WHITE = colors.white
 BLACK = colors.black
 GRAY = colors.HexColor('#64748b')  # Slate gray
 
-# TESC Logo URL
-TESC_LOGO_URL = 'https://tesc.co.zw/wp-content/uploads/2025/04/tesc-logo.jpg'
+# SCALAREYE Logo URL
+SCALAREYE_LOGO_URL = 'https://scalareye.co.zw/wp-content/uploads/2025/04/scalareye-logo.jpg'
 
 
-def get_tesc_logo():
+def get_scalareye_logo():
     """
-    Fetch and cache the TESC logo from the URL.
+    Fetch and cache the SCALAREYE logo from the URL.
     Returns a BytesIO object with the image data, or None if failed.
     """
-    cache_key = 'tesc_logo_image'
+    cache_key = 'scalareye_logo_image'
     cached_logo = cache.get(cache_key)
 
     if cached_logo:
         return BytesIO(cached_logo)
 
     try:
-        response = requests.get(TESC_LOGO_URL, timeout=10)
+        response = requests.get(SCALAREYE_LOGO_URL, timeout=10)
         if response.status_code == 200:
             image_data = response.content
             # Cache for 24 hours
             cache.set(cache_key, image_data, 60 * 60 * 24)
             return BytesIO(image_data)
     except Exception as e:
-        print(f"Failed to fetch TESC logo: {e}")
+        print(f"Failed to fetch SCALAREYE logo: {e}")
 
     return None
 
@@ -93,7 +93,7 @@ class NumberedCanvas(canvas.Canvas):
         page_width, page_height = self._pagesize
 
         # Footer line
-        self.setStrokeColor(TESC_BLUE)
+        self.setStrokeColor(SCALAREYE_BLUE)
         self.setLineWidth(0.5)
         self.line(30, 40, page_width - 30, 40)
 
@@ -113,7 +113,7 @@ class NumberedCanvas(canvas.Canvas):
 
 class ProfessionalPDFGenerator:
     """
-    Generates professional PDF reports with TESC branding.
+    Generates professional PDF reports with SCALAREYE branding.
     """
 
     def __init__(self, title: str, institution_name: str = None, orientation: str = 'portrait'):
@@ -139,7 +139,7 @@ class ProfessionalPDFGenerator:
             name='ReportTitle',
             parent=self.styles['Heading1'],
             fontSize=18,
-            textColor=TESC_BLUE,
+            textColor=SCALAREYE_BLUE,
             spaceAfter=6,
             alignment=TA_CENTER
         ))
@@ -157,7 +157,7 @@ class ProfessionalPDFGenerator:
             name='SectionHeader',
             parent=self.styles['Heading2'],
             fontSize=14,
-            textColor=TESC_BLUE,
+            textColor=SCALAREYE_BLUE,
             spaceBefore=15,
             spaceAfter=10
         ))
@@ -178,9 +178,9 @@ class ProfessionalPDFGenerator:
         ))
 
     def _get_logo(self):
-        """Get the TESC logo image for the header."""
+        """Get the SCALAREYE logo image for the header."""
         if self._logo is None:
-            logo_data = get_tesc_logo()
+            logo_data = get_scalareye_logo()
             if logo_data:
                 try:
                     self._logo = Image(logo_data, width=50, height=50)
@@ -193,7 +193,7 @@ class ProfessionalPDFGenerator:
         return self._logo if self._logo else None
 
     def _create_header(self, institution_name: str = None) -> list:
-        """Create the report header with TESC branding."""
+        """Create the report header with SCALAREYE branding."""
         elements = []
 
         # Try to get logo
@@ -203,7 +203,7 @@ class ProfessionalPDFGenerator:
             # Header with actual logo
             header_data = [[
                 logo,
-                Paragraph("TERTIARY EDUCATION SUPPORT CENTER", ParagraphStyle(
+                Paragraph("SCALAREYE CENTRAL DATA SYSTEM", ParagraphStyle(
                     'HeaderText',
                     parent=self.styles['Normal'],
                     fontSize=14,
@@ -215,14 +215,14 @@ class ProfessionalPDFGenerator:
         else:
             # Fallback: Text-based header
             header_data = [[
-                Paragraph("TESC", ParagraphStyle(
+                Paragraph("SCALAREYE", ParagraphStyle(
                     'LogoText',
                     parent=self.styles['Normal'],
                     fontSize=24,
                     textColor=WHITE,
                     fontName='Helvetica-Bold'
                 )),
-                Paragraph("TERTIARY EDUCATION SUPPORT CENTER", ParagraphStyle(
+                Paragraph("SCALAREYE CENTRAL DATA SYSTEM", ParagraphStyle(
                     'HeaderText',
                     parent=self.styles['Normal'],
                     fontSize=14,
@@ -234,7 +234,7 @@ class ProfessionalPDFGenerator:
 
         header_table = Table(header_data, colWidths=[80, None])
         header_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), TESC_BLUE),
+            ('BACKGROUND', (0, 0), (-1, -1), SCALAREYE_BLUE),
             ('TEXTCOLOR', (0, 0), (-1, -1), WHITE),
             ('ALIGN', (0, 0), (0, 0), 'CENTER'),
             ('ALIGN', (1, 0), (1, 0), 'CENTER'),
@@ -253,7 +253,7 @@ class ProfessionalPDFGenerator:
             'InstitutionName',
             parent=self.styles['Normal'],
             fontSize=11,
-            textColor=TESC_BLUE,
+            textColor=SCALAREYE_BLUE,
             alignment=TA_CENTER,
             fontName='Helvetica-Oblique'
         )
@@ -281,7 +281,7 @@ class ProfessionalPDFGenerator:
         elements.append(HRFlowable(
             width="100%",
             thickness=1,
-            color=TESC_BLUE_LIGHT,
+            color=SCALAREYE_BLUE_LIGHT,
             spaceBefore=5,
             spaceAfter=15
         ))
@@ -334,7 +334,7 @@ class ProfessionalPDFGenerator:
         # Table styling - Blue theme
         style_commands = [
             # Header styling
-            ('BACKGROUND', (0, 0), (-1, 0), TESC_BLUE),
+            ('BACKGROUND', (0, 0), (-1, 0), SCALAREYE_BLUE),
             ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
@@ -351,7 +351,7 @@ class ProfessionalPDFGenerator:
 
             # Grid
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
-            ('BOX', (0, 0), (-1, -1), 1, TESC_BLUE),
+            ('BOX', (0, 0), (-1, -1), 1, SCALAREYE_BLUE),
 
             # Vertical alignment
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),

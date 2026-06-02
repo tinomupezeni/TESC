@@ -54,7 +54,7 @@ class InstitutionViewSet(viewsets.ModelViewSet):
                 )
 
             # 4. Create the User Account
-            default_password = 'tesc@123'
+            default_password = 'scalareye@123'
             
             # We use the email as the username to ensure it's unique and matches the login flow
             user = CustomUser.objects.create_user(
@@ -64,6 +64,8 @@ class InstitutionViewSet(viewsets.ModelViewSet):
                 first_name=institution.name,
                 is_staff=True # Adjust permissions as needed
             )
+            user.must_change_password = True
+            user.save()
 
             # 5. Link User to Institution via InstitutionAdmin
             InstitutionAdmin.objects.create(

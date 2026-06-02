@@ -26,6 +26,7 @@ interface UserInfo {
   first_name: string;
   last_name: string;
   level: string;
+  must_change_password: boolean;
   role: RoleInfo | null;
   department: DepartmentInfo | null;
 }

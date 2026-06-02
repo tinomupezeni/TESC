@@ -2,7 +2,7 @@
 
 ## Overview
 
-The TESC backend is built using Django and Django REST Framework, providing a robust and scalable API for the frontend. It follows a modular architecture with separate Django apps for different functionalities.
+The ScalarEye backend is built using Django and Django REST Framework, providing a robust and scalable API for the frontend. It follows a modular architecture with separate Django apps for different functionalities.
 
 ## Project Structure
 

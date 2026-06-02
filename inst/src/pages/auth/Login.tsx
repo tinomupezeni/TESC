@@ -18,8 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Loader2, Mail, Lock } from "lucide-react";
-import { bg_image, tesc_logo } from "@/constants/images";
+import { AlertCircle, Building2, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { bg_image } from "@/components/layout/ScalarEyeLogo";
+import { ScalarEyeLogo } from "@/components/layout/ScalarEyeLogo";
 import {
   getInstitutionAdminProfile,
   loginInstitutionAdmin,
@@ -36,6 +37,7 @@ const Login = () => {
   const [selectedInstId, setSelectedInstId] = useState<string>("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   // UI States
   const [error, setError] = useState("");
@@ -86,12 +88,8 @@ const Login = () => {
       
       <Card className="w-full max-w-[420px] shadow-2xl rounded-2xl relative z-10 border-white/10 bg-white/95 dark:bg-slate-950/95 overflow-hidden">
         <CardHeader className="space-y-1 text-center pb-4 sm:pb-6 p-6 sm:p-8">
-          <div className="mx-auto bg-white p-2 rounded-full w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shadow-lg mb-4">
-            <img
-              src={tesc_logo}
-              alt="TESC Logo"
-              className="h-14 sm:h-16 w-auto"
-            />
+          <div className="mx-auto flex justify-center mb-4">
+            <ScalarEyeLogo className="h-20 w-20 sm:h-24 sm:w-24" />
           </div>
 
           <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight">
@@ -170,14 +168,20 @@ const Login = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className="pl-10 h-10 sm:h-11 text-xs sm:text-sm transition-all"
+                  className="pl-10 pr-10 h-10 sm:h-11 text-xs sm:text-sm transition-all"
                   required
                 />
+                <div 
+                  className="absolute right-3 top-3 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </div>
               </div>
             </div>
 

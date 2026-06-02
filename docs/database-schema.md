@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the database schema for the TESC system, including tables, relationships, and key constraints. The system uses PostgreSQL as its primary database.
+This document outlines the database schema for the ScalarEye system, including tables, relationships, and key constraints. The system uses PostgreSQL as its primary database.
 
 ## Core Tables
 

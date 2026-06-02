@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
-// Updated type definition for the TESC profile
+// Updated type definition for the ScalarEye profile
 type ProfileData = {
   email: string;
   first_name: string;
@@ -96,7 +96,7 @@ const Profile = () => {
   };
 
   if (isLoading && !profile) {
-    return <div className="p-8">Loading TESC Profile...</div>;
+    return <div className="p-8">Loading ScalarEye Profile...</div>;
   }
 
   return (
