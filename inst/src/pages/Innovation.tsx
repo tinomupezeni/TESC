@@ -20,20 +20,30 @@ const InnovationDashboard = () => {
   if (loading) return <div>Loading...</div>;
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Innovation & Industrialisation</h1>
-        <p className="text-muted-foreground">
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Innovation & Industrialisation</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Manage institution hubs, startups, partnerships, and research grants.
         </p>
       </div>
 
       <Tabs defaultValue="projects" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-          <TabsTrigger value="projects" className="gap-2"><Rocket className="h-4 w-4"/> Projects</TabsTrigger>
-          <TabsTrigger value="hubs" className="gap-2"><Building2 className="h-4 w-4"/> Hubs</TabsTrigger>
-          <TabsTrigger value="partnerships" className="gap-2"><Handshake className="h-4 w-4"/> Partners</TabsTrigger>
-          <TabsTrigger value="grants" className="gap-2"><Banknote className="h-4 w-4"/> Grants</TabsTrigger>
-        </TabsList>
+        <div className="px-1">
+          <TabsList className="bg-muted p-1 w-full sm:w-auto overflow-x-auto justify-start no-scrollbar">
+            <TabsTrigger value="projects" className="gap-2 text-xs sm:text-sm">
+              <Rocket className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> Projects
+            </TabsTrigger>
+            <TabsTrigger value="hubs" className="gap-2 text-xs sm:text-sm">
+              <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> Hubs
+            </TabsTrigger>
+            <TabsTrigger value="partnerships" className="gap-2 text-xs sm:text-sm">
+              <Handshake className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> Partners
+            </TabsTrigger>
+            <TabsTrigger value="grants" className="gap-2 text-xs sm:text-sm">
+              <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> Grants
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="projects" className="space-y-4">
           <ProjectManager projects={projects} onRefresh={refresh} />

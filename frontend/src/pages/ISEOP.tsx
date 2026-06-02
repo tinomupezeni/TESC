@@ -230,28 +230,26 @@ export default function ISEOPStudents() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">ISEOP Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">ISEOP Dashboard</h1>
 
         {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <StatsCard title="Total Students" value={stats.total} description="Across all years/institutions" icon={Users} variant="accent" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatsCard title="Total Students" value={stats.total} description="All years" icon={Users} variant="accent" />
           <StatsCard title="Active Students" value={stats.active} description={`Active in ${new Date().getFullYear()}`} icon={Zap} variant="success" />
-          <StatsCard title="Students that Completed Programs" value={stats.completed} description="Completed across all years" icon={GraduationCap} variant="info" />
-          <StatsCard title="Deferred / Dropped" value={stats.deferred} description="Students that Deferred/Dropped across all years" icon={AlertTriangle} variant="warning" />
-          <StatsCard title="Male Students" value={stats.male} description={`${stats.maleRate}% of total`} icon={Users} variant="default" />
-          <StatsCard title="Female Students" value={stats.female} description={`${stats.femaleRate}% of total`} icon={Users} variant="default" />
+          <StatsCard title="Completed" value={stats.completed} description="Across all years" icon={GraduationCap} variant="info" />
+          <StatsCard title="Deferred/Dropped" value={stats.deferred} description="Across all years" icon={AlertTriangle} variant="warning" />
+          <StatsCard title="Male Students" value={stats.male} description={`${stats.maleRate}%`} icon={Users} variant="default" />
+          <StatsCard title="Female Students" value={stats.female} description={`${stats.femaleRate}%`} icon={Users} variant="default" />
           <StatsCard title="Total Programs" value={stats.totalPrograms} description="Active programs" icon={Building} variant="default" />
-          <StatsCard title="Students with Disabilities" value={stats.disabilityTotal} description="All students with disabilities" icon={Accessibility} variant="info" />
-          <StatsCard title="Active (Disability)" value={stats.disabilityActive} description="Currently active with disability" icon={Zap} variant="success" />
-          <StatsCard title="Completed (Disability)" value={stats.disabilityCompleted} description="Completed programs with disability" icon={GraduationCap} variant="info" />
+          <StatsCard title="Special Needs" value={stats.disabilityTotal} description="All disabilities" icon={Accessibility} variant="info" />
         </div>
 
         {/* CHART */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Enrollment vs Completion Trends</CardTitle>
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Enrollment vs Completion Trends</CardTitle>
             <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-9">
                 <SelectValue placeholder="All Programs" />
               </SelectTrigger>
               <SelectContent>
@@ -262,31 +260,29 @@ export default function ISEOPStudents() {
               </SelectContent>
             </Select>
           </CardHeader>
-          <CardContent>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" allowDecimals={false} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="Enrolled" stroke="#4f46e5" strokeWidth={2} activeDot={{ r: 8 }}>
-                    <LabelList dataKey="Enrolled" position="top" offset={10} />
-                  </Line>
-                  <Line type="monotone" dataKey="Completed" stroke="#22c55e" strokeWidth={2}>
-                    <LabelList dataKey="Completed" position="top" offset={10} />
-                  </Line>
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <CardContent className="h-64 sm:h-[350px] p-2 sm:p-6 pt-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" allowDecimals={false} fontSize={10} />
+                <YAxis allowDecimals={false} fontSize={10} />
+                <Tooltip wrapperStyle={{ fontSize: '10px' }} />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                <Line type="monotone" dataKey="Enrolled" stroke="#4f46e5" strokeWidth={2} activeDot={{ r: 8 }}>
+                  <LabelList dataKey="Enrolled" position="top" offset={10} style={{ fontSize: '10px' }} />
+                </Line>
+                <Line type="monotone" dataKey="Completed" stroke="#22c55e" strokeWidth={2}>
+                  <LabelList dataKey="Completed" position="top" offset={10} style={{ fontSize: '10px' }} />
+                </Line>
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* FILTERS */}
-        <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="relative md:col-span-2">
+        <Card className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="relative sm:col-span-2">
               <Input placeholder="Search name, ID, program..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
@@ -311,48 +307,48 @@ export default function ISEOPStudents() {
                 <SelectItem value="Female">Female</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="ghost" onClick={resetFilters}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+            <Button variant="ghost" onClick={resetFilters} className="h-9 sm:col-span-2 lg:col-span-1"><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
           </div>
         </Card>
 
         {/* TABLE */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Students ({filteredStudents.length})</CardTitle>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExcelExport}><Download className="h-4 w-4 mr-2" /> Excel</Button>
-              <Button variant="outline" size="sm" onClick={handleCSVExport}><Download className="h-4 w-4 mr-2" /> CSV</Button>
-              <Button variant="outline" size="sm" onClick={handlePDFExport}><FileDown className="h-4 w-4 mr-2" /> PDF</Button>
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Students ({filteredStudents.length})</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleExcelExport}><Download className="h-3 w-3 sm:mr-2" /> <span className="hidden sm:inline">Excel</span></Button>
+              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleCSVExport}><Download className="h-3 w-3 sm:mr-2" /> <span className="hidden sm:inline">CSV</span></Button>
+              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handlePDFExport}><FileDown className="h-3 w-3 sm:mr-2" /> <span className="hidden sm:inline">PDF</span></Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 sm:p-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Institution</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Year</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Disability</TableHead>
+                  <TableHead className="hidden lg:table-cell">Institution</TableHead>
+                  <TableHead className="hidden md:table-cell">Program</TableHead>
+                  <TableHead className="hidden sm:table-cell">Year</TableHead>
+                  <TableHead className="hidden xl:table-cell">Gender</TableHead>
+                  <TableHead className="hidden xl:table-cell">Disability</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead />
+                  <TableHead className="text-right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? Array(5).fill(0).map((_, i) => <TableRowSkeleton key={i} />) : paginatedStudents.map((s: any) => (
                   <TableRow key={s.id}>
-                    <TableCell>{s.student_id}</TableCell>
-                    <TableCell>{s.full_name}</TableCell>
-                    <TableCell>{s.institution_name}</TableCell>
-                    <TableCell>{s.program_name}</TableCell>
-                    <TableCell>{s.enrollment_year ?? "N/A"}</TableCell>
-                    <TableCell>{s.gender ?? "N/A"}</TableCell>
-                    <TableCell>{s.disability_type && s.disability_type !== "None" ? s.disability_type : "None"}</TableCell>
-                    <TableCell><Badge variant={getStatusVariant(s.status)}>{s.status}</Badge></TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => setSelectedStudent(s)}>
+                    <TableCell className="font-medium text-[10px] sm:text-xs">{s.student_id}</TableCell>
+                    <TableCell className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{s.full_name}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs">{s.institution_name}</TableCell>
+                    <TableCell className="hidden md:table-cell text-xs">{s.program_name}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-xs">{s.enrollment_year ?? "N/A"}</TableCell>
+                    <TableCell className="hidden xl:table-cell text-xs">{s.gender ?? "N/A"}</TableCell>
+                    <TableCell className="hidden xl:table-cell text-xs">{s.disability_type && s.disability_type !== "None" ? s.disability_type : "None"}</TableCell>
+                    <TableCell><Badge variant={getStatusVariant(s.status)} className="text-[10px] sm:text-xs whitespace-nowrap">{s.status}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setSelectedStudent(s)}>
                         <Info className="h-4 w-4" />
                       </Button>
                     </TableCell>

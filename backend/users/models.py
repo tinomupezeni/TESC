@@ -2,22 +2,42 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from academic.models import Institution
 class Role(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    institution = models.ForeignKey(
+        Institution, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='roles'
+    )
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('institution', 'name')
+
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.institution.name if self.institution else 'Global'})"
 
 
 class Department(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    institution = models.ForeignKey(
+        Institution, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='departments_users' # Avoiding name conflict with faculties.Department
+    )
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     permissions = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('institution', 'name')
+
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.institution.name if self.institution else 'Global'})"
 
 
 class CustomUser(AbstractUser):

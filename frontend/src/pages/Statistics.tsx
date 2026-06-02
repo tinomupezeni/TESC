@@ -55,11 +55,11 @@ export default function Statistics() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-7 w-7" />
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 sm:h-7 sm:h-7" />
               TESC Statistics
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Overall insights and analytics for all institutions
             </p>
           </div>
@@ -70,29 +70,29 @@ export default function Statistics() {
         {error && <p className="text-red-500">Failed to load statistics.</p>}
 
         {!loading && data && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard
-              title="Total Institutions"
+              title="Institutions"
               value={data.total_institutions}
-              description="All institution types"
+              description="All types"
               icon={Building}
               variant="default"
               onClick={() => navigate("/institutions")}
             />
 
             <StatsCard
-              title="Total Students"
+              title="Students"
               value={data.total_students}
-              description="Currently enrolled"
+              description="Enrolled"
               icon={Users}
               variant="accent"
               onClick={() => navigate("/students")}
             />
 
             <StatsCard
-              title="Total Programs"
+              title="Programs"
               value={data.total_programs}
-              description="Across all institutions"
+              description="Active"
               icon={GraduationCap}
               variant="success"
               onClick={() => navigate("/programs")}
@@ -101,7 +101,7 @@ export default function Statistics() {
             <StatsCard
               title="Total Staff"
               value={data.total_staff}
-              description="Lecturing & Admin"
+              description="Personnel"
               icon={UserCheck}
               variant="success"
               onClick={() => navigate("/staff")}
@@ -122,21 +122,21 @@ export default function Statistics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Student Distribution */}
           <Card>
-            <CardHeader>
-              <CardTitle>Student Distribution by Institution Type</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Student Distribution by Institution Type</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-2 sm:p-6">
               <StudentDistributionChart />
             </CardContent>
           </Card>
 
           {/* Student-Staff Ratio */}
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Student-Staff Ratio</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Student-Staff Ratio</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-80 w-full">
+            <CardContent className="p-2 sm:p-6">
+              <div className="h-64 sm:h-80 w-full">
                 <RatioChart />
               </div>
             </CardContent>

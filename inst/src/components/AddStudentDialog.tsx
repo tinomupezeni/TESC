@@ -294,7 +294,7 @@ export function AddStudentDialog({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Add New Student</DialogTitle>
           <DialogDescription>
@@ -338,7 +338,7 @@ export function AddStudentDialog({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Personal Details */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="first_name">First Name *</Label>
                 <Input
@@ -359,7 +359,7 @@ export function AddStudentDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="student_id">Student ID *</Label>
                 <Input
@@ -379,7 +379,7 @@ export function AddStudentDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender *</Label>
                 <Select
@@ -407,12 +407,12 @@ export function AddStudentDialog({
             </div>
 
             {/* --- CASCADING DROPDOWNS START --- */}
-            <div className="p-4 bg-muted/50 rounded-md border space-y-4">
+            <div className="p-3 sm:p-4 bg-muted/50 rounded-md border space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
                 Academic Placement
               </h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 1. Faculty Select (Filter Depts) */}
                 <div className="space-y-2">
                   <Label>Faculty *</Label>
@@ -448,6 +448,20 @@ export function AddStudentDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {filteredDepartments.map((d) => (
+                        <SelectItem key={d.id} value={d.id.toString()}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedFacultyId && filteredDepartments.length === 0 && (
+                    <p className="text-[10px] text-destructive">
+                      No departments in this faculty.
+                    </p>
+                  )}
+                </div>
+              </div>
+
                         <SelectItem key={d.id} value={d.id.toString()}>
                           {d.name}
                         </SelectItem>

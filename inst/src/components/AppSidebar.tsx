@@ -80,6 +80,18 @@ const menuGroups = [
 export default function AppSidebar() {
   const { user, logout } = useAuth();
 
+  const userPermissions = user?.department?.permissions || [];
+  const userLevel = user?.level;
+
+  const filterLinks = (items: any[]) => {
+    if (userLevel === "1") return items;
+    return items.filter((item) => {
+      // Basic access pages
+      if (["/dashboard", "/dashboard/settings"].includes(item.url)) return true;
+      return userPermissions.includes(item.url);
+    });
+  };
+
   // Get initials for avatar fallback
   const initials = user 
     ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() 
@@ -115,33 +127,38 @@ export default function AppSidebar() {
 
       {/* --- CONTENT: Navigation Groups --- */}
       <SidebarContent>
-        {menuGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild tooltip={item.title}>
-                      <NavLink
-                        to={item.url}
-                        end={item.url === "/dashboard"}
-                        className={({ isActive }) =>
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-                            : "text-muted-foreground hover:text-foreground"
-                        }
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {menuGroups.map((group) => {
+          const filteredItems = filterLinks(group.items);
+          if (filteredItems.length === 0) return null;
+
+          return (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {filteredItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild tooltip={item.title}>
+                        <NavLink
+                          to={item.url}
+                          end={item.url === "/dashboard"}
+                          className={({ isActive }) =>
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                              : "text-muted-foreground hover:text-foreground"
+                          }
+                        >
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       {/* --- FOOTER: User Profile & Settings --- */}

@@ -81,20 +81,20 @@ export default function Institutions() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Educational Institutions</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold">Educational Institutions</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Manage Teachers Colleges, Polytechnics, and Industrial Training Centres
               </p>
             </div>
 
-            <Button onClick={() => setRegisterInst(true)}>
+            <Button onClick={() => setRegisterInst(true)} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Register Institution
             </Button>
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
             {isLoading && (
               <>
                 <InstitutionCardSkeleton />
@@ -119,27 +119,28 @@ export default function Institutions() {
                   key={institution.id}
                   className="hover:shadow-lg transition-shadow"
                 >
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <Building className="h-5 w-5 text-primary" />
-                          {institution.name}
+                  <CardHeader className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                          <Building className="h-5 w-5 text-primary shrink-0" />
+                          <span className="truncate">{institution.name}</span>
                         </CardTitle>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {institution.address || "No address"}
+                        <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{institution.address || "No address"}</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1 items-end">
-                        <Badge variant="outline">{institution.type}</Badge>
+                      <div className="flex flex-row sm:flex-col gap-1 items-center sm:items-end w-full sm:w-auto">
+                        <Badge variant="outline" className="text-[10px] sm:text-xs">{institution.type}</Badge>
                         <Badge
                           variant={
                             institution.status === "Active"
                               ? "default"
                               : "secondary"
                           }
+                          className="text-[10px] sm:text-xs"
                         >
                           {institution.status}
                         </Badge>
@@ -147,32 +148,32 @@ export default function Institutions() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
                     {/* Stats */}
-                    <div className="grid grid-cols-3 gap-4 p-3 bg-muted/20 rounded-lg">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 p-2 sm:p-3 bg-muted/20 rounded-lg">
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-[10px] sm:text-sm text-muted-foreground">
                           Students
                         </div>
-                        <div className="font-bold">
+                        <div className="text-sm sm:text-base font-bold">
                           {institution.student_count}
                         </div>
                       </div>
 
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-[10px] sm:text-sm text-muted-foreground">
                           Staff
                         </div>
-                        <div className="font-bold">
+                        <div className="text-sm sm:text-base font-bold">
                           {institution.staff_count}
                         </div>
                       </div>
 
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-[10px] sm:text-sm text-muted-foreground">
                           Programs
                         </div>
-                        <div className="font-bold">
+                        <div className="text-sm sm:text-base font-bold">
                           {institution.program_count || 0}
                         </div>
                       </div>
@@ -180,11 +181,11 @@ export default function Institutions() {
 
                     {/* Capacity */}
                     <div>
-                      <div className="flex justify-between text-sm mb-2">
+                      <div className="flex justify-between text-[10px] sm:text-sm mb-2">
                         <span>Capacity Utilization</span>
                         <span>{utilization.toFixed(0)}%</span>
                       </div>
-                      <Progress value={utilization} className="h-2" />
+                      <Progress value={utilization} className="h-1.5 sm:h-2" />
                     </div>
 
                     {/* --- ACTIONS ROW --- */}
@@ -192,7 +193,7 @@ export default function Institutions() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 h-9 text-xs sm:text-sm"
                         onClick={() => setEditingInstitution(institution)}
                       >
                         View & Edit
@@ -201,7 +202,7 @@ export default function Institutions() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         disabled={deleteMutation.isPending}
                         onClick={() => handleDelete(institution.id)}
                       >
@@ -213,7 +214,7 @@ export default function Institutions() {
                       </Button>
                     </div>
 
-                    <div className="text-xs text-muted-foreground pt-2 border-t">
+                    <div className="text-[10px] sm:text-xs text-muted-foreground pt-2 border-t">
                       Established: {institution.established} |{" "}
                       {institution.location}
                     </div>

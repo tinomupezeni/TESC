@@ -195,28 +195,28 @@ export default function Statistics() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:mb-8">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-              <GraduationCap className="h-8 w-8 text-blue-600" />
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+              <GraduationCap className="h-6 w-6 sm:h-8 sm:h-8 text-blue-600" />
               Graduation Analytics
             </h1>
           </div>
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" onClick={() => exportData('excel')} className="flex gap-2 font-bold border-blue-200">
-              <Download className="h-4 w-4" /> Excel
+          <div className="flex flex-wrap gap-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={() => exportData('excel')} className="flex gap-2 font-bold border-blue-200 h-9">
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Excel</span>
             </Button>
-            <Button onClick={() => exportData('csv')} variant="outline" className="flex gap-2 font-bold border-blue-200">
-              <Download className="h-4 w-4" /> CSV
+            <Button variant="outline" size="sm" onClick={() => exportData('csv')} className="flex gap-2 font-bold border-blue-200 h-9">
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
             </Button>
-            <Button onClick={() => setReportBuilderOpen(true)} className="flex gap-2 font-bold bg-green-600 hover:bg-green-700">
-              <FileText className="h-4 w-4" /> Generate Report
+            <Button size="sm" onClick={() => setReportBuilderOpen(true)} className="flex gap-2 font-bold bg-green-600 hover:bg-green-700 h-9">
+              <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Report</span>
             </Button>
           </div>
         </div>
 
         {/* Filters Section */}
         <Card className="p-4 border-blue-100 dark:border-slate-800 print:hidden shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-            <div className="relative lg:col-span-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4">
+            <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 placeholder="Search..."
@@ -266,7 +266,7 @@ export default function Statistics() {
               </SelectContent>
             </Select>
 
-            <Button variant="ghost" onClick={resetFilters} className="text-slate-500 font-bold hover:text-blue-600">
+            <Button variant="ghost" onClick={resetFilters} className="text-slate-500 font-bold hover:text-blue-600 sm:col-span-2 lg:col-span-1">
               <RotateCcw className="h-4 w-4 mr-2" /> Reset
             </Button>
           </div>
@@ -302,17 +302,17 @@ export default function Statistics() {
         </div>
 
         <Card className="print:shadow-none print:border-none shadow-sm border-blue-50">
-          <CardContent className="pt-6">
-            <div className="rounded-md border border-blue-100 dark:border-slate-800">
+          <CardContent className="p-0 sm:pt-6">
+            <div className="rounded-md border-0 sm:border border-blue-100 dark:border-slate-800">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                    <TableHead className="font-bold">Student ID</TableHead>
-                    <TableHead className="font-bold">Full Name</TableHead>
-                    <TableHead className="font-bold">Institution</TableHead>
-                    <TableHead className="font-bold">Program</TableHead>
-                    <TableHead className="font-bold">Category</TableHead>
-                    <TableHead className="text-center font-bold">Year</TableHead>
+                    <TableHead className="font-bold w-[100px]">ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="font-bold hidden lg:table-cell">Institution</TableHead>
+                    <TableHead className="font-bold hidden md:table-cell">Program</TableHead>
+                    <TableHead className="font-bold hidden xl:table-cell">Category</TableHead>
+                    <TableHead className="text-center font-bold hidden sm:table-cell">Year</TableHead>
                     <TableHead className="font-bold">Grade</TableHead>
                     <TableHead className="text-right print:hidden font-bold">Actions</TableHead>
                   </TableRow>
@@ -325,19 +325,19 @@ export default function Statistics() {
                   ) : (
                     paginatedData.map((grad) => (
                       <TableRow key={grad.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors">
-                        <TableCell className="font-medium font-mono text-xs text-blue-700 dark:text-blue-400">{grad.student_id}</TableCell>
-                        <TableCell className="font-bold text-slate-900 dark:text-slate-100">{grad.full_name || `${grad.first_name} ${grad.last_name}`}</TableCell>
-                        <TableCell className="text-xs font-medium">{grad.institution_name}</TableCell>
-                        <TableCell className="text-xs font-medium">{grad.program_name || 'N/A'}</TableCell>
-                        <TableCell className="text-xs font-medium">{grad.program_category || 'N/A'}</TableCell>
-                        <TableCell className="text-center font-bold">{grad.graduation_year}</TableCell>
+                        <TableCell className="font-medium font-mono text-[10px] sm:text-xs text-blue-700 dark:text-blue-400">{grad.student_id}</TableCell>
+                        <TableCell className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100">{grad.full_name || `${grad.first_name} ${grad.last_name}`}</TableCell>
+                        <TableCell className="text-xs font-medium hidden lg:table-cell">{grad.institution_name}</TableCell>
+                        <TableCell className="text-xs font-medium hidden md:table-cell">{grad.program_name || 'N/A'}</TableCell>
+                        <TableCell className="text-xs font-medium hidden xl:table-cell">{grad.program_category || 'N/A'}</TableCell>
+                        <TableCell className="text-center font-bold hidden sm:table-cell">{grad.graduation_year}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={`font-bold ${getGradeStyles(grad.final_grade)}`}>
+                          <Badge variant="outline" className={`font-bold text-[10px] sm:text-xs whitespace-nowrap ${getGradeStyles(grad.final_grade)}`}>
                             {grad.final_grade}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right print:hidden">
-                          <Button variant="ghost" size="sm" className="font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setSelectedStudent(grad)}>View</Button>
+                          <Button variant="ghost" size="sm" className="font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2" onClick={() => setSelectedStudent(grad)}>View</Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -348,28 +348,31 @@ export default function Statistics() {
 
             <StudentView data={selectedStudent} setdata={setSelectedStudent} />
 
-            <div className="flex items-center justify-between space-x-2 py-4 print:hidden">
-              <div className="text-sm text-muted-foreground font-medium">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 print:hidden">
+              <div className="text-xs sm:text-sm text-muted-foreground font-medium text-center sm:text-left">
                 Showing <strong>{filteredData.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</strong> to <strong>{Math.min(currentPage * itemsPerPage, filteredData.length)}</strong> of {filteredData.length} graduates
               </div>
-              <div className="flex space-x-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="font-bold border-blue-200"
+                  className="font-bold border-blue-200 h-8 px-2"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  <ChevronLeft className="h-4 w-4 sm:mr-1" /> Prev
                 </Button>
+                <div className="text-xs font-bold px-2 whitespace-nowrap">
+                  Page {currentPage} of {totalPages || 1}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="font-bold border-blue-200"
+                  className="font-bold border-blue-200 h-8 px-2"
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages || totalPages === 0}
                 >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                  Next <ChevronRight className="h-4 w-4 sm:ml-1" />
                 </Button>
               </div>
             </div>

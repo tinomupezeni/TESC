@@ -65,30 +65,31 @@ const ForcePasswordChange = () => {
   const strength = getStrengthLabel();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1">
-          <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center">
-              <GraduationCap className="h-10 w-10 text-warning" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_left]" />
+      <Card className="w-full max-w-md shadow-2xl relative z-10 border-warning/10 rounded-2xl">
+        <CardHeader className="space-y-1 p-6 sm:p-8 pb-4 sm:pb-6">
+          <div className="flex justify-center mb-6">
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-warning/10 flex items-center justify-center shadow-inner">
+              <GraduationCap className="h-10 w-10 sm:h-12 sm:w-12 text-warning" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Change Password</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-center tracking-tight">Change Password</CardTitle>
+          <CardDescription className="text-center text-xs sm:text-sm px-4">
             You're using a temporary password. Please create a new one.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Alert className="bg-warning/10 border-warning">
-              <AlertCircle className="h-4 w-4 text-warning" />
-              <AlertDescription className="text-warning-foreground">
+        <CardContent className="px-6 sm:px-8 pb-8 sm:pb-10">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Alert className="bg-warning/10 border-warning py-2.5 px-3">
+              <AlertCircle className="h-4 w-4 text-warning shrink-0" />
+              <AlertDescription className="text-warning-foreground text-[10px] sm:text-xs">
                 For security, you must change your password before proceeding.
               </AlertDescription>
             </Alert>
 
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword text-xs sm:text-sm font-medium">New Password</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -96,20 +97,21 @@ const ForcePasswordChange = () => {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={isLoading}
+                className="h-10 sm:h-11 text-xs sm:text-sm shadow-sm"
               />
               {newPassword && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Password Strength:</span>
-                    <span className={`font-medium ${strength.color}`}>{strength.label}</span>
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span className="text-muted-foreground">Strength:</span>
+                    <span className={`font-bold ${strength.color}`}>{strength.label}</span>
                   </div>
-                  <Progress value={passwordStrength()} className="h-2" />
+                  <Progress value={passwordStrength()} className="h-1.5 sm:h-2" />
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword text-xs sm:text-sm font-medium">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -117,20 +119,21 @@ const ForcePasswordChange = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
+                className="h-10 sm:h-11 text-xs sm:text-sm shadow-sm"
               />
             </div>
 
-            <div className="space-y-2 rounded-lg bg-muted p-3">
-              <p className="text-sm font-medium">Password Requirements:</p>
-              <div className="space-y-1">
+            <div className="space-y-2.5 rounded-xl bg-muted/50 p-4 border border-border/50">
+              <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Requirements:</p>
+              <div className="space-y-2">
                 {passwordRequirements.map((req, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm">
+                  <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs">
                     {req.test ? (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-success shrink-0" />
                     ) : (
-                      <XCircle className="h-4 w-4 text-muted-foreground" />
+                      <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0 opacity-40" />
                     )}
-                    <span className={req.test ? "text-success" : "text-muted-foreground"}>
+                    <span className={req.test ? "text-success font-medium" : "text-muted-foreground"}>
                       {req.label}
                     </span>
                   </div>
@@ -140,10 +143,15 @@ const ForcePasswordChange = () => {
 
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full h-11 text-sm sm:text-base font-semibold shadow-lg shadow-primary/20" 
               disabled={isLoading || passwordStrength() < 100}
             >
-              {isLoading ? "Updating..." : "Update Password"}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  Updating...
+                </div>
+              ) : "Update Password"}
             </Button>
           </form>
         </CardContent>

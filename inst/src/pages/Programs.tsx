@@ -97,32 +97,34 @@ const Programs = () => {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 px-1">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
             Programs & Courses
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Managing academic curriculum for <span className="font-semibold text-primary">{user?.institution?.name}</span>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 truncate">
+            Managing curriculum for <span className="font-semibold text-primary">{user?.institution?.name}</span>
           </p>
         </div>
         
         {user?.institution?.id && (
-          <AddProgramDialog 
-            institutionId={user.institution.id} 
-            onSuccess={fetchPrograms} 
-          />
+          <div className="w-full sm:w-auto">
+            <AddProgramDialog 
+              institutionId={user.institution.id} 
+              onSuccess={fetchPrograms} 
+            />
+          </div>
         )}
       </div>
 
       {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative w-full sm:max-w-md px-1">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search by name or code..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-11 h-10 sm:h-11"
         />
       </div>
 
@@ -133,38 +135,38 @@ const Programs = () => {
           <p className="text-sm text-muted-foreground">Loading programs...</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
           {filteredPrograms.length === 0 ? (
-            <div className="col-span-full text-center py-20 border-2 border-dashed rounded-xl text-muted-foreground bg-muted/5">
+            <div className="col-span-full text-center py-20 border-2 border-dashed rounded-xl text-muted-foreground bg-muted/5 mx-1">
               <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-20" />
               <h3 className="text-lg font-medium text-foreground">No programs found</h3>
               <p className="max-w-xs mx-auto text-sm mt-1">Try adjusting your search or add a new program.</p>
             </div>
           ) : (
             filteredPrograms.map((program) => (
-              <Card key={program.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary flex flex-col h-full relative">
+              <Card key={program.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary flex flex-col h-full relative mx-1">
                 
                 {/* Delete Button - Absolute Positioned Top Right */}
-                <div className="absolute top-4 right-4 z-10">
+                <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                         {deletingId === program.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="w-[95vw] sm:w-full">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogDescription className="text-xs sm:text-sm">
                           This will permanently delete the <strong>{program.name}</strong> program. 
-                          This action cannot be undone and may fail if students are currently enrolled.
+                          This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="text-xs sm:text-sm h-9 sm:h-10">Cancel</AlertDialogCancel>
                         <AlertDialogAction 
                           onClick={() => handleDelete(program.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm h-9 sm:h-10"
                         >
                           Delete Program
                         </AlertDialogAction>
@@ -173,72 +175,72 @@ const Programs = () => {
                   </AlertDialog>
                 </div>
 
-                <CardHeader>
+                <CardHeader className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-2 mr-8">
-                    <div className="space-y-1.5 flex-1">
+                    <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className="font-mono">{program.code}</Badge>
-                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">{program.level}</Badge>
+                        <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs">{program.code}</Badge>
+                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] sm:text-xs">{program.level}</Badge>
                       </div>
-                      <CardTitle className="text-xl leading-tight">{program.name}</CardTitle>
+                      <CardTitle className="text-lg sm:text-xl leading-tight truncate" title={program.name}>{program.name}</CardTitle>
                     </div>
                   </div>
-                  <CardDescription className="line-clamp-2 min-h-[40px]">
+                  <CardDescription className="line-clamp-2 min-h-[40px] text-xs sm:text-sm mt-2">
                     {program.description || "No description provided."}
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="flex-1 flex flex-col">
+                <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0">
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-2 py-4 border-y mb-6 bg-muted/20 rounded-lg px-3 text-center md:text-left">
+                  <div className="grid grid-cols-3 gap-2 py-3 sm:py-4 border-y mb-6 bg-muted/20 rounded-lg px-2 sm:px-3 text-center">
                     <div className="space-y-1">
-                      <span className="flex items-center justify-center md:justify-start gap-1.5 text-xs text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5" /> Duration
+                      <span className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" /> <span className="hidden xs:inline">Duration</span>
                       </span>
-                      <p className="text-sm font-semibold">{program.duration} Yrs</p>
+                      <p className="text-xs sm:text-sm font-semibold">{program.duration} Yrs</p>
                     </div>
-                    <div className="space-y-1 border-x px-3">
-                      <span className="flex items-center justify-center md:justify-start gap-1.5 text-xs text-muted-foreground">
-                        <Users className="h-3.5 w-3.5" /> Intake
+                    <div className="space-y-1 border-x px-1">
+                      <span className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" /> <span className="hidden xs:inline">Intake</span>
                       </span>
-                      <p className="text-sm font-semibold">{program.student_capacity}</p>
+                      <p className="text-xs sm:text-sm font-semibold">{program.student_capacity}</p>
                     </div>
-                    <div className="space-y-1 pl-1">
-                      <span className="flex items-center justify-center md:justify-start gap-1.5 text-xs text-muted-foreground">
-                        <FileText className="h-3.5 w-3.5" /> Dept.
+                    <div className="space-y-1">
+                      <span className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
+                        <FileText className="h-3 w-3" /> <span className="hidden xs:inline">Dept.</span>
                       </span>
-                      <p className="text-sm font-semibold truncate" title={program.department_name}>
-                        {program.department_name || "Unassigned"}
+                      <p className="text-xs sm:text-sm font-semibold truncate px-1" title={program.department_name}>
+                        {program.department_name || "N/A"}
                       </p>
                     </div>
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="flex gap-3 mt-auto pt-2">
+                  <div className="flex gap-2 sm:gap-3 mt-auto pt-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button variant="outline" size="sm" className="flex-1 h-9 sm:h-10 text-xs sm:text-sm">
                           <Info className="h-4 w-4 mr-2" /> Details
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
+                      <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-4 sm:p-6">
                         <DialogHeader>
-                          <DialogTitle className="text-2xl">{program.name}</DialogTitle>
-                          <DialogDescription className="font-mono text-primary">
+                          <DialogTitle className="text-xl sm:text-2xl">{program.name}</DialogTitle>
+                          <DialogDescription className="font-mono text-primary text-xs sm:text-sm">
                             {program.code} • {program.level}
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-6 py-4 text-sm">
-                          <div className="p-4 bg-muted/50 rounded-lg border italic">
+                        <div className="space-y-4 sm:space-y-6 py-4 text-xs sm:text-sm">
+                          <div className="p-3 sm:p-4 bg-muted/50 rounded-lg border italic">
                             {program.description || "No description available."}
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-muted-foreground">Coordinator</p>
+                              <p className="text-muted-foreground text-[10px] sm:text-xs">Coordinator</p>
                               <p className="font-medium text-primary">{program.coordinator || "Not assigned"}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Category</p>
+                              <p className="text-muted-foreground text-[10px] sm:text-xs">Category</p>
                               <p className="font-medium">{program.category || "N/A"}</p>
                             </div>
                           </div>
@@ -247,11 +249,13 @@ const Programs = () => {
                     </Dialog>
 
                     {user?.institution?.id && (
-                      <EditProgramDialog 
-                        program={program}
-                        institutionId={user.institution.id}
-                        onSuccess={fetchPrograms}
-                      />
+                      <div className="flex-1">
+                        <EditProgramDialog 
+                          program={program}
+                          institutionId={user.institution.id}
+                          onSuccess={fetchPrograms}
+                        />
+                      </div>
                     )}
                   </div>
                 </CardContent>

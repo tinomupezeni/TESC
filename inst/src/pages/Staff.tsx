@@ -169,9 +169,9 @@ const Staff = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Staff Management</h1>
-        <p className="text-muted-foreground mt-1">
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Staff Management</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Manage academic and non-academic staff for{" "}
           <span className="font-semibold text-primary">
             {user?.institution?.name}
@@ -180,51 +180,51 @@ const Staff = () => {
       </div>
 
       {/* --- DYNAMIC STATS GRID --- */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         
         {/* Always keep Total Staff card */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Staff</CardDescription>
-            <CardTitle className="text-3xl">{staff.length}</CardTitle>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 p-4 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm">Total Staff</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">{staff.length}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">All departments</p>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">All departments</p>
           </CardContent>
         </Card>
 
         {/* Generate a card for each role found in DB */}
         {Object.entries(roleStats).map(([role, count]) => (
-            <Card key={role}>
-                <CardHeader className="pb-3">
-                    <CardDescription className="flex items-center gap-2">
+            <Card key={role} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2 p-4 sm:p-6">
+                    <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
                         {getRoleIcon(role)}
-                        {role}s {/* Simple pluralization */}
+                        <span className="truncate">{role}s</span>
                     </CardDescription>
-                    <CardTitle className="text-3xl">
+                    <CardTitle className="text-2xl sm:text-3xl">
                         {count}
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Active records</p>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Active records</p>
                 </CardContent>
             </Card>
         ))}
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Vacant Positions</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Vacant Positions</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Open positions awaiting recruitment
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge
                 variant="secondary"
-                className="bg-amber-100 text-amber-800 hover:bg-amber-200"
+                className="bg-amber-100 text-amber-800 hover:bg-amber-200 text-[10px] sm:text-xs"
               >
                 {vacancies.length} Open
               </Badge>
@@ -235,43 +235,43 @@ const Staff = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <div className="space-y-3">
             {vacanciesLoading ? (
-              <div className="text-center py-4 text-sm text-muted-foreground">
+              <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
                 Loading vacancies...
               </div>
             ) : vacancies.length === 0 ? (
-              <div className="text-center py-4 text-sm text-muted-foreground">
+              <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
                 No active job openings.
               </div>
             ) : (
               vacancies.map((position) => (
                 <div
                   key={position.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+                  className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/30 transition-colors gap-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <Briefcase className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{position.title}</p>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs sm:text-sm truncate">{position.title}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                         {position.faculty ? `${position.faculty_name} - ` : ""}
                         {position.department_name}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-sm font-medium">
-                        {position.quantity} position(s)
+                  <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                    <div className="text-right hidden xs:block">
+                      <p className="text-[10px] sm:text-xs font-medium">
+                        {position.quantity} pos
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Deadline: {position.deadline}
+                      <p className="text-[10px] text-muted-foreground">
+                        {position.deadline}
                       </p>
                     </div>
-                    <Button size="sm" variant="ghost">
+                    <Button size="sm" variant="ghost" className="h-8 px-2 text-[10px] sm:text-xs">
                       View
                     </Button>
                   </div>
@@ -282,84 +282,94 @@ const Staff = () => {
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <Card className="overflow-hidden border-none sm:border">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Staff Directory</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Staff Directory</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 View and manage all staff members
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" onClick={handleExport} className="h-9 flex-1 sm:flex-none">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <UploadStaffDialog onSuccess={fetchStaff} />
-              <AddStaffDialog
-                onStaffAdded={fetchStaff}
-              />
+              <div className="flex-1 sm:flex-none">
+                <UploadStaffDialog onSuccess={fetchStaff} />
+              </div>
+              <div className="flex-1 sm:flex-none">
+                <AddStaffDialog
+                  onStaffAdded={fetchStaff}
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           {/* Filters Bar */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, ID, or email..."
+                placeholder="Search name, ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-9 sm:h-10"
               />
             </div>
-            <Select value={filterFaculty} onValueChange={setFilterFaculty}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by faculty" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Faculties</SelectItem>
-                {uniqueFaculties.map((fac) => (
-                  <SelectItem key={fac} value={fac as string}>
-                    {fac}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filterDepartment}
-              onValueChange={setFilterDepartment}
-            >
-              <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {uniqueDepartments.map((dept) => (
-                  <SelectItem key={dept} value={dept as string}>
-                    {dept}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Select value={filterFaculty} onValueChange={setFilterFaculty}>
+                <SelectTrigger className="w-full h-9 sm:h-10 text-xs sm:text-sm">
+                  <div className="flex items-center">
+                    <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
+                    <SelectValue placeholder="All Faculties" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Faculties</SelectItem>
+                  {uniqueFaculties.map((fac) => (
+                    <SelectItem key={fac} value={fac as string}>
+                      {fac}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filterDepartment}
+                onValueChange={setFilterDepartment}
+              >
+                <SelectTrigger className="w-full h-9 sm:h-10 text-xs sm:text-sm">
+                  <div className="flex items-center">
+                    <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
+                    <SelectValue placeholder="All Departments" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {uniqueDepartments.map((dept) => (
+                    <SelectItem key={dept} value={dept as string}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Staff ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Faculty</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[100px] text-xs">ID</TableHead>
+                  <TableHead className="text-xs">Name</TableHead>
+                  <TableHead className="hidden lg:table-cell text-xs">Role</TableHead>
+                  <TableHead className="hidden xl:table-cell text-xs">Faculty</TableHead>
+                  <TableHead className="hidden md:table-cell text-xs">Department</TableHead>
+                  <TableHead className="hidden sm:table-cell text-xs">Contact</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -367,7 +377,7 @@ const Staff = () => {
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                      <span className="text-xs text-muted-foreground mt-2 block">
+                      <span className="text-[10px] text-muted-foreground mt-2 block">
                         Loading Staff...
                       </span>
                     </TableCell>
@@ -376,9 +386,9 @@ const Staff = () => {
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="text-center py-8 text-muted-foreground"
+                      className="text-center py-8 text-muted-foreground text-xs"
                     >
-                      No staff members found for {user?.institution?.name}
+                      No staff members found.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -388,33 +398,29 @@ const Staff = () => {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleViewProfile(staff)}
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-[10px] sm:text-xs">
                         {staff.employee_id}
                       </TableCell>
-                      <TableCell>{staff.full_name}</TableCell>
-                      <TableCell>{staff.position}</TableCell>
-                      <TableCell>{staff.faculty_name || "N/A"}</TableCell>
-                      <TableCell>{staff.department_name}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs">{staff.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs">{staff.phone}</span>
+                      <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{staff.full_name}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs truncate max-w-[120px]">{staff.position}</TableCell>
+                      <TableCell className="hidden xl:table-cell text-xs truncate max-w-[120px]">{staff.faculty_name || "N/A"}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs truncate max-w-[120px]">{staff.department_name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                            <span className="text-[10px] truncate max-w-[150px]">{staff.email}</span>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={staff.is_active ? "default" : "secondary"}
-                          className={
+                          className={`text-[10px] sm:text-xs px-1.5 py-0.5 whitespace-nowrap ${
                             staff.is_active
                               ? "bg-green-600 hover:bg-green-700"
                               : "bg-gray-500"
-                          }
+                          }`}
                         >
                           {staff.is_active ? "Active" : "Inactive"}
                         </Badge>
@@ -425,11 +431,11 @@ const Staff = () => {
                       >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -454,7 +460,7 @@ const Staff = () => {
           </div>
 
           <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               Showing {filteredStaff.length} of {staff.length} staff members
             </p>
           </div>
@@ -462,11 +468,10 @@ const Staff = () => {
       </Card>
 
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          {/* ... Profile details (same as before) ... */}
+        <DialogContent className="max-w-3xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Staff Profile</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl sm:text-2xl">Staff Profile</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Detailed information and qualifications
             </DialogDescription>
           </DialogHeader>

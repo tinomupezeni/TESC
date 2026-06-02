@@ -152,44 +152,50 @@ const Students = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Student Management</h1>
-        <p className="text-muted-foreground mt-1">
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Student Management</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Manage student registrations for <span className="font-semibold text-primary">{user?.institution?.name}</span>
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <Card className="overflow-hidden border-none sm:border">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Students Directory</CardTitle>
-              <CardDescription>View and manage all registered students</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Students Directory</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">View and manage all registered students</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <UploadStudentsDialog onSuccess={fetchStudents} />
-              <AddStudentDialog 
-                onStudentAdded={fetchStudents} 
-                institutionId={user?.institution?.id} 
-              />
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:flex-none">
+                <UploadStudentsDialog onSuccess={fetchStudents} />
+              </div>
+              <div className="flex-1 sm:flex-none">
+                <AddStudentDialog 
+                  onStudentAdded={fetchStudents} 
+                  institutionId={user?.institution?.id} 
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by Name, ID, or National ID..."
+                placeholder="Search Name, ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-9 sm:h-10"
               />
             </div>
             <Select value={filterProgram} onValueChange={setFilterProgram}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by program" />
+              <SelectTrigger className="w-full md:w-[200px] h-9 sm:h-10 text-xs sm:text-sm">
+                <div className="flex items-center">
+                  <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
+                  <SelectValue placeholder="All Programs" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Programs</SelectItem>
@@ -200,17 +206,17 @@ const Students = () => {
             </Select>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Enrollment</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[100px] text-xs">ID</TableHead>
+                  <TableHead className="text-xs">Name</TableHead>
+                  <TableHead className="hidden lg:table-cell text-xs">Program</TableHead>
+                  <TableHead className="hidden sm:table-cell text-xs">Gender</TableHead>
+                  <TableHead className="hidden md:table-cell text-xs">Enrollment</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,22 +228,22 @@ const Students = () => {
                    </TableRow>
                 ) : filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
                       {students.length === 0 ? "No students found." : "No matching results."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginatedStudents.map((student) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.student_id}</TableCell>
-                      <TableCell>{student.full_name}</TableCell> 
-                      <TableCell>{student.program_name}</TableCell>
-                      <TableCell>{student.gender}</TableCell>
-                      <TableCell>{student.enrollment_year}</TableCell>
+                      <TableCell className="font-medium text-[10px] sm:text-xs">{student.student_id}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{student.full_name}</TableCell> 
+                      <TableCell className="hidden lg:table-cell text-xs">{student.program_name}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">{student.gender}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">{student.enrollment_year}</TableCell>
                       <TableCell>
                         <Badge
                           variant={student.status === "Active" ? "default" : student.status === "Graduated" ? "outline" : "destructive"}
-                          className={student.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""}
+                          className={`text-[10px] sm:text-xs px-1.5 py-0.5 whitespace-nowrap ${student.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""}`}
                         >
                           {student.status}
                         </Badge>
@@ -245,11 +251,11 @@ const Students = () => {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setSelectedStudent(student)}>
@@ -277,17 +283,19 @@ const Students = () => {
             </Table>
           </div>
           
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+            <div className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
               Showing {filteredStudents.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredStudents.length)} of {filteredStudents.length} entries
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1 || loading}>
-                <ChevronLeft className="h-4 w-4 mr-2" /> Previous
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handlePrevPage} disabled={currentPage === 1 || loading}>
+                <ChevronLeft className="h-4 w-4 sm:mr-1" /> Prev
               </Button>
-              <span className="text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
-              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage >= totalPages || loading}>
-                Next <ChevronRight className="h-4 w-4 ml-2" />
+              <div className="text-[10px] sm:text-xs font-medium px-2 whitespace-nowrap">
+                Page {currentPage} of {totalPages || 1}
+              </div>
+              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleNextPage} disabled={currentPage >= totalPages || loading}>
+                Next <ChevronRight className="h-4 w-4 sm:ml-1" />
               </Button>
             </div>
           </div>

@@ -331,22 +331,34 @@ export default function InnovationOverview() {
       <div className="space-y-6">
 
         {/* Header */}
-        <div className="pb-2 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div className="pb-2 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2"><Lightbulb className="h-7 w-7 text-accent" /> Innovation Lifecycle Management</h1>
-            <p className="text-muted-foreground">Track progress of all projects across phases.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <Lightbulb className="h-6 w-6 sm:h-7 sm:h-7 text-accent" /> 
+              <span className="truncate">Innovation Lifecycle</span>
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Track progress of all projects across phases.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={handleExcelExport} variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Excel</Button>
-            <Button onClick={handleCSVExport} variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> CSV</Button>
-            <Button onClick={() => window.print()} variant="outline" size="sm"><FileDown className="mr-2 h-4 w-4" /> PDF</Button>
+          <div className="flex flex-wrap gap-2 print:hidden">
+            <Button onClick={handleExcelExport} variant="outline" size="sm" className="h-9">
+              <Download className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Excel</span>
+            </Button>
+            <Button onClick={handleCSVExport} variant="outline" size="sm" className="h-9">
+              <Download className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
+            </Button>
+            <Button onClick={() => window.print()} variant="outline" size="sm" className="h-9">
+              <FileDown className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
+            </Button>
           </div>
         </div>
 
         {/* Filters */}
         <Card className="print:hidden">
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-4">
-            <Input placeholder="Search Project / Team" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <Input placeholder="Search Project / Team" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              </div>
             <Select value={stageFilter} onValueChange={setStageFilter}>
               <SelectTrigger><SelectValue placeholder="Stage" /></SelectTrigger>
               <SelectContent>
@@ -389,7 +401,9 @@ export default function InnovationOverview() {
                 {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={resetFilters} className="gap-2 col-span-2 lg:col-span-1"><RotateCcw className="h-4 w-4" /> Reset</Button>
+            <Button variant="outline" onClick={resetFilters} className="gap-2 sm:col-span-2 xl:col-span-1">
+                <RotateCcw className="h-4 w-4" /> Reset
+            </Button>
           </CardContent>
         </Card>
 
@@ -438,54 +452,60 @@ export default function InnovationOverview() {
 
         {/* Table */}
         <Card>
-          <CardHeader><CardTitle>Project Repository ({filteredProjects.length} results)</CardTitle></CardHeader>
-          <CardContent>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Project Repository ({filteredProjects.length} results)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 sm:p-6">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Project / Team</TableHead>
-                  <TableHead>Institution</TableHead>
+                  <TableHead className="hidden lg:table-cell">Institution</TableHead>
                   <TableHead>Stage</TableHead>
-                  <TableHead>IP Type</TableHead>
-                  <TableHead>Sector</TableHead>
+                  <TableHead className="hidden md:table-cell">IP Type</TableHead>
+                  <TableHead className="hidden sm:table-cell">Sector</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedProjects.map(p => (
                   <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setViewModalProject(p)}>
-                    <TableCell>
-                      <div className="font-medium text-primary">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.team_name}</div>
+                    <TableCell className="max-w-[150px] sm:max-w-none">
+                      <div className="font-medium text-primary text-xs sm:text-sm truncate">{p.name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{p.team_name}</div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs">
+                      <div className="font-medium">{p.institution_name}</div>
+                      <div className="text-[10px] text-muted-foreground">{p.hub_name || 'No Hub'}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm font-medium">{p.institution_name}</div>
-                      <div className="text-xs text-muted-foreground">{p.hub_name || 'No Hub'}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" style={{ borderColor: stageColors[p.stage], color: stageColors[p.stage] }}>
+                      <Badge variant="outline" className="text-[10px] sm:text-xs whitespace-nowrap" style={{ borderColor: stageColors[p.stage], color: stageColors[p.stage] }}>
                         {p.stage_display || p.stage}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                        <Badge variant="secondary" style={{ backgroundColor: ipTypeColors[p.ip_type] || '#E5E7EB', color: '#0F172A' }}>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs" style={{ backgroundColor: ipTypeColors[p.ip_type] || '#E5E7EB', color: '#0F172A' }}>
                             {p.ip_type || 'Unregistered'}
                         </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{p.sector_display}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-[10px]">{p.sector_display}</TableCell>
                     <TableCell className="text-right">
-                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); setViewModalProject(p); }}>
-                            <Eye className="h-3 w-3 mr-1" /> View
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-blue-600 border-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); setViewModalProject(p); }}>
+                            <Eye className="h-3 w-3 sm:mr-1" /> <span className="hidden sm:inline">View</span>
                         </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            <div className="flex items-center justify-between mt-4 border-t pt-4">
-              <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(prev-1, 1))}>Prev</Button>
-              <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-              <Button size="sm" variant="outline" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(prev => Math.min(prev+1, totalPages))}>Next</Button>
+            <div className="flex items-center justify-between p-4 border-t">
+              <Button size="sm" variant="outline" className="h-8 px-2" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(prev-1, 1))}>
+                <ChevronLeft className="h-4 w-4" /> <span className="hidden sm:inline">Prev</span>
+              </Button>
+              <span className="text-xs sm:text-sm text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+              <Button size="sm" variant="outline" className="h-8 px-2" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(prev => Math.min(prev+1, totalPages))}>
+                <span className="hidden sm:inline">Next</span> <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </CardContent>
         </Card>

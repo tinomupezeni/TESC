@@ -78,53 +78,55 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center relative overflow-hidden"
       style={{ backgroundImage: `url(${bg_image})` }}
     >
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-[1px] sm:backdrop-blur-[2px]" />
       
-      <Card className="w-full max-w-md shadow-2xl rounded-xl relative z-10 border-white/10 bg-white/95 dark:bg-slate-950/95">
-        <CardHeader className="space-y-1 text-center pb-6">
-          <img
-            src={tesc_logo}
-            alt="TESC Logo"
-            className="h-24 mx-auto mb-4 drop-shadow-md rounded-full"
-          />
+      <Card className="w-full max-w-[420px] shadow-2xl rounded-2xl relative z-10 border-white/10 bg-white/95 dark:bg-slate-950/95 overflow-hidden">
+        <CardHeader className="space-y-1 text-center pb-4 sm:pb-6 p-6 sm:p-8">
+          <div className="mx-auto bg-white p-2 rounded-full w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shadow-lg mb-4">
+            <img
+              src={tesc_logo}
+              alt="TESC Logo"
+              className="h-14 sm:h-16 w-auto"
+            />
+          </div>
 
-          <CardTitle className="text-2xl font-bold tracking-tight">
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight">
             Institution Portal
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Verify your institution and sign in
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-5">
+        <CardContent className="px-6 sm:px-8 pb-8 sm:pb-10">
+          <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="py-2.5 px-3">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="text-xs">{error}</AlertDescription>
               </Alert>
             )}
 
-            {/* 1. Institution Selection (Visual Confirmation) */}
-            <div className="space-y-2">
-              <Label htmlFor="institution">Institution Name</Label>
+            {/* 1. Institution Selection */}
+            <div className="space-y-1.5">
+              <Label htmlFor="institution" className="text-xs sm:text-sm font-medium">Institution Name</Label>
               <Select 
                 onValueChange={(value) => setSelectedInstId(value)} 
                 disabled={isLoading || isLoadingInsts}
               >
-                <SelectTrigger id="institution" className="h-11 bg-slate-50/50">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    <SelectValue placeholder={isLoadingInsts ? "Loading list..." : "Select your institution"} />
+                <SelectTrigger id="institution" className="h-10 sm:h-11 bg-slate-50/50 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground truncate">
+                    <Building2 className="h-4 w-4 shrink-0" />
+                    <SelectValue placeholder={isLoadingInsts ? "Loading list..." : "Select institution"} />
                   </div>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[200px]">
                   {institutions?.map((inst: any) => (
-                    <SelectItem key={inst.id} value={inst.id.toString()}>
+                    <SelectItem key={inst.id} value={inst.id.toString()} className="text-xs sm:text-sm">
                       {inst.name}
                     </SelectItem>
                   ))}
@@ -133,10 +135,10 @@ const Login = () => {
             </div>
 
             {/* 2. Email Input */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Institutional Email</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs sm:text-sm font-medium">Institutional Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
@@ -144,20 +146,20 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  className="pl-9 h-11 transition-all"
+                  className="pl-10 h-10 sm:h-11 text-xs sm:text-sm transition-all"
                   required
                 />
               </div>
             </div>
 
             {/* 3. Password Input */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" title="password" className="text-xs sm:text-sm font-medium">Password</Label>
                 <Button
                   type="button"
                   variant="link"
-                  className="px-0 h-auto text-xs text-muted-foreground hover:text-primary"
+                  className="px-0 h-auto text-[10px] sm:text-xs text-muted-foreground hover:text-primary"
                   onClick={() => navigate("/forgot-password")}
                   disabled={isLoading}
                 >
@@ -165,7 +167,7 @@ const Login = () => {
                 </Button>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
@@ -173,7 +175,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className="pl-9 h-11 transition-all"
+                  className="pl-10 h-10 sm:h-11 text-xs sm:text-sm transition-all"
                   required
                 />
               </div>
@@ -182,8 +184,7 @@ const Login = () => {
             {/* Submit Button */}
             <Button 
               type="submit" 
-              className="w-full h-11 text-base font-medium mt-2" 
-              // Require institution selection + email + password to activate button
+              className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold mt-2 shadow-lg shadow-primary/20" 
               disabled={isLoading || !selectedInstId || !email || !password}
             >
               {isLoading ? (
@@ -196,9 +197,11 @@ const Login = () => {
               )}
             </Button>
 
-            <div className="text-center pt-2">
-              <p className="text-xs text-muted-foreground">
+            <div className="text-center pt-4 sm:pt-6 border-t mt-2">
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                <span className="h-1 w-1 rounded-full bg-slate-400" />
                 Protected by ZCHPC System Security
+                <span className="h-1 w-1 rounded-full bg-slate-400" />
               </p>
             </div>
           </form>

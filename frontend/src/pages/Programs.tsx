@@ -34,34 +34,34 @@ export default function Programs() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Programs</h1>
+      <div className="space-y-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Programs</h1>
         {programs.length === 0 ? (
           <p className="text-muted-foreground">No programs found.</p>
         ) : (
           <Card>
-            <CardHeader>
-              <CardTitle>Program List</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Program List</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
+                    <TableHead className="w-[80px]">ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Institution</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Enrolled Students</TableHead>
+                    <TableHead className="hidden md:table-cell">Institution</TableHead>
+                    <TableHead className="hidden sm:table-cell">Level</TableHead>
+                    <TableHead className="text-right">Students</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {programs.map((program) => (
                     <TableRow key={program.id}>
-                      <TableCell>{program.id}</TableCell>
-                      <TableCell>{program.name}</TableCell>
-                      <TableCell>{program.institution_name}</TableCell>
-                      <TableCell>{program.level}</TableCell>
-                      <TableCell>{program.enrolled_students}</TableCell>
+                      <TableCell className="font-medium text-[10px] sm:text-xs">{program.id}</TableCell>
+                      <TableCell className="text-xs sm:text-sm">{program.name}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">{program.institution_name}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">{program.level}</TableCell>
+                      <TableCell className="text-right text-xs">{program.enrolled_students}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -55,52 +55,62 @@ const IseopManager = ({ onRefresh }: IseopManagerProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-lg font-bold">ISEOP Programs</h2>
-        <IseopProgramFormDialog onSuccess={fetchPrograms} trigger={<Button>Add Program</Button>} />
+        <div className="w-full sm:w-auto">
+          <IseopProgramFormDialog onSuccess={fetchPrograms} trigger={<Button className="w-full sm:w-auto h-9 text-xs sm:text-sm">Add Program</Button>} />
+        </div>
       </div>
 
       {loading ? (
-        <p>Loading programs...</p>
+        <div className="py-10 text-center text-muted-foreground text-sm">Loading programs...</div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="border rounded-lg bg-white overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Capacity</TableHead>
-                <TableHead>Occupied</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-xs">Name</TableHead>
+                <TableHead className="text-center text-xs">Cap.</TableHead>
+                <TableHead className="text-center text-xs">Occ.</TableHead>
+                <TableHead className="hidden sm:table-cell text-xs">Status</TableHead>
+                <TableHead className="text-right text-xs">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {programs.length > 0 ? (
                 programs.map((program) => (
                   <TableRow key={program.id}>
-                    <TableCell className="font-medium">{program.name}</TableCell>
-                    <TableCell>{program.capacity}</TableCell>
-                    <TableCell>{program.occupied}</TableCell>
-                    <TableCell>{program.status}</TableCell>
-                    <TableCell className="text-right flex gap-2 justify-end">
-                      <IseopProgramFormDialog
-                        program={program}
-                        onSuccess={fetchPrograms}
-                        trigger={<Button size="sm" variant="outline">Edit</Button>}
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(program.id)}
-                      >
-                        Delete
-                      </Button>
+                    <TableCell className="font-medium text-[10px] sm:text-xs max-w-[150px] truncate">{program.name}</TableCell>
+                    <TableCell className="text-center text-[10px] sm:text-xs">{program.capacity}</TableCell>
+                    <TableCell className="text-center text-[10px] sm:text-xs">{program.occupied}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-[10px] sm:text-xs">
+                       <span className={`px-2 py-0.5 rounded-full text-[10px] ${program.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                         {program.status}
+                       </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-1 justify-end">
+                        <IseopProgramFormDialog
+                          program={program}
+                          onSuccess={fetchPrograms}
+                          trigger={<Button size="sm" variant="ghost" className="h-7 w-7 p-0 sm:h-8 sm:px-2 sm:w-auto text-[10px]">Edit</Button>}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 sm:h-8 sm:px-2 sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 text-[10px]"
+                          onClick={() => handleDelete(program.id)}
+                        >
+                          <span className="hidden sm:inline">Delete</span>
+                          <span className="sm:hidden">×</span>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10 text-xs sm:text-sm">
                     No programs found.
                   </TableCell>
                 </TableRow>
