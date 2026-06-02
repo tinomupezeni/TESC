@@ -114,18 +114,18 @@ export default function Regional() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <MapPin className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <MapPin className="h-6 w-6 sm:h-7 sm:h-7 text-primary" />
             Regional Analysis
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Aggregated institutional footprint by location
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Provinces Covered"
+            title="Provinces"
             value={stats.provinces_covered}
             description="Active regions"
             icon={MapPin}
@@ -140,7 +140,7 @@ export default function Regional() {
             onClick={() => navigate("/students?sort=location")}
           />
           <StatsCard
-            title="Total Institutions"
+            title="Institutions"
             value={stats.total_institutions}
             description="Registered"
             icon={Building}
@@ -160,23 +160,23 @@ export default function Regional() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Bar Chart Section */}
           <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Total Enrollment by Location</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Total Enrollment by Location</CardTitle>
             </CardHeader>
-            <CardContent className="h-96">
+            <CardContent className="h-64 sm:h-96 p-2 sm:p-6 pt-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={distinctChartData}
                   layout="vertical"
-                  margin={{ left: 20, right: 30 }}
+                  margin={{ left: 0, right: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" fontSize={12} />
+                  <XAxis type="number" fontSize={10} />
                   <YAxis
                     dataKey="location"
                     type="category"
-                    fontSize={11}
-                    width={100}
+                    fontSize={10}
+                    width={80}
                   />
                   <Tooltip
                     content={<CustomTooltip />}
@@ -187,7 +187,7 @@ export default function Regional() {
                     name="Total Students"
                     fill="hsl(var(--primary))"
                     radius={[0, 4, 4, 0]}
-                    barSize={20}
+                    barSize={15}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -196,34 +196,34 @@ export default function Regional() {
 
           {/* Table Section */}
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Distinct Location Stats</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Distinct Location Stats</CardTitle>
             </CardHeader>
-            <CardContent className="h-96 overflow-y-auto p-0">
+            <CardContent className="h-64 sm:h-96 overflow-y-auto p-0 sm:p-6 sm:pt-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Location</TableHead>
-                    <TableHead className="text-right">Students</TableHead>
-                    <TableHead className="text-center">Hubs</TableHead>
+                    <TableHead className="text-xs">Location</TableHead>
+                    <TableHead className="text-right text-xs">Students</TableHead>
+                    <TableHead className="text-center text-xs">Hubs</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {distinctChartData.map((item: any, index: number) => (
                     <TableRow key={index}>
-                      <TableCell className="py-3">
-                        <div className="font-medium text-xs">
+                      <TableCell className="py-2 sm:py-3">
+                        <div className="font-medium text-[10px] sm:text-xs">
                           {item.location}
                         </div>
-                        <div className="text-[10px] text-muted-foreground truncate max-w-[150px]">
+                        <div className="hidden sm:block text-[10px] text-muted-foreground truncate max-w-[150px]">
                           {item.institutions}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right text-xs font-semibold">
+                      <TableCell className="text-right text-[10px] sm:text-xs font-semibold">
                         {item.students.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-center text-xs">
-                        <span className={`px-2 py-0.5 rounded-full ${item.hubs > 0 ? 'bg-green-100 text-green-700 font-bold' : 'bg-slate-100 text-slate-400'}`}>
+                      <TableCell className="text-center text-[10px] sm:text-xs">
+                        <span className={`px-1.5 py-0.5 rounded-full ${item.hubs > 0 ? 'bg-green-100 text-green-700 font-bold' : 'bg-slate-100 text-slate-400'}`}>
                            {item.hubs}
                         </span>
                       </TableCell>

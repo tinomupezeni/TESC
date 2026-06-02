@@ -6,7 +6,7 @@ class RoleSerializer(serializers.ModelSerializer):
     """Serializes the Role model."""
     class Meta:
         model = Role
-        fields = ['id', 'name', 'description', 'created_at']
+        fields = ['id', 'name', 'description', 'institution', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 # --- 2. Department Serializer ---
@@ -14,7 +14,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
     """Serializes the Department model, including the new permissions field."""
     class Meta:
         model = Department
-        fields = ['id', 'name', 'description', 'permissions', 'created_at']
+        fields = ['id', 'name', 'description', 'permissions', 'institution', 'created_at']
         read_only_fields = ['id', 'created_at']
 
     def validate_permissions(self, value):
@@ -56,7 +56,7 @@ class UserSerializer(serializers.ModelSerializer):
             'username',         # System-safe ID (will be set by frontend)
             'first_name',       # New field for first name
             'last_name',        # New field for last name
-            'email', 'level', 
+            'email', 'level', 'institution',
             'role', 'department', 'role_id', 'department_id'
         ]
         read_only_fields = ['id']

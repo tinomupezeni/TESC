@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,14 +8,76 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Building2, Lock, Bell, Upload } from "lucide-react";
+import {
+  Building2,
+  Lock,
+  Bell,
+  Upload,
+  ShieldCheck,
+  Circle,
+  CheckCircle2,
+  Copy,
+  Check,
+  Search,
+  RotateCcw,
+  Loader2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import {
+  fetchRoles,
+  fetchDepartments,
+  fetchUsers,
+  addDepartment,
+  editDepartment,
+  addUser,
+  editUser,
+  deleteUser,
+} from "../services/settings.services";
+import Users from "@/modules/settings/Users";
+import UserModal from "@/modules/settings/UserModal";
+
+const INSTITUTION_PAGES = [
+  { name: "Dashboard", url: "/dashboard" },
+  { name: "Students", url: "/dashboard/students" },
+  { name: "ISEOP Stats", url: "/dashboard/special-enrollment" },
+  { name: "Staff", url: "/dashboard/staff" },
+  { name: "Faculties", url: "/dashboard/faculties" },
+  { name: "Programs", url: "/dashboard/programs" },
+  { name: "Graduates", url: "/dashboard/graduates" },
+  { name: "Facilities", url: "/dashboard/facilities" },
+  { name: "Innovation", url: "/dashboard/innovation" },
+  { name: "Reports", url: "/dashboard/reports" },
+  { name: "Settings", url: "/dashboard/settings" },
+];
 
 const Settings = () => {
+  const { user: currentUser, updatePassword } = useAuth();
+  const isAdmin = currentUser?.level === "1";
+
   const [notifications, setNotifications] = useState({
     email: true,
     studentRegistration: true,
@@ -23,177 +85,419 @@ const Settings = () => {
     ministryUpdates: true,
   });
 
+  const [createdCredentials, setCreatedCredentials] = useState<any>(null);
+  const [roles, setRoles] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // States for Security
+  const [passwordData, setPasswordData] = useState({
+    old: "",
+    new: "",
+    confirm: "",
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    old: false,
+    new: false,
+    confirm: false,
+  });
+
+  const [newDept, setNewDept] = useState({
+    name: "",
+    description: "",
+    permissions: [],
+  });
+  const [newUser, setNewUser] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    department: "",
+    role: "",
+    level: "4",
+  });
+
+  const [openDeptModal, setOpenDeptModal] = useState(false);
+  const [openUserModal, setOpenUserModal] = useState(false);
+
+  const refreshData = useCallback(async () => {
+    if (!isAdmin) return;
+    setLoading(true);
+    try {
+      const [r, d, u] = await Promise.all([
+        fetchRoles(),
+        fetchDepartments(),
+        fetchUsers(),
+      ]);
+      setRoles(r || []);
+      setDepartments(d || []);
+      setUsers(u?.results || u || []);
+    } catch (err) {
+      toast.error("Failed to load access control data");
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
   const handleSaveProfile = () => {
     toast.success("Institution profile updated successfully");
   };
 
-  const handleSaveSecurity = () => {
-    toast.success("Security settings updated successfully");
+  const handleSaveSecurity = async () => {
+    if (!passwordData.old || !passwordData.new) {
+        return toast.error("Please fill in both current and new passwords");
+      }
+      if (passwordData.new !== passwordData.confirm) {
+        return toast.error("New passwords do not match");
+      }
+      if (passwordData.new.length < 8) {
+        return toast.error("New password must be at least 8 characters");
+      }
+  
+      try {
+        await updatePassword(passwordData.old, passwordData.new);
+        toast.success("Password changed successfully");
+        setPasswordData({ old: "", new: "", confirm: "" });
+      } catch (err) {
+        const errorMsg = typeof err === "string" ? err : "Failed to update password";
+        toast.error(errorMsg);
+      }
+  };
+
+  const editUserHandler = (user: any) => {
+    setEditingItem(user);
+    setNewUser({
+      firstName: user.first_name || "",
+      lastName: user.last_name || "",
+      email: user.email || "",
+      role: user.role?.name || "",
+      department: user.department?.name || "",
+      level: user.level || "4",
+    });
+    setOpenUserModal(true);
+  };
+
+  const saveUser = async () => {
+    const deptObj: any = departments.find((d: any) => d.name === newUser.department);
+    const payload = {
+      username: newUser.email, // Using email as username for consistency
+      first_name: newUser.firstName,
+      last_name: newUser.lastName,
+      email: newUser.email,
+      department_id: deptObj?.id,
+      level: newUser.level,
+      institution: currentUser?.institution?.id
+    };
+
+    try {
+      if (editingItem) {
+        await editUser((editingItem as any).id, payload);
+        toast.success("User updated");
+      } else {
+        const response = await addUser(payload);
+        setCreatedCredentials({
+          email: response.email,
+          password: response.password || "tesc@123",
+        });
+      }
+      setOpenUserModal(false);
+      setNewUser({
+        firstName: "",
+        lastName: "",
+        email: "",
+        department: "",
+        role: "",
+        level: "4",
+      });
+      refreshData();
+    } catch (err) {
+      toast.error("Error saving user");
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Settings</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Manage institution profile and preferences
         </p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profile" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            Institution Profile
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Lock className="h-4 w-4" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
-          </TabsTrigger>
-        </TabsList>
+        <div className="px-1">
+          <TabsList className="bg-muted p-1 w-full sm:w-auto overflow-x-auto justify-start no-scrollbar">
+            <TabsTrigger value="profile" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
+              <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              Profile
+            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="access" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                Access Control
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="security" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
+              <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              Security
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
+              <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              Notifications
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="profile" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Institution Information</CardTitle>
-              <CardDescription>
+        <TabsContent value="profile" className="space-y-4 px-1">
+          {/* ... Existing profile content ... */}
+          <Card className="border-none sm:border">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Institution Information</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Update your institution's public profile
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="institution-name">Institution Name</Label>
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="institution-name" className="text-xs sm:text-sm">Institution Name</Label>
                   <Input
                     id="institution-name"
-                    defaultValue="Mutare Polytechnic"
+                    defaultValue={currentUser?.institution?.name || "Mutare Polytechnic"}
+                    className="h-9 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="institution-type">Type</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="institution-type" className="text-xs sm:text-sm">Type</Label>
                   <Input
                     id="institution-type"
-                    defaultValue="Polytechnic"
+                    defaultValue={currentUser?.institution?.type || "Polytechnic"}
                     disabled
+                    className="h-9 sm:h-10 text-xs sm:text-sm bg-muted"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Official Email</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs sm:text-sm">Official Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  defaultValue="admin@mutarepoly.ac.zw"
+                  defaultValue={currentUser?.institution?.email || "admin@institution.ac.zw"}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" defaultValue="+263 20 123 4567" />
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone" className="text-xs sm:text-sm">Phone Number</Label>
+                  <Input id="phone" defaultValue="+263 20 123 4567" className="h-9 sm:h-10 text-xs sm:text-sm" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="province">Province</Label>
-                  <Input id="province" defaultValue="Manicaland" disabled />
+                <div className="space-y-1.5">
+                  <Label htmlFor="province" className="text-xs sm:text-sm">Province</Label>
+                  <Input id="province" defaultValue="Manicaland" disabled className="h-9 sm:h-10 text-xs sm:text-sm bg-muted" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Physical Address</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="address" className="text-xs sm:text-sm">Physical Address</Label>
                 <Textarea
                   id="address"
                   defaultValue="123 Education Drive, Mutare, Zimbabwe"
                   rows={3}
+                  className="text-xs sm:text-sm"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="logo">Institution Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 rounded-lg bg-muted flex items-center justify-center">
-                    <Building2 className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Logo
-                  </Button>
-                </div>
-              </div>
-
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
+              <Button onClick={handleSaveProfile} className="w-full sm:w-auto h-9 sm:h-10">Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your account password regularly for security
+        {isAdmin && (
+          <TabsContent value="access" className="space-y-6 px-1">
+            <Card className="border-none sm:border">
+                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
+                  <div>
+                    <CardTitle className="text-lg sm:text-xl">Departments & Access</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Create departments and assign page access permissions</CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full sm:w-auto h-9"
+                    onClick={() => {
+                      setEditingItem(null);
+                      setNewDept({
+                        name: "",
+                        description: "",
+                        permissions: [],
+                      });
+                      setOpenDeptModal(true);
+                    }}
+                  >
+                    Add Department
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0 sm:p-6 pt-0 sm:pt-0">
+                  <div className="rounded-md border overflow-x-auto mx-1 sm:mx-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Department</TableHead>
+                        <TableHead className="text-xs hidden sm:table-cell">Permissions</TableHead>
+                        <TableHead className="text-right text-xs">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                         <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader2 className="h-4 w-4 animate-spin inline mr-2"/>Loading...</TableCell></TableRow>
+                      ) : departments.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-xs">No departments created.</TableCell></TableRow>
+                      ) : (
+                        departments.map((dep: any) => (
+                          <TableRow key={dep.id}>
+                            <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-3">
+                              {dep.name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-[10px] sm:text-xs hidden sm:table-cell">
+                              {dep.permissions?.length || 0} Pages Accessible
+                            </TableCell>
+                            <TableCell className="text-right py-2 sm:py-3">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2"
+                                onClick={() => {
+                                  setEditingItem(dep);
+                                  setNewDept(dep);
+                                  setOpenDeptModal(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Users
+                users={users}
+                setEditingItem={setEditingItem}
+                setNewUser={setNewUser}
+                setOpenUserModal={setOpenUserModal}
+                editUserHandler={editUserHandler}
+                deleteUserHandler={async (id) => {
+                    if(confirm("Delete user?")) {
+                        await deleteUser(id);
+                        refreshData();
+                    }
+                }}
+              />
+          </TabsContent>
+        )}
+
+        <TabsContent value="security" className="space-y-4 px-1">
+          <Card className="border-none sm:border">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Change Password</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Update your account password regularly
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input id="current-password" type="password" />
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+              <div className="space-y-1.5 relative">
+                <Label htmlFor="current-password" className="text-xs sm:text-sm">Current Password</Label>
+                <Input 
+                    id="current-password" 
+                    type={showPasswords.old ? "text" : "password"} 
+                    className="h-9 sm:h-10 pr-10" 
+                    value={passwordData.old}
+                    onChange={(e) => setPasswordData({...passwordData, old: e.target.value})}
+                />
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-0 top-6 h-9 w-9"
+                    onClick={() => setShowPasswords({...showPasswords, old: !showPasswords.old})}
+                >
+                    {showPasswords.old ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input id="new-password" type="password" />
+              <div className="space-y-1.5 relative">
+                <Label htmlFor="new-password"  className="text-xs sm:text-sm">New Password</Label>
+                <Input 
+                    id="new-password" 
+                    type={showPasswords.new ? "text" : "password"} 
+                    className="h-9 sm:h-10 pr-10" 
+                    value={passwordData.new}
+                    onChange={(e) => setPasswordData({...passwordData, new: e.target.value})}
+                />
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-0 top-6 h-9 w-9"
+                    onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
+                >
+                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input id="confirm-password" type="password" />
+              <div className="space-y-1.5 relative">
+                <Label htmlFor="confirm-password"  className="text-xs sm:text-sm">Confirm New Password</Label>
+                <Input 
+                    id="confirm-password" 
+                    type={showPasswords.confirm ? "text" : "password"} 
+                    className="h-9 sm:h-10 pr-10" 
+                    value={passwordData.confirm}
+                    onChange={(e) => setPasswordData({...passwordData, confirm: e.target.value})}
+                />
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-0 top-6 h-9 w-9"
+                    onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
+                >
+                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
               </div>
 
-              <Button onClick={handleSaveSecurity}>Update Password</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Login Information</CardTitle>
-              <CardDescription>Your account credentials</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Username</Label>
-                <Input value="mutarepoly" disabled />
-              </div>
-              <div className="space-y-2">
-                <Label>Account Status</Label>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-success" />
-                  <span className="text-sm">Active</span>
-                </div>
-              </div>
+              <Button onClick={handleSaveSecurity} className="w-full sm:w-auto h-9 sm:h-10">Update Password</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
+        <TabsContent value="notifications" className="space-y-4 px-1">
+           {/* ... Existing notifications content ... */}
+           <Card className="border-none sm:border">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Notification Preferences</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Manage how you receive updates and alerts
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="space-y-6 p-4 sm:p-6 pt-0">
+              <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">
+                  <Label htmlFor="email-notifications" className="text-sm sm:text-base">
                     Email Notifications
                   </Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     Receive notifications via email
                   </p>
                 </div>
@@ -206,10 +510,10 @@ const Settings = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor="student-reg">Student Registrations</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <Label htmlFor="student-reg" className="text-sm sm:text-base">Student Registrations</Label>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     Alert when new students register
                   </p>
                 </div>
@@ -225,46 +529,9 @@ const Settings = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="result-uploads">Result Uploads</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Notify on result submission
-                  </p>
-                </div>
-                <Switch
-                  id="result-uploads"
-                  checked={notifications.resultUploads}
-                  onCheckedChange={(checked) =>
-                    setNotifications({
-                      ...notifications,
-                      resultUploads: checked,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="ministry-updates">Ministry Updates</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Important announcements from Ministry
-                  </p>
-                </div>
-                <Switch
-                  id="ministry-updates"
-                  checked={notifications.ministryUpdates}
-                  onCheckedChange={(checked) =>
-                    setNotifications({
-                      ...notifications,
-                      ministryUpdates: checked,
-                    })
-                  }
-                />
-              </div>
-
               <Button
                 onClick={() => toast.success("Notification preferences saved")}
+                className="w-full sm:w-auto h-9 sm:h-10 text-xs sm:text-sm"
               >
                 Save Preferences
               </Button>
@@ -272,8 +539,135 @@ const Settings = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* --- MODALS --- */}
+      <Dialog
+          open={!!createdCredentials}
+          onOpenChange={(open) => !open && setCreatedCredentials(null)}
+        >
+          <DialogContent className="sm:max-w-md w-[95vw] p-4 sm:p-6 rounded-xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-green-600 text-lg sm:text-xl">
+                <ShieldCheck className="h-6 w-6 shrink-0" />
+                User Created
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                Share these credentials with the user securely.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="bg-muted/50 p-4 rounded-lg border space-y-4 my-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground uppercase font-bold">Email</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background p-2 rounded border font-mono text-[10px] sm:text-sm truncate">
+                    {createdCredentials?.email}
+                  </code>
+                  <Button size="icon" variant="ghost" onClick={() => copyToClipboard(createdCredentials?.email || "")} className="h-8 w-8">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground uppercase font-bold">Temp Password</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background p-2 rounded border font-mono text-[10px] sm:text-sm">
+                    {createdCredentials?.password}
+                  </code>
+                  <Button size="icon" variant="ghost" onClick={() => copyToClipboard(createdCredentials?.password || "")} className="h-8 w-8">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={() => setCreatedCredentials(null)} className="w-full h-10">Done</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <DepartmentModal
+          open={openDeptModal}
+          onClose={() => setOpenDeptModal(false)}
+          dept={newDept}
+          setDept={setNewDept}
+          onSave={async () => {
+            try {
+                if (editingItem) await editDepartment((editingItem as any).id, newDept);
+                else await addDepartment({ ...newDept, institution: currentUser?.institution?.id });
+                setOpenDeptModal(false);
+                refreshData();
+                toast.success("Department updated");
+            } catch(err) {
+                toast.error("Error saving department");
+            }
+          }}
+        />
+
+        <UserModal
+          open={openUserModal}
+          onClose={() => setOpenUserModal(false)}
+          user={newUser}
+          setUser={setNewUser}
+          onSave={saveUser}
+          departments={departments}
+          roles={roles}
+          editing={!!editingItem}
+        />
     </div>
   );
 };
+
+function DepartmentModal({ open, onClose, dept, setDept, onSave }: any) {
+  const togglePage = (url: string) => {
+    const current = dept.permissions || [];
+    const updated = current.includes(url)
+      ? current.filter((p: string) => p !== url)
+      : [...current, url];
+    setDept({ ...dept, permissions: updated });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl w-[95vw] overflow-hidden flex flex-col max-h-[90vh] p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="text-xl sm:text-2xl">Access Control</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">Assign page access permissions to this department</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4 flex-1 overflow-y-auto pr-1 sm:pr-2">
+          <Input
+            placeholder="Department Name (e.g. Finance)"
+            value={dept.name}
+            className="h-10 sm:h-11"
+            onChange={(e) => setDept({ ...dept, name: e.target.value })}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border p-3 sm:p-4 rounded-xl bg-muted/20">
+            {INSTITUTION_PAGES.map((page) => (
+              <div
+                key={page.url}
+                onClick={() => togglePage(page.url)}
+                className="flex items-center gap-3 cursor-pointer hover:bg-background p-3 rounded-lg border border-transparent hover:border-border transition-all"
+              >
+                {dept.permissions?.includes(page.url) ? (
+                  <CheckCircle2 className="text-green-600 h-5 w-5 shrink-0" />
+                ) : (
+                  <Circle className="text-muted-foreground/30 h-5 w-5 shrink-0" />
+                )}
+                <span className="text-xs sm:text-sm font-medium">{page.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <DialogFooter className="pt-4 border-t gap-2 sm:gap-0">
+          <Button variant="ghost" onClick={onClose} className="h-9 sm:h-10 text-xs sm:text-sm">
+            Cancel
+          </Button>
+          <Button onClick={onSave} className="h-9 sm:h-10 text-xs sm:text-sm">Save Permissions</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default Settings;

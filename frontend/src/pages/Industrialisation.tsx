@@ -85,17 +85,17 @@ export default function Industrialisation() {
                 
                 {/* Header */}
                 <div className="pb-2 border-b">
-                    <h1 className="text-3xl font-bold flex items-center gap-2">
-                        <Factory className="h-7 w-7 text-primary" /> 
+                    <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+                        <Factory className="h-6 w-6 sm:h-7 sm:h-7 text-primary" /> 
                         Commercialisation
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm sm:text-base text-muted-foreground">
                         Monitor industry linkages, startups, and commercialization.
                     </p>
                 </div>
 
                 {/* Key Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard 
                         title="Commercialised Projects" 
                         value={calculatedStats.commercialised} 
@@ -129,14 +129,14 @@ export default function Industrialisation() {
                     
                     {/* Sector Chart */}
                     <Card>
-                        <CardHeader className="flex flex-row items-center gap-2">
+                        <CardHeader className="flex flex-row items-center gap-2 p-4 sm:p-6">
                             <BarChart3 className="h-5 w-5 text-emerald-600" />
-                            <CardTitle>Commercialised Project Sectors</CardTitle>
+                            <CardTitle className="text-base sm:text-lg">Commercialised Project Sectors</CardTitle>
                         </CardHeader>
-                        <CardContent className="h-80 relative">
+                        <CardContent className="h-64 sm:h-80 relative p-2 sm:p-6 pt-0">
                             {!hasSectorData && (
                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                    <span className="text-muted-foreground font-medium bg-background/80 px-2 py-1 rounded">
+                                    <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-background/80 px-2 py-1 rounded">
                                         No Commercialised Data
                                     </span>
                                 </div>
@@ -144,14 +144,15 @@ export default function Industrialisation() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     {hasSectorData && <Tooltip />}
-                                    {hasSectorData && <Legend verticalAlign="bottom" height={36} />}
+                                    {hasSectorData && <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px' }} />}
                                     <Pie
                                         data={chartData}
                                         dataKey="value"
                                         nameKey="name"
                                         cx="50%"
                                         cy="50%"
-                                        outerRadius={100}
+                                        outerRadius={80}
+                                        sm:outerRadius={100}
                                         innerRadius={0}
                                         stroke="none"
                                     >
@@ -170,28 +171,28 @@ export default function Industrialisation() {
 
                     {/* Partnerships Table */}
                     <Card>
-                        <CardHeader className="flex flex-row items-center gap-2">
+                        <CardHeader className="flex flex-row items-center gap-2 p-4 sm:p-6">
                             <Target className="h-5 w-5 text-sky-600" />
-                            <CardTitle>Recent Partnerships</CardTitle>
+                            <CardTitle className="text-base sm:text-lg">Recent Partnerships</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="rounded-md border max-h-[320px] overflow-auto">
+                        <CardContent className="p-0 sm:p-6">
+                            <div className="rounded-md border-0 sm:border max-h-[320px] overflow-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Partner Name</TableHead>
-                                            <TableHead>Focus Area</TableHead>
-                                            <TableHead>Status</TableHead>
+                                            <TableHead className="text-xs sm:text-sm">Partner</TableHead>
+                                            <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Focus Area</TableHead>
+                                            <TableHead className="text-xs sm:text-sm">Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {partnerships && partnerships.length > 0 ? (
                                             partnerships.slice(0, 10).map((item) => (
                                                 <TableRow key={item.id}>
-                                                    <TableCell className="font-medium">{item.partner_name}</TableCell>
-                                                    <TableCell>{item.focus_area}</TableCell>
+                                                    <TableCell className="font-medium text-xs sm:text-sm">{item.partner_name}</TableCell>
+                                                    <TableCell className="text-xs hidden sm:table-cell">{item.focus_area}</TableCell>
                                                     <TableCell>
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800">
                                                             {item.status}
                                                         </span>
                                                     </TableCell>
@@ -202,7 +203,7 @@ export default function Industrialisation() {
                                                 <TableCell colSpan={3} className="h-48 text-center">
                                                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                                                         <FolderOpen className="h-8 w-8 mb-2 opacity-20" />
-                                                        <p>No partnership data available.</p>
+                                                        <p className="text-xs">No partnership data available.</p>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

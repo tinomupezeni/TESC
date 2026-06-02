@@ -312,7 +312,7 @@ export default function Students() {
           </Card>
 
           <Card className="print:shadow-none print:border-none">
-            <CardHeader className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 pb-4 print:hidden">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 print:hidden">
               <div>
                 <CardTitle>Student Records ({filteredStudents.length})</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -320,16 +320,17 @@ export default function Students() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
+                  className="h-8 px-2 sm:px-3"
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  <ChevronLeft className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Previous</span>
                 </Button>
-                <div className="text-sm font-medium px-2">
+                <div className="text-xs sm:text-sm font-medium px-2 whitespace-nowrap">
                   Page {currentPage} of {totalPages || 1}
                 </div>
                 <Button
@@ -337,23 +338,24 @@ export default function Students() {
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage >= totalPages || totalPages === 0}
+                  className="h-8 px-2 sm:px-3"
                 >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                  <span className="hidden sm:inline">Next</span> <ChevronRight className="h-4 w-4 sm:ml-1" />
                 </Button>
               </div>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student ID</TableHead>
+                    <TableHead className="w-[100px]">ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Institution</TableHead>
-                    <TableHead>Institution Type</TableHead>
-                    <TableHead>Program</TableHead>
-                    <TableHead>Gender</TableHead>
-                    <TableHead>Year</TableHead>
+                    <TableHead className="hidden lg:table-cell">Institution</TableHead>
+                    <TableHead className="hidden xl:table-cell">Type</TableHead>
+                    <TableHead className="hidden md:table-cell">Program</TableHead>
+                    <TableHead className="hidden sm:table-cell">Gender</TableHead>
+                    <TableHead className="hidden sm:table-cell">Year</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right print:hidden">Actions</TableHead>
                   </TableRow>
@@ -376,20 +378,20 @@ export default function Students() {
                   ) : (
                     paginatedStudents.map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.student_id}</TableCell>
-                        <TableCell>{student.full_name}</TableCell>
-                        <TableCell>{student.institution_name}</TableCell>
-                        <TableCell>{student.type}</TableCell>
-                        <TableCell>{student.program_name}</TableCell>
-                        <TableCell>{student.gender}</TableCell>
-                        <TableCell>{student.enrollment_year}</TableCell>
+                        <TableCell className="font-medium text-xs sm:text-sm">{student.student_id}</TableCell>
+                        <TableCell className="max-w-[120px] sm:max-w-none truncate sm:whitespace-normal">{student.full_name}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{student.institution_name}</TableCell>
+                        <TableCell className="hidden xl:table-cell">{student.type}</TableCell>
+                        <TableCell className="hidden md:table-cell">{student.program_name}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{student.gender}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{student.enrollment_year}</TableCell>
                         <TableCell>
-                          <Badge variant={student.status === "Active" ? "default" : "outline"}>
+                          <Badge variant={student.status === "Active" ? "default" : "outline"} className="text-[10px] sm:text-xs">
                             {student.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right print:hidden">
-                          <Button variant="ghost" size="sm" onClick={() => setstudent(student)}>
+                          <Button variant="ghost" size="sm" onClick={() => setstudent(student)} className="h-8 px-2">
                             View
                           </Button>
                         </TableCell>

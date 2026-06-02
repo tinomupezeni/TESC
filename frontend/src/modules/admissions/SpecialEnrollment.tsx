@@ -82,32 +82,32 @@ export default function SpecialEnrollmentDashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="pb-2 border-b">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <User className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <User className="h-6 w-6 sm:h-7 sm:h-7 text-primary" />
             Special Needs & Work-for-Fees
           </h1>
-          <p className="text-muted-foreground">Tracking student support and work-for-fees allocations.</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Tracking student support and work-for-fees allocations.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatsCard title="Special Needs Total(Normal Enrollment)" value={data.students.counts.disabled} icon={User} variant="accent" />
-          <StatsCard title="Work-for-Fees Students" value={data.students.counts.work_for_fees} icon={CreditCard} variant="info" />
-          <StatsCard title="Special Needs Total(ISEOP Enrollment)" value={data.iseop.counts.total} icon={UserCheck} variant="success" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatsCard title="Special Needs (Normal)" value={data.students.counts.disabled} icon={User} variant="accent" />
+          <StatsCard title="Work-for-Fees" value={data.students.counts.work_for_fees} icon={CreditCard} variant="info" />
+          <StatsCard title="Special Needs (ISEOP)" value={data.iseop.counts.total} icon={UserCheck} variant="success" />
         </div>
 
         {/* First Row: The Two Pie Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle>Disability Categories (Normal Enrollment)</CardTitle></CardHeader>
-            <CardContent className="h-80">
+            <CardHeader className="p-4 sm:p-6"><CardTitle className="text-base sm:text-lg">Disability Categories (Normal)</CardTitle></CardHeader>
+            <CardContent className="h-64 sm:h-80 p-2 sm:p-6">
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" cx="40%" cy="50%" outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
+                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} sm:outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
                       {pieData.map((entry, index) => <Cell key={index} fill={COLOR_MAP[entry.name] || "#6B7280"} />)}
                     </Pie>
-                    <Tooltip />
-                    <Legend layout="vertical" align="right" verticalAlign="middle" formatter={renderLegendText} />
+                    <Tooltip wrapperStyle={{ fontSize: '10px' }} />
+                    <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} formatter={(v) => <span className="text-[10px]">{v}</span>} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : <NoData />}
@@ -115,16 +115,16 @@ export default function SpecialEnrollmentDashboard() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Disability Categories (ISEOP Enrollment)</CardTitle></CardHeader>
-            <CardContent className="h-80">
+            <CardHeader className="p-4 sm:p-6"><CardTitle className="text-base sm:text-lg">Disability Categories (ISEOP)</CardTitle></CardHeader>
+            <CardContent className="h-64 sm:h-80 p-2 sm:p-6">
               {iseopPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={iseopPieData} dataKey="value" nameKey="name" cx="40%" cy="50%" outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
+                    <Pie data={iseopPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} sm:outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
                       {iseopPieData.map((entry, index) => <Cell key={index} fill={COLOR_MAP[entry.name] || "#6B7280"} />)}
                     </Pie>
-                    <Tooltip />
-                    <Legend layout="vertical" align="right" verticalAlign="middle" formatter={renderLegendText} />
+                    <Tooltip wrapperStyle={{ fontSize: '10px' }} />
+                    <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} formatter={(v) => <span className="text-[10px]">{v}</span>} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : <NoData />}
@@ -135,21 +135,21 @@ export default function SpecialEnrollmentDashboard() {
         {/* Second Row: Top 5 Bar Chart and Table */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <BarChartIcon className="h-5 w-5 text-primary" />
                 Top 5 Disabilities
               </CardTitle>
             </CardHeader>
-            <CardContent className="h-80">
+            <CardContent className="h-64 sm:h-80 p-2 sm:p-6">
               {top5Data.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={top5Data} layout="vertical" margin={{ left: 30, right: 30 }}>
+                  <BarChart data={top5Data} layout="vertical" margin={{ left: 0, right: 30 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" width={80} fontSize={12} tickLine={false} axisLine={false} />
-                    <Tooltip cursor={{ fill: 'transparent' }} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
+                    <YAxis dataKey="name" type="category" width={80} fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip cursor={{ fill: 'transparent' }} wrapperStyle={{ fontSize: '10px' }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                       {top5Data.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -161,23 +161,23 @@ export default function SpecialEnrollmentDashboard() {
           </Card>
 
           <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>Work-for-Fees Allocation</CardTitle></CardHeader>
-            <CardContent>
+            <CardHeader className="p-4 sm:p-6"><CardTitle className="text-base sm:text-lg">Work-for-Fees Allocation</CardTitle></CardHeader>
+            <CardContent className="p-0 sm:p-6">
               {data.students.work_for_fees.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Service Area</TableHead>
-                      <TableHead className="text-center">Students</TableHead>
-                      <TableHead className="text-right">Hours Pledged</TableHead>
+                      <TableHead className="text-xs">Service Area</TableHead>
+                      <TableHead className="text-center text-xs">Students</TableHead>
+                      <TableHead className="text-right text-xs">Hours</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.students.work_for_fees.map((item) => (
                       <TableRow key={item.work_area}>
-                        <TableCell className="font-medium">{item.work_area}</TableCell>
-                        <TableCell className="text-center">{item.students}</TableCell>
-                        <TableCell className="text-right">{item.hours} hrs</TableCell>
+                        <TableCell className="font-medium text-[10px] sm:text-xs">{item.work_area}</TableCell>
+                        <TableCell className="text-center text-[10px] sm:text-xs">{item.students}</TableCell>
+                        <TableCell className="text-right text-[10px] sm:text-xs">{item.hours} hrs</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

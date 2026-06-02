@@ -82,17 +82,17 @@ export default function Facilities() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <School className="h-7 w-7" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <School className="h-6 w-6 sm:h-7 sm:h-7" />
             Facilities & Capacity
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage infrastructure, capacity, and resource utilization
           </p>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <StatsCard
             title="Total Capacity"
             value={totalCapacity.toLocaleString()}
@@ -109,17 +109,17 @@ export default function Facilities() {
 
         
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 Capacity Utilization
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold mb-2">
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold mb-2">
                 {utilization.toFixed(1)}%
               </div>
               <Progress value={utilization} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
                 {totalCurrentUsage.toLocaleString()} /{" "}
                 {totalCapacity.toLocaleString()}
               </p>
@@ -131,10 +131,10 @@ export default function Facilities() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Enrollment vs Capacity Chart */}
           <Card>
-            <CardHeader>
-              <CardTitle>Capacity vs. Current Usage by Facility Type</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Capacity vs. Current Usage by Facility Type</CardTitle>
             </CardHeader>
-            <CardContent className="h-80">
+            <CardContent className="h-64 sm:h-80 p-2 sm:p-6">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={capacityData}>
                   <CartesianGrid
@@ -143,12 +143,12 @@ export default function Facilities() {
                   />
                   <XAxis
                     dataKey="name"
-                    fontSize={12}
+                    fontSize={10}
                     stroke="hsl(var(--muted-foreground))"
                   />
-                  <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis fontSize={10} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
                   <Bar dataKey="capacity" fill="hsl(var(--accent))" />
                   <Bar
                     dataKey="usage"
@@ -162,43 +162,47 @@ export default function Facilities() {
 
           {/* Major Facilities Table */}
           <Card>
-            <CardHeader>
-              <CardTitle>Major Facilities Status</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Major Facilities Status</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Facility</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Capacity</TableHead>
-                    <TableHead>Current Usage</TableHead>
+                    <TableHead className="hidden sm:table-cell">Type</TableHead>
+                    <TableHead className="hidden sm:table-cell">Capacity</TableHead>
+                    <TableHead>Usage</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {facilitiesLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">
+                      <TableCell colSpan={5} className="text-center">
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : facilities.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">
+                      <TableCell colSpan={5} className="text-center">
                         No facilities found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     facilities.map((f: Facility) => (
                       <TableRow key={f.id}>
-                        <TableCell className="font-medium">{f.name}</TableCell>
-                        <TableCell>{f.facility_type}</TableCell>
-                        <TableCell>{f.capacity.toLocaleString()}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium text-xs sm:text-sm">{f.name}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs">{f.facility_type}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs">{f.capacity.toLocaleString()}</TableCell>
+                        <TableCell className="text-xs">
                           {f.current_usage.toLocaleString()}
                         </TableCell>
-                        <TableCell>{f.status}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">
+                            {f.status}
+                          </Badge>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}

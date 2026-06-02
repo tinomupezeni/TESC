@@ -252,53 +252,53 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
-        <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening today.</p>
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard Overview</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">Welcome back! Here's what's happening today.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.title} className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest actions across your institution</CardDescription>
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-xl">Recent Activity</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Latest actions across your institution</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div className="space-y-4">
               {recentActivities.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No recent activity found.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground text-center py-8">No recent activity found.</p>
               ) : (
                 recentActivities.map((activity, idx) => (
-                  <div key={idx} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
-                    <div className={`h-2 w-2 rounded-full mt-2
+                  <div key={idx} className="flex items-start gap-3 sm:gap-4 pb-4 border-b last:border-0 last:pb-0">
+                    <div className={`h-2 w-2 rounded-full mt-2 shrink-0
                       ${activity.type === 'student' ? 'bg-blue-500' :
                         activity.type === 'staff' ? 'bg-purple-500' : 'bg-amber-500'}`}
                     />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">{activity.user}</span>
-                        <span>•</span>
-                        <span>{activity.program}</span>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-xs sm:text-sm font-medium truncate">{activity.action}</p>
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground truncate max-w-[100px] sm:max-w-none">{activity.user}</span>
+                        <span className="hidden xs:inline">•</span>
+                        <span className="truncate">{activity.program}</span>
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap shrink-0">
                       {timeAgo(activity.time)}
                     </span>
                   </div>
@@ -309,24 +309,24 @@ const Dashboard = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Users className="h-5 w-5" />
               Student Status Breakdown
             </CardTitle>
-            <CardDescription>Current distribution of student statuses</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">Current distribution of student statuses</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
               {statusItems.map((item) => (
                 <div
                   key={item.label}
                   className={`flex items-center gap-3 p-3 rounded-lg ${item.bg}`}
                 >
-                  <item.icon className={`h-4 w-4 ${item.color}`} />
-                  <div>
-                    <p className="text-lg font-semibold">{item.value}</p>
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <item.icon className={`h-4 w-4 shrink-0 ${item.color}`} />
+                  <div className="min-w-0">
+                    <p className="text-base sm:text-lg font-semibold">{item.value}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{item.label}</p>
                   </div>
                 </div>
               ))}

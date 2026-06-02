@@ -87,84 +87,89 @@ const Graduates = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
           Graduates & Completions
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Analytics based on student records marked as 'Graduated'
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{currentYear} Graduates</CardDescription>
-            <CardTitle className="text-3xl text-primary">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 p-4 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm">{currentYear} Graduates</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl text-primary">
               {totalGraduatesCurrent}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               Current academic year
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{currentYear - 1} Graduates</CardDescription>
-            <CardTitle className="text-3xl">{totalGraduatesPrev}</CardTitle>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 p-4 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm">{currentYear - 1} Graduates</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">{totalGraduatesPrev}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3" />
               <span>Previous year comparison</span>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Records</CardDescription>
-            <CardTitle className="text-3xl">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 p-4 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm">Total Records</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">
                 {stats.reduce((acc, curr) => acc + curr.total_graduates, 0)}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">All time graduates</p>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">All time graduates</p>
           </CardContent>
         </Card>
         {/* Placeholder for future metric */}
-        <Card className="bg-muted/10 border-dashed">
-          <CardHeader className="pb-3">
-            <CardDescription>Average Pass Rate</CardDescription>
-            <CardTitle className="text-xl text-muted-foreground">N/A</CardTitle>
+        <Card className="bg-muted/10 border-dashed hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 p-4 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm">Average Pass Rate</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl text-muted-foreground">N/A</CardTitle>
           </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0">
+             <p className="text-[10px] sm:text-xs text-muted-foreground">Historical data</p>
+          </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <Card className="overflow-hidden border-none sm:border">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Graduation Statistics</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Graduation Statistics</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Aggregated by Program and Year
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredStats.length === 0}>
+            <div className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredStats.length === 0} className="w-full sm:w-auto h-9">
                 <Download className="h-4 w-4 mr-2" />
                 Export Report
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by year" />
+              <SelectTrigger className="w-full md:w-[200px] h-9 sm:h-10 text-xs sm:text-sm">
+                <div className="flex items-center">
+                  <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
+                  <SelectValue placeholder="All Years" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Years</SelectItem>
@@ -175,9 +180,11 @@ const Graduates = () => {
             </Select>
 
             <Select value={filterProgram} onValueChange={setFilterProgram}>
-              <SelectTrigger className="w-full md:w-[250px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by program" />
+              <SelectTrigger className="w-full md:w-[250px] h-9 sm:h-10 text-xs sm:text-sm">
+                <div className="flex items-center">
+                  <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
+                  <SelectValue placeholder="All Programs" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Programs</SelectItem>
@@ -188,18 +195,18 @@ const Graduates = () => {
             </Select>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Year</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Total Graduates</TableHead>
-                  <TableHead className="text-emerald-600">Distinction</TableHead>
-                  <TableHead className="text-blue-600">Credit</TableHead>
-                  <TableHead className="text-amber-600">Pass</TableHead>
-                  <TableHead>Pass Rate</TableHead>
+                  <TableHead className="text-xs">Year</TableHead>
+                  <TableHead className="text-xs">Program</TableHead>
+                  <TableHead className="hidden md:table-cell text-xs">Level</TableHead>
+                  <TableHead className="text-xs">Total</TableHead>
+                  <TableHead className="text-emerald-600 hidden sm:table-cell text-xs">Dist.</TableHead>
+                  <TableHead className="text-blue-600 hidden sm:table-cell text-xs">Credit</TableHead>
+                  <TableHead className="text-amber-600 hidden sm:table-cell text-xs">Pass</TableHead>
+                  <TableHead className="text-xs">Rate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -213,10 +220,10 @@ const Graduates = () => {
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="text-center py-8 text-muted-foreground"
+                      className="text-center py-8 text-muted-foreground text-xs"
                     >
-                      <PieChart className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                      No graduation records found matching your filters.
+                      <PieChart className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                      No records found.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -225,19 +232,19 @@ const Graduates = () => {
                     
                     return (
                     <TableRow key={index}>
-                      <TableCell className="font-medium">{stat.graduation_year}</TableCell>
-                      <TableCell>{stat.program__name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{stat.program__level}</Badge>
+                      <TableCell className="font-medium text-[10px] sm:text-xs">{stat.graduation_year}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm truncate max-w-[150px] sm:max-w-none">{stat.program__name}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">
+                        <Badge variant="outline" className="text-[10px]">{stat.program__level}</Badge>
                       </TableCell>
-                      <TableCell className="font-bold">
+                      <TableCell className="font-bold text-[10px] sm:text-xs">
                         {stat.total_graduates}
                       </TableCell>
-                      <TableCell>{stat.distinctions}</TableCell>
-                      <TableCell>{stat.credits}</TableCell>
-                      <TableCell>{stat.passes}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">{stat.distinctions}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">{stat.credits}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">{stat.passes}</TableCell>
                       <TableCell>
-                        <span className="font-mono text-xs">{passRate}%</span>
+                        <span className="font-mono text-[10px] sm:text-xs">{passRate}%</span>
                       </TableCell>
                     </TableRow>
                   )})

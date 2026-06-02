@@ -234,34 +234,35 @@ export default function SettingsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Settings className="h-8 w-8 text-primary" /> Settings
+        <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+          <Settings className="h-6 w-6 sm:h-8 sm:h-8 text-primary" /> Settings
         </h1>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="bg-muted p-1">
-            <TabsTrigger value="profile" className="gap-2">
-              <UserIcon className="h-4 w-4" /> Personal Profile
+          <TabsList className="bg-muted p-1 w-full sm:w-auto overflow-x-auto justify-start">
+            <TabsTrigger value="profile" className="gap-2 text-xs sm:text-sm">
+              <UserIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Profile
             </TabsTrigger>
             {isSystemAdmin && (
-              <TabsTrigger value="system" className="gap-2">
-                <ShieldCheck className="h-4 w-4" /> System Management
+              <TabsTrigger value="system" className="gap-2 text-xs sm:text-sm">
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> System
               </TabsTrigger>
             )}
           </TabsList>
 
           {/* --- PERSONAL PROFILE TAB --- */}
           <TabsContent value="profile" className="space-y-6 pt-4">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Account Details</CardTitle>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Account Details</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">First Name</label>
+                      <label className="text-xs sm:text-sm font-medium">First Name</label>
                       <Input
+                        className="h-9 sm:h-10"
                         value={profileData.firstName}
                         onChange={(e) =>
                           setProfileData({
@@ -272,8 +273,9 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Last Name</label>
+                      <label className="text-xs sm:text-sm font-medium">Last Name</label>
                       <Input
+                        className="h-9 sm:h-10"
                         value={profileData.lastName}
                         onChange={(e) =>
                           setProfileData({
@@ -285,27 +287,28 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Email Address</label>
+                    <label className="text-xs sm:text-sm font-medium">Email Address</label>
                     <Input
                       value={profileData.email}
                       disabled
-                      className="bg-muted"
+                      className="bg-muted h-9 sm:h-10"
                     />
                   </div>
-                  <Button onClick={handleUpdateProfile}>Update Profile</Button>
+                  <Button onClick={handleUpdateProfile} className="w-full sm:w-auto h-9 sm:h-10">Update Profile</Button>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <Lock className="h-4 w-4" /> Change Password
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
                   {/* Current Password */}
                   <div className="relative">
                     <Input
+                      className="h-9 sm:h-10 pr-10"
                       type={showPasswords.old ? "text" : "password"}
                       placeholder="Current Password"
                       value={passwordData.old}
@@ -332,6 +335,7 @@ export default function SettingsPage() {
                   {/* New Password */}
                   <div className="relative">
                     <Input
+                      className="h-9 sm:h-10 pr-10"
                       type={showPasswords.new ? "text" : "password"}
                       placeholder="New Password"
                       value={passwordData.new}
@@ -358,6 +362,7 @@ export default function SettingsPage() {
                   {/* Confirm Password */}
                   <div className="relative">
                     <Input
+                      className="h-9 sm:h-10 pr-10"
                       type={showPasswords.confirm ? "text" : "password"}
                       placeholder="Confirm New Password"
                       value={passwordData.confirm}
@@ -383,7 +388,7 @@ export default function SettingsPage() {
 
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-9 sm:h-10"
                     onClick={handleChangePassword}
                   >
                     Update Password
@@ -397,9 +402,11 @@ export default function SettingsPage() {
           {isSystemAdmin && (
             <TabsContent value="system" className="space-y-6 pt-4">
               <Card>
-                <CardHeader className="flex flex-row justify-between items-center">
-                  <CardTitle>Departments & Permissions</CardTitle>
+                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Departments & Permissions</CardTitle>
                   <Button
+                    size="sm"
+                    className="w-full sm:w-auto h-9"
                     onClick={() => {
                       setEditingItem(null);
                       setNewDept({
@@ -413,28 +420,29 @@ export default function SettingsPage() {
                     Add Department
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Access Scope</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="text-xs">Department</TableHead>
+                        <TableHead className="text-xs hidden sm:table-cell">Access Scope</TableHead>
+                        <TableHead className="text-right text-xs">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {departments.map((dep) => (
                         <TableRow key={dep.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-3">
                             {dep.name}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="text-muted-foreground text-[10px] sm:text-xs hidden sm:table-cell">
                             {dep.permissions?.length || 0} Modules Assigned
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right py-2 sm:py-3">
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-8 px-2"
                               onClick={() => {
                                 setEditingItem(dep);
                                 setNewDept(dep);

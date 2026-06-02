@@ -35,39 +35,39 @@ export default function AdmissionsDashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-blue-600/90 rounded-lg p-6 text-white shadow-lg">
-          <h1 className="text-3xl font-bold mb-1 flex items-center gap-2">
-            <GraduationCap className="h-8 w-8" /> Admissions Management
-            Dashboard
+        <div className="bg-blue-600/90 rounded-lg p-4 sm:p-6 text-white shadow-lg">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1 flex items-center gap-2">
+            <GraduationCap className="h-7 w-7 sm:h-8 sm:h-8" /> 
+            <span className="truncate">Admissions Dashboard</span>
           </h1>
-          <p className="text-lg opacity-90">
+          <p className="text-sm sm:text-lg opacity-90">
             Overview of current enrollment figures, completion rates, and
             financial status.
           </p>
         </div>
 
         {/* Key Admissions Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="New Enrollments (2025)"
+            title="New Enrollments"
             value={28750}
-            description="Students registered this semester"
+            description="Enrolled this semester"
             icon={UserPlus}
-            trend={{ value: 5.4, label: "YoY increase" }}
+            trend={{ value: 5.4, label: "YoY" }}
             variant="accent"
           />
           <StatsCard
-            title="Total Graduates (YTD)"
+            title="Total Graduates"
             value={18420}
-            description="Students who completed their courses"
+            description="Completed courses"
             icon={CheckCircle}
-            trend={{ value: 12.5, label: "vs. previous year" }}
+            trend={{ value: 12.5, label: "YoY" }}
             variant="success"
           />
           <StatsCard
             title="Dropout Rate"
             value="12.7%"
-            description="Percentage of program dropouts"
+            description="Program dropouts"
             icon={UserX}
             trend={{ value: -1.1, label: "reduction" }}
             variant="destructive"
@@ -75,9 +75,9 @@ export default function AdmissionsDashboard() {
           <StatsCard
             title="Pending Fees"
             value="ZWL 4.5M"
-            description="Outstanding payments from students"
+            description="Outstanding payments"
             icon={Wallet}
-            trend={{ value: 0.5, label: "monthly increase" }}
+            trend={{ value: 0.5, label: "monthly" }}
             variant="info"
           />
         </div>
@@ -85,13 +85,13 @@ export default function AdmissionsDashboard() {
         {/* Enrollment Chart and Detailed Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Enrollment Distribution by Program Category</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Enrollment by Category</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-96">
+            <CardContent className="h-64 sm:h-96 p-2 sm:p-6 pt-0">
+              <div className="h-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={enrollmentByProgram} layout="vertical">
+                  <BarChart data={enrollmentByProgram} layout="vertical" margin={{ left: -20, right: 20 }}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       className="stroke-muted"
@@ -100,21 +100,25 @@ export default function AdmissionsDashboard() {
                       dataKey="name"
                       type="category"
                       className="text-muted-foreground"
+                      fontSize={10}
+                      width={80}
                     />
-                    <XAxis type="number" className="text-muted-foreground" />
-                    <Tooltip />
-                    <Legend />
+                    <XAxis type="number" className="text-muted-foreground" fontSize={10} />
+                    <Tooltip wrapperStyle={{ fontSize: '10px' }} />
+                    <Legend wrapperStyle={{ fontSize: '10px' }} />
                     <Bar
                       dataKey="Enrolled"
                       fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                      name="Current Enrollment"
+                      radius={[0, 4, 4, 0]}
+                      name="Current"
+                      barSize={15}
                     />
                     <Bar
                       dataKey="Goal"
                       fill="hsl(var(--accent))"
-                      radius={[4, 4, 0, 0]}
-                      name="Target Enrollment"
+                      radius={[0, 4, 4, 0]}
+                      name="Target"
+                      barSize={15}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -123,21 +127,21 @@ export default function AdmissionsDashboard() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Quick Insights</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Quick Insights</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 p-4 sm:p-6 pt-0">
               <StatsCard
-                title="Registration Compliance"
+                title="Registration"
                 value="98.5%"
-                description="Students fully registered"
+                description="Fully registered"
                 icon={Percent}
                 variant="success"
               />
               <StatsCard
                 title="ISEOP Students"
                 value={1240}
-                description="Total enrolled under ISEOP"
+                description="Total enrolled"
                 icon={ArrowUpRight}
                 variant="default"
               />

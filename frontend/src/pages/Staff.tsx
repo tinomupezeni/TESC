@@ -177,18 +177,18 @@ export default function StaffPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Staff Records</h1>
-              <p className="text-muted-foreground">Manage and track institutional personnel</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Staff Records</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Manage and track institutional personnel</p>
             </div>
-            <div className="flex gap-2 print:hidden">
-              <Button variant="outline" onClick={handleExcelExport} disabled={filteredStaff.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Excel
+            <div className="flex flex-wrap gap-2 print:hidden">
+              <Button variant="outline" size="sm" onClick={handleExcelExport} disabled={filteredStaff.length === 0} className="h-9">
+                <Download className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Excel</span>
               </Button>
-              <Button variant="outline" onClick={handleCSVExport} disabled={filteredStaff.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> CSV
+              <Button variant="outline" size="sm" onClick={handleCSVExport} disabled={filteredStaff.length === 0} className="h-9">
+                <Download className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
               </Button>
-              <Button onClick={() => setReportBuilderOpen(true)} className="bg-green-600 hover:bg-green-700">
-                <FileText className="mr-2 h-4 w-4" /> Generate Report
+              <Button size="sm" onClick={() => setReportBuilderOpen(true)} className="bg-green-600 hover:bg-green-700 h-9">
+                <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Report</span>
               </Button>
             </div>
           </div>
@@ -229,16 +229,16 @@ export default function StaffPage() {
 
           {/* Search & Filter - Hidden in Print */}
           <Card className="print:hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <Filter className="h-5 w-5" /> Search and Filter
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                 <div className="lg:col-span-1">
                   <Input
-                    placeholder="Search by name, ID..."
+                    placeholder="Search name, ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -265,7 +265,7 @@ export default function StaffPage() {
                     <SelectItem value="Inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="ghost" onClick={resetFilters} className="text-muted-foreground">
+                <Button variant="ghost" onClick={resetFilters} className="text-muted-foreground w-full sm:w-auto">
                   <RotateCcw className="h-4 w-4 mr-2" /> Reset
                 </Button>
               </div>
@@ -274,24 +274,25 @@ export default function StaffPage() {
 
           {/* Staff Table */}
           <Card className="print:shadow-none print:border-none">
-            <CardHeader className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 pb-4">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 p-4 sm:p-6">
               <div>
-                <CardTitle>Personnel List ({filteredStaff.length})</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1 print:hidden">
+                <CardTitle className="text-base sm:text-lg">Personnel List ({filteredStaff.length})</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 print:hidden">
                   Showing {filteredStaff.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredStaff.length)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 print:hidden">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end print:hidden">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
+                  className="h-8 px-2"
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  <ChevronLeft className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Prev</span>
                 </Button>
-                <div className="text-sm font-medium px-2">
+                <div className="text-xs sm:text-sm font-medium px-2 whitespace-nowrap">
                   Page {currentPage} of {totalPages || 1}
                 </div>
                 <Button
@@ -299,21 +300,22 @@ export default function StaffPage() {
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage >= totalPages || totalPages === 0}
+                  className="h-8 px-2"
                 >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                  <span className="hidden sm:inline">Next</span> <ChevronRight className="h-4 w-4 sm:ml-1" />
                 </Button>
               </div>
             </CardHeader>
             
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Employee ID</TableHead>
+                    <TableHead className="w-[100px]">ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Institution</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Position</TableHead>
+                    <TableHead className="hidden lg:table-cell">Institution</TableHead>
+                    <TableHead className="hidden md:table-cell">Department</TableHead>
+                    <TableHead className="hidden sm:table-cell">Position</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right print:hidden">Actions</TableHead>
                   </TableRow>
@@ -330,18 +332,18 @@ export default function StaffPage() {
                   ) : (
                     paginatedStaff.map((staff) => (
                       <TableRow key={staff.id}>
-                        <TableCell className="font-medium">{staff.employee_id}</TableCell>
-                        <TableCell>{staff.full_name}</TableCell>
-                        <TableCell>{staff.institution_name}</TableCell>
-                        <TableCell>{staff.department_name || "N/A"}</TableCell>
-                        <TableCell>{staff.position}</TableCell>
+                        <TableCell className="font-medium text-xs sm:text-sm">{staff.employee_id}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{staff.full_name}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{staff.institution_name}</TableCell>
+                        <TableCell className="hidden md:table-cell">{staff.department_name || "N/A"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{staff.position}</TableCell>
                         <TableCell>
-                          <Badge variant={staff.is_active ? "default" : "outline"}>
+                          <Badge variant={staff.is_active ? "default" : "outline"} className="text-[10px] sm:text-xs">
                             {staff.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right print:hidden">
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedStaff(staff)}>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedStaff(staff)} className="h-8 px-2">
                             View
                           </Button>
                         </TableCell>

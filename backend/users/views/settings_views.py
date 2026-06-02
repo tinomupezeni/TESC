@@ -12,9 +12,21 @@ class RoleViewSet(viewsets.ModelViewSet):
     CRUD for Role objects.
     Endpoint: /roles/
     """
-    queryset = Role.objects.all().order_by('name')
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.level == '1': # System Admin
+            return Role.objects.all().order_by('name')
+        return Role.objects.filter(institution=user.institution).order_by('name')
+
+    def perform_create(self, serializer):
+        # Automatically assign institution if not a system admin
+        if self.request.user.level != '1':
+            serializer.save(institution=self.request.user.institution)
+        else:
+            serializer.save()
 
 # --- 2. Department ViewSet ---
 class DepartmentViewSet(viewsets.ModelViewSet):
@@ -22,9 +34,20 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     CRUD for Department objects.
     Endpoint: /departments/
     """
-    queryset = Department.objects.all().order_by('name')
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.level == '1': # System Admin
+            return Department.objects.all().order_by('name')
+        return Department.objects.filter(institution=user.institution).order_by('name')
+
+    def perform_create(self, serializer):
+        if self.request.user.level != '1':
+            serializer.save(institution=self.request.user.institution)
+        else:
+            serializer.save()
 
 # --- 3. User ViewSet ---
 class UserViewSet(viewsets.ModelViewSet):
@@ -37,8 +60,19 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # We filter where 'inst_admin' is null to exclude institutional accounts
-        # from the general system settings user list.
-        return CustomUser.objects.filter(inst_admin__isnull=True).order_by('username')
+        user = self.request.user
+        if user.level == '1':
+            # We filter where 'inst_admin' is null to exclude institutional accounts
+            # from the general system settings user list.
+            return CustomUser.objects.filter(institution__isnull=True).order_by('username')
+        
+        # Institutional admins see users within their institution
+        return CustomUser.objects.filter(institution=user.institution).order_by('username')
+    
+    def perform_create(self, serializer):
+        if self.request.user.level != '1':
+            serializer.save(institution=self.request.user.institution)
+        else:
+            serializer.save()
     
     

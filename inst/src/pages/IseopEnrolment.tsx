@@ -21,22 +21,24 @@ const InnovationDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 uppercase">ISEOP Enrollment Statistics</h1>
-        <p className="text-muted-foreground">Integrated Skills Empowerment Outreach Programme</p>
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 uppercase">ISEOP Enrollment</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Integrated Skills Empowerment Outreach Programme</p>
       </div>
 
       <Tabs defaultValue="students" className="space-y-4">
-        <TabsList className="bg-slate-100 p-1">
-          <TabsTrigger value="students" className="gap-2">
-            <Users className="h-4 w-4" /> STUDENTS' DETAILS
-          </TabsTrigger>
-          <TabsTrigger value="programs" className="gap-2">
-            <GraduationCap className="h-4 w-4" /> PROGRAMS
-          </TabsTrigger>
-        </TabsList>
+        <div className="px-1">
+          <TabsList className="bg-slate-100 p-1 w-full sm:w-auto overflow-x-auto justify-start no-scrollbar">
+            <TabsTrigger value="students" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> STUDENTS' DETAILS
+            </TabsTrigger>
+            <TabsTrigger value="programs" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
+              <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> PROGRAMS
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="students" className="mt-6">
+        <TabsContent value="students" className="mt-4 sm:mt-6 px-1">
           <IseopStudentManager 
             students={students} 
             programs={programs.map(p => p.name)}
@@ -45,7 +47,7 @@ const InnovationDashboard = () => {
           />
         </TabsContent>
 
-        <TabsContent value="programs">
+        <TabsContent value="programs" className="px-1">
           <IseopManager 
             programs={programs} 
             onRefresh={refresh} 

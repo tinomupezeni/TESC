@@ -94,14 +94,14 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold">ISEOP Students</h2>
-          <p className="text-sm text-muted-foreground">Manage and bulk import students via CSV.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage and bulk import students via CSV.</p>
         </div>
-        <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={downloadTemplate}>
-                <FileDown className="mr-2 h-4 w-4" />
+        <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" onClick={downloadTemplate} className="h-8 text-[10px] sm:text-xs">
+                <FileDown className="mr-2 h-3.5 w-3.5" />
                 Template
             </Button>
             
@@ -117,73 +117,77 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
+                className="h-8 text-[10px] sm:text-xs"
             >
-                <UploadCloud className="mr-2 h-4 w-4" />
+                <UploadCloud className="mr-2 h-3.5 w-3.5" />
                 Bulk Upload
             </Button>
             
             <IseopStudentFormDialog 
                 onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }} 
-                trigger={<Button size="sm">Add Student</Button>} 
+                trigger={<Button size="sm" className="h-8 text-[10px] sm:text-xs">Add Student</Button>} 
             />
         </div>
       </div>
 
       {loading ? (
-        <div className="py-10 text-center text-muted-foreground">Loading student records...</div>
+        <div className="py-10 text-center text-muted-foreground text-sm">Loading student records...</div>
       ) : (
-        <div className="border rounded-lg bg-white">
+        <div className="border rounded-lg bg-white overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student ID</TableHead>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Program</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-xs">ID</TableHead>
+                <TableHead className="text-xs">Name</TableHead>
+                <TableHead className="hidden lg:table-cell text-xs">Email</TableHead>
+                <TableHead className="hidden sm:table-cell text-xs">Program</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-right text-xs">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {students.length > 0 ? (
                 students.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium text-blue-600">{student.student_id}</TableCell>
-                    <TableCell>{`${student.first_name} ${student.last_name}`}</TableCell>
-                    <TableCell className="text-muted-foreground">{student.email || "—"}</TableCell>
-                    <TableCell>
-                        <span className="px-2 py-1 rounded-md bg-slate-100 text-xs font-medium">
+                    <TableCell className="font-medium text-blue-600 text-[10px] sm:text-xs">{student.student_id}</TableCell>
+                    <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{`${student.first_name} ${student.last_name}`}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{student.email || "—"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                        <span className="px-2 py-1 rounded-md bg-slate-100 text-[10px] font-medium truncate max-w-[150px] inline-block">
                             {student.program_name || 'Unassigned'}
                         </span>
                     </TableCell>
                     <TableCell>
-                        <span className={`capitalize px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                        <span className={`capitalize px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold whitespace-nowrap ${
                             student.status === 'Active/Enrolled' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                         }`}>
                             {student.status}
                         </span>
                     </TableCell>
-                    <TableCell className="text-right flex gap-2 justify-end">
-                      <IseopStudentFormDialog
-                        student={student}
-                        onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }}
-                        trigger={<Button size="sm" variant="ghost">Edit</Button>}
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDelete(student.id)}
-                      >
-                        Delete
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex gap-1 justify-end">
+                        <IseopStudentFormDialog
+                          student={student}
+                          onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }}
+                          trigger={<Button size="sm" variant="ghost" className="h-7 w-7 p-0 sm:h-8 sm:px-2 sm:w-auto text-[10px]">Edit</Button>}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 sm:h-8 sm:px-2 sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 text-[10px]"
+                          onClick={() => handleDelete(student.id)}
+                        >
+                          <span className="hidden sm:inline">Delete</span>
+                          <span className="sm:hidden">×</span>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                    No student records found. Start by adding one or uploading a CSV.
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12 text-xs sm:text-sm">
+                    No student records found.
                   </TableCell>
                 </TableRow>
               )}

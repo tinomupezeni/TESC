@@ -56,21 +56,21 @@ export default function DropoutAnalysis() {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="pb-2 border-b">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <UserX className="h-7 w-7 text-destructive" />
-            National Dropout Analysis
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <UserX className="h-6 w-6 sm:h-7 sm:h-7 text-destructive" />
+            Dropout Analysis
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Overview of student attrition across the higher education landscape.
           </p>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Dropouts"
             value={total_dropouts}
-            description="Across all institutions"
+            description="All institutions"
             icon={UserX}
             variant="destructive"
           />
@@ -79,7 +79,7 @@ export default function DropoutAnalysis() {
   value={reasonMap["Financial Hardship"] || 0}
   description={
     total_dropouts
-      ? `${(((reasonMap["Financial Hardship"] || 0) / total_dropouts) * 100).toFixed(1)}% of total`
+      ? `${(((reasonMap["Financial Hardship"] || 0) / total_dropouts) * 100).toFixed(1)}%`
       : "0%"
   }
   icon={DollarSign}
@@ -88,7 +88,7 @@ export default function DropoutAnalysis() {
           <StatsCard
             title="Personal Issues"
             value={reasonMap["Personal/Family Issues"] || 0}
-            description="Marital or family related"
+            description="Marital/Family"
             icon={HeartCrack}
             variant="accent"
           />
@@ -104,14 +104,14 @@ export default function DropoutAnalysis() {
         {/* Pie Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Dropout Reasons Distribution</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Dropout Reasons Distribution</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-96 relative">
+            <CardContent className="p-2 sm:p-6">
+              <div className="h-64 sm:h-96 relative">
                 {!total_dropouts && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <span className="text-muted-foreground font-medium">No Data Available</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">No Data Available</span>
                   </div>
                 )}
                 <ResponsiveContainer width="100%" height="100%">
@@ -122,8 +122,10 @@ export default function DropoutAnalysis() {
     nameKey="name"
     cx="50%"
     cy="50%"
-    innerRadius={80}
-    outerRadius={120}
+    innerRadius={50}
+    outerRadius={80}
+    sm:innerRadius={80}
+    sm:outerRadius={120}
     paddingAngle={2}
     stroke="none"
     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
@@ -141,9 +143,10 @@ export default function DropoutAnalysis() {
           borderRadius: '8px',
           border: 'none',
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          fontSize: '10px'
         }}
       />
-      <Legend verticalAlign="bottom" height={36} />
+      <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px' }} />
     </>
   )}
 </PieChart>
@@ -154,25 +157,25 @@ export default function DropoutAnalysis() {
 
           {/* Table */}
           <Card>
-            <CardHeader>
-              <CardTitle>Breakdown by Reason</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Breakdown by Reason</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Reason</TableHead>
-                    <TableHead className="text-right">Count</TableHead>
+                    <TableHead className="text-xs">Reason</TableHead>
+                    <TableHead className="text-right text-xs">Count</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {chart_data.map((d) => (
                     <TableRow key={d.name}>
-                      <TableCell className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
-                        {d.name}
+                      <TableCell className="flex items-center gap-2 py-2 sm:py-3 text-[10px] sm:text-xs">
+                        <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                        <span className="truncate">{d.name}</span>
                       </TableCell>
-                      <TableCell className="text-right font-medium">{d.value}</TableCell>
+                      <TableCell className="text-right font-medium text-[10px] sm:text-xs">{d.value}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
