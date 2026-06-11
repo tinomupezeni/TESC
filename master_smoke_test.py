@@ -18,7 +18,8 @@ def main():
     scripts = [
         "smoke_test_admin.py",
         "smoke_test_inst.py",
-        "smoke_test_modules.py"
+        "smoke_test_modules.py",
+        "smoke_test_validation.py"
     ]
     
     overall_success = True
