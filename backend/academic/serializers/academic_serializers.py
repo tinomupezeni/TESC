@@ -1,7 +1,7 @@
 # academic/serializers.py
 
 from rest_framework import serializers
-from ..models import Institution, Facility, Student
+from ..models import Institution, Facility, Student, Payment
 from faculties.models import Program
 
 class FacilitySerializer(serializers.ModelSerializer):
@@ -71,7 +71,8 @@ class StudentWriteSerializer(serializers.ModelSerializer):
         fields = [
             'student_id', 'national_id', 'first_name', 'last_name', 
             'gender', 'date_of_birth', 'enrollment_year', 'status',
-            'institution', 'program'
+            'institution', 'program', 'dropout_reason', 'is_work_for_fees',
+            'work_area', 'hours_pledged', 'disability_type', 'graduation_year', 'final_grade'
         ]
         # You could add validation here, e.g., to ensure program
         # belongs to the selected institution.
@@ -82,7 +83,8 @@ class StudentReadSerializer(serializers.ModelSerializer):
     Shows nested/string representations for relations.
     """
     institution = serializers.StringRelatedField()
-    program = serializers.StringRelatedField()
+    program_name = serializers.CharField(source='program.name', read_only=True)
+    program = serializers.PrimaryKeyRelatedField(read_only=True)
     full_name = serializers.CharField(read_only=True)
 
     class Meta:
@@ -90,5 +92,18 @@ class StudentReadSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'student_id', 'national_id', 'full_name', 'first_name', 'last_name',
             'gender', 'date_of_birth', 'enrollment_year', 'status',
-            'institution', 'program', 'created_at'
+            'institution', 'program', 'program_name', 'created_at',
+            'dropout_reason', 'is_work_for_fees', 'work_area', 'hours_pledged',
+            'disability_type', 'graduation_year', 'final_grade'
         ]
+class PaymentSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    student_id_code = serializers.CharField(source='student.student_id', read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = [
+            'id', 'student', 'student_name', 'student_id_code', 
+            'amount', 'date_paid', 'reference', 'created_at'
+        ]
+        read_only_fields = ['created_at']

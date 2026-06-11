@@ -455,8 +455,15 @@ class ProfessionalPDFGenerator:
         )
         elements.append(data_table)
 
-        # Build PDF
-        doc.build(elements)
+        # Build PDF with custom canvas for page numbers/footers
+        from functools import partial
+        canvas_with_metadata = partial(
+            NumberedCanvas,
+            institution_name=self.institution_name,
+            report_title=self.title
+        )
+        
+        doc.build(elements, canvasmaker=canvas_with_metadata)
 
         buffer.seek(0)
         return buffer

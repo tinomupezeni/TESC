@@ -109,7 +109,8 @@ class StaffViewSet(viewsets.ModelViewSet):
              return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        StaffService.create_staff(serializer.validated_data)
+        instance = StaffService.create_staff(serializer.validated_data)
+        serializer.instance = instance
 
     def perform_update(self, serializer):
         StaffService.update_staff(serializer.instance, serializer.validated_data)

@@ -12,11 +12,12 @@ from django.utils.timezone import now
 from ..models import Payment, Student
 from academic.models import FeeStructure
 from faculties.models import Program
+from ..serializers.academic_serializers import PaymentSerializer
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
-    # serializer_class = PaymentSerializer
+    serializer_class = PaymentSerializer
 
     # ------------------------------------------------------------------
     # RECORD PAYMENT
