@@ -149,16 +149,17 @@ class Student(models.Model):
         blank=True
     )
 
-    institution = models.ForeignKey(Institution, on_delete=models.PROTECT, related_name='students')
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='students')
 
     program = models.ForeignKey(
         'faculties.Program',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='students'
     )
 
     
     is_work_for_fees = models.BooleanField(default=False)
+    is_iseop = models.BooleanField(default=False)
 
     WORK_AREAS = [
     # Academic / Learning Support

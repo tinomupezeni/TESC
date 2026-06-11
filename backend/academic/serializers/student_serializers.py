@@ -67,6 +67,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'disability_type',
             'semester_fee',
             'total_paid',
+            'is_iseop',
         ]
         read_only_fields = ['created_at', 'updated_at', 'full_name']
 

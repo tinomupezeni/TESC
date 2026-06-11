@@ -11,7 +11,7 @@ class HubAnalysisView(APIView):
         total_hubs = hubs.count()
         total_cap = hubs.aggregate(Sum('capacity'))['capacity__sum'] or 0
         total_occ = hubs.aggregate(Sum('occupied'))['occupied__sum'] or 0
-        occupancy_rate = int((total_occ / total_cap) * 100)
+        occupancy_rate = int((total_occ / total_cap) * 100) if total_cap > 0 else 0
         
         # List Data (with Institution Name)
         hub_data = []

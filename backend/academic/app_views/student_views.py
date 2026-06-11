@@ -73,7 +73,8 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        StudentService.create_student(serializer.validated_data)
+        instance = StudentService.create_student(serializer.validated_data)
+        serializer.instance = instance
 
     def perform_update(self, serializer):
         try:

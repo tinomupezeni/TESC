@@ -2,8 +2,8 @@ import logging
 import datetime
 from django.db import models
 from cryptography.fernet import InvalidToken
-# Import get_fernet as the multi-fernet tool
-from core.utils.crypto import get_fernet
+# Import encryption utilities
+from core.utils.crypto import get_fernet, get_multi_fernet
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class EncryptedTextField(models.TextField):
         if value is None:
             return value
         try:
-            f = get_fernet()
+            f = get_multi_fernet()
             return f.decrypt(value.encode()).decode()
         except (InvalidToken, Exception):
             return value
@@ -54,7 +54,7 @@ class EncryptedTextField(models.TextField):
         if value is None:
             return value
         try:
-            f = get_fernet()
+            f = get_multi_fernet()
             # If it's already a token, decrypt it
             if self.is_fernet_token(value):
                 return f.decrypt(value.encode()).decode()

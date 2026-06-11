@@ -7,6 +7,7 @@ Provides endpoints for:
 - Getting relation field options
 """
 
+import logging
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -25,6 +26,8 @@ from .dynamic_serializers import (
     RelationOptionsRequestSerializer
 )
 from .pdf_generator import generate_dynamic_report_pdf
+
+logger = logging.getLogger(__name__)
 
 
 class ReportSchemaView(APIView):
@@ -130,6 +133,7 @@ class DynamicReportGenerateView(APIView):
         try:
             report_data = DynamicReportService.generate_report_data(config)
         except Exception as e:
+            logger.exception("Failed to generate report data")
             return Response(
                 {'error': f'Failed to generate report: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -171,6 +175,7 @@ class DynamicReportGenerateView(APIView):
                 orientation=data.get('orientation', 'auto')
             )
         except Exception as e:
+            logger.exception("PDF generation failed")
             return Response(
                 {'error': f'Failed to generate PDF: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -220,6 +225,7 @@ class DynamicReportPreviewView(APIView):
         try:
             report_data = DynamicReportService.generate_report_data(config)
         except Exception as e:
+            logger.exception("Preview generation failed")
             return Response(
                 {'error': f'Failed to generate preview: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -257,6 +263,7 @@ class RelationOptionsView(APIView):
                 institution_id=institution_id
             )
         except Exception as e:
+            logger.exception("Failed to get relation options")
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST

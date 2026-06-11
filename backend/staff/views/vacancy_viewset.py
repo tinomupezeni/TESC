@@ -30,4 +30,5 @@ class VacancyViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        VacancyService.create_vacancy(serializer.validated_data)
+        instance = VacancyService.create_vacancy(serializer.validated_data)
+        serializer.instance = instance
