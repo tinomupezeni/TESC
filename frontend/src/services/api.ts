@@ -10,6 +10,10 @@ const getBaseURL = () => {
       return `${protocol}//${hostname}:8000/api`;
     }
     // Otherwise assume standard production routing (/api proxied by nginx)
+    // 🚨 Respect the current protocol (http or https)
+    if (hostname.endsWith(".zchpc.ac.zw")) {
+      return `${protocol}//${hostname}/api`;
+    }
     return `${protocol}//${hostname}/api`;
   }
   return "https://tesc.zchpc.ac.zw/api";
@@ -58,11 +62,15 @@ apiClient.interceptors.response.use(
     // If the error is 401 (Unauthorized) and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       
-      // Safety: If the refresh request itself fails, clear storage and redirect
-      if (originalRequest.url?.includes("/users/token/refresh/")) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/";
+      // Safety: If the refresh request OR login request itself fails, don't try to refresh
+      if (originalRequest.url?.includes("/users/token/")) {
+        // If it was the refresh token failing, clear and redirect
+        if (originalRequest.url?.includes("/users/token/refresh/")) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            window.location.href = "/";
+        }
+        // If it was the login failing, just pass the error through to the component
         return Promise.reject(error);
       }
 

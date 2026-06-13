@@ -4,6 +4,7 @@ import { School, Building, Bed, Users } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { useStatistics } from "@/hooks/useStatistics";
 import { useFacilities, Facility } from "@/hooks/useFacilities";
+import { Badge } from "@/components/ui/badge";
 
 import { Progress } from "@/components/ui/progress";
 import {

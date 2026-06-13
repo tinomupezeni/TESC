@@ -32,7 +32,9 @@ services:
   backend:
     image: tinotenda762/tesc-backend:latest
     build: ./backend
-    command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 60
+    volumes:
+      - ./backend:/app
     
     # 1. Load variables from .env (SECRET_KEY, DB_USER, etc.)
     env_file:

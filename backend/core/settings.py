@@ -27,10 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'tesc.zchpc.ac.zw',
+    'tesc-inst.zchpc.ac.zw',
+    '10.50.200.35',
     '127.0.0.1',
     'localhost',
-    'tesc-inst.zchpc.ac.zw',
-    '10.50.200.35'
 ]
 
 
@@ -162,8 +162,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1",
     "http://localhost:8081",
     "http://localhost",
+    "http://10.50.200.35",
+    "http://10.50.200.35:8081",
+    "http://10.50.200.35:8082",
     "https://tesc-inst.zchpc.ac.zw",
     "https://tesc.zchpc.ac.zw",
+    "http://tesc-inst.zchpc.ac.zw",
+    "http://tesc.zchpc.ac.zw",
 ]
 
 
@@ -171,6 +176,10 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
     "http://10.50.200.35",
+    "http://10.50.200.35:8081",
+    "http://10.50.200.35:8082",
     "https://tesc.zchpc.ac.zw",
     "https://tesc-inst.zchpc.ac.zw",
+    "http://tesc.zchpc.ac.zw",
+    "http://tesc-inst.zchpc.ac.zw",
 ]

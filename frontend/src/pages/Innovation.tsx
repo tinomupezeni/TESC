@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, FileDown, Download, RotateCcw, Zap, Scale, BriefcaseBusiness, Factory, Lightbulb, Eye, FolderOpen, Target, BarChart3, PieChart } from "lucide-react";
+import { Loader2, FileDown, Download, RotateCcw, Zap, Scale, BriefcaseBusiness, Factory, Lightbulb, Eye, FolderOpen, Target, BarChart3, PieChart, ChevronLeft, ChevronRight } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDetailedInnovations } from "@/hooks/useInnovationAnalytics"; 
@@ -404,6 +404,7 @@ export default function InnovationOverview() {
             <Button variant="outline" onClick={resetFilters} className="gap-2 sm:col-span-2 xl:col-span-1">
                 <RotateCcw className="h-4 w-4" /> Reset
             </Button>
+            </div>
           </CardContent>
         </Card>
 

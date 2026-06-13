@@ -23,6 +23,9 @@ import {
   EyeOff,
   Check,
   Copy,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +47,7 @@ import {
   addUser,
   editUser,
   deleteUser,
+  deleteDepartment,
 } from "../services/settings.services";
 import Users from "@/modules/settings/Users";
 import UserModal from "@/modules/settings/UserModal";
@@ -52,15 +56,19 @@ import { Label } from "@/components/ui/label";
 const SYSTEM_PAGES = [
   { name: "Institutions", url: "/institutions" },
   { name: "Student Records", url: "/students" },
+  { name: "ISEOP Student Records", url: "/ISEOP" },
+  { name: "Staff Records", url: "/staff" },
   { name: "Statistics", url: "/statistics" },
+  { name: "Graduation Records", url: "/graduates" },
   { name: "Facilities & Capacity", url: "/facilities" },
   { name: "Innovation", url: "/innovation" },
-  { name: "Industrialisation", url: "/industrialisation" },
+  { name: "Commercialisation", url: "/industrialisation" },
   { name: "Incubation Hubs", url: "/hubs" },
   { name: "Startups", url: "/startups" },
   { name: "Regional Analysis", url: "/regional" },
   { name: "Admissions Dashboard", url: "/admissions" },
   { name: "Dropout Analysis", url: "/admissions/dropouts" },
+  { name: "Special Enrollments", url: "/admissions/special" },
   { name: "Payments & Fees", url: "/admissions/fees" },
   { name: "Reports", url: "/reports" },
   { name: "Settings", url: "/settings" },
@@ -117,6 +125,24 @@ export default function SettingsPage() {
 
   const [openDeptModal, setOpenDeptModal] = useState(false);
   const [openUserModal, setOpenUserModal] = useState(false);
+
+  // Deletion States
+  const [deptToDelete, setDeptToDelete] = useState(null);
+  const [deleteStatus, setDeleteStatus] = useState({
+    showWarning: false,
+    message: "",
+    userCount: 0,
+    isDeleting: false,
+  });
+
+  // User Deletion States
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [userDeleteStatus, setUserDeleteStatus] = useState({
+    showWarning: false,
+    message: "",
+    dependencies: [],
+    isDeleting: false,
+  });
 
   const toggleVisibility = (field: string) => {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -226,8 +252,83 @@ export default function SettingsPage() {
         level: "4",
       });
       refreshData();
-    } catch (err) {
-      toast.error("Error saving user");
+    } catch (err: any) {
+      toast.error(err.message || "Error saving user");
+    }
+  };
+
+  const handleDeleteDept = async (dept, force = false) => {
+    try {
+      setDeleteStatus((prev) => ({ ...prev, isDeleting: true }));
+      await deleteDepartment(dept.id, force);
+      toast.success("Department deleted successfully");
+      setDeptToDelete(null);
+      setDeleteStatus({
+        showWarning: false,
+        message: "",
+        userCount: 0,
+        isDeleting: false,
+      });
+      refreshData();
+    } catch (err: any) {
+      const errorData = err.response?.data;
+      if (errorData?.error === "cannot_delete_has_users") {
+        setDeptToDelete(dept);
+        setDeleteStatus({
+          showWarning: true,
+          message: errorData.message,
+          userCount: errorData.user_count,
+          isDeleting: false,
+        });
+      } else {
+        toast.error(err.message || "Failed to delete department");
+        setDeleteStatus((prev) => ({ ...prev, isDeleting: false }));
+      }
+    }
+  };
+
+  const handleDeleteUser = async (user, force = false) => {
+    const userId = typeof user === "object" ? user.id : user;
+    const userData = typeof user === "object" ? user : users.find((u) => u.id === userId);
+
+    // 🚨 If not a force-delete and we haven't shown the dialog yet, just show the dialog first
+    if (!force && !userToDelete) {
+      setUserToDelete(userData);
+      setUserDeleteStatus({
+        showWarning: false,
+        message: "",
+        dependencies: [],
+        isDeleting: false,
+      });
+      return;
+    }
+
+    try {
+      setUserDeleteStatus((prev) => ({ ...prev, isDeleting: true }));
+      await deleteUser(userId, force);
+      toast.success("User deleted successfully");
+      setUserToDelete(null);
+      setUserDeleteStatus({
+        showWarning: false,
+        message: "",
+        dependencies: [],
+        isDeleting: false,
+      });
+      refreshData();
+    } catch (err: any) {
+      const errorData = err.response?.data;
+      if (errorData?.error === "cannot_delete_has_dependencies") {
+        setUserToDelete(userData);
+        setUserDeleteStatus({
+          showWarning: true,
+          message: errorData.message,
+          dependencies: errorData.dependencies || [],
+          isDeleting: false,
+        });
+      } else {
+        toast.error(err.message || "Failed to delete user");
+        setUserDeleteStatus((prev) => ({ ...prev, isDeleting: false }));
+      }
     }
   };
 
@@ -439,18 +540,28 @@ export default function SettingsPage() {
                             {dep.permissions?.length || 0} Modules Assigned
                           </TableCell>
                           <TableCell className="text-right py-2 sm:py-3">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2"
-                              onClick={() => {
-                                setEditingItem(dep);
-                                setNewDept(dep);
-                                setOpenDeptModal(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2"
+                                onClick={() => {
+                                  setEditingItem(dep);
+                                  setNewDept(dep);
+                                  setOpenDeptModal(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteDept(dep)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -465,7 +576,7 @@ export default function SettingsPage() {
                 setNewUser={setNewUser}
                 setOpenUserModal={setOpenUserModal}
                 editUserHandler={editUserHandler}
-                deleteUserHandler={deleteUser}
+                deleteUserHandler={handleDeleteUser}
               />
             </TabsContent>
           )}
@@ -576,6 +687,154 @@ export default function SettingsPage() {
           roles={roles}
           editing={!!editingItem}
         />
+
+        {/* Delete User Confirmation Dialog */}
+        <Dialog
+          open={!!userToDelete}
+          onOpenChange={(open) => !open && setUserToDelete(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {userDeleteStatus.showWarning ? (
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
+                Confirm User Deletion
+              </DialogTitle>
+              <DialogDescription className="py-2">
+                {userDeleteStatus.showWarning ? (
+                  <div className="space-y-3">
+                    <p className="font-semibold text-destructive">
+                      Warning: This user account has active profile links.
+                    </p>
+                    <p>{userDeleteStatus.message}</p>
+                    <div className="bg-destructive/10 p-3 rounded-lg border border-destructive/20 text-sm">
+                      <p className="font-bold">Force Delete Impact:</p>
+                      <ul className="list-disc list-inside mt-1">
+                        <li>Deletes account: <strong>{userToDelete?.email}</strong></li>
+                        <li>Permanently removes linked: <strong>{userDeleteStatus.dependencies.join(", ")}</strong></li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    Are you sure you want to delete the user{" "}
+                    <strong>{userToDelete?.first_name} {userToDelete?.last_name}</strong>?
+                    This action cannot be undone.
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setUserToDelete(null)}
+                disabled={userDeleteStatus.isDeleting}
+              >
+                Cancel
+              </Button>
+              {userDeleteStatus.showWarning ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteUser(userToDelete, true)}
+                  disabled={userDeleteStatus.isDeleting}
+                >
+                  {userDeleteStatus.isDeleting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Force Delete Account & Profiles
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteUser(userToDelete, false)}
+                  disabled={userDeleteStatus.isDeleting}
+                >
+                  {userDeleteStatus.isDeleting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Delete User
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Department Confirmation Dialog */}
+        <Dialog
+          open={!!deptToDelete}
+          onOpenChange={(open) => !open && setDeptToDelete(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {deleteStatus.showWarning ? (
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
+                Confirm Deletion
+              </DialogTitle>
+              <DialogDescription className="py-2">
+                {deleteStatus.showWarning ? (
+                  <div className="space-y-3">
+                    <p className="font-semibold text-destructive">
+                      Warning: This department cannot be deleted normally.
+                    </p>
+                    <p>{deleteStatus.message}</p>
+                    <div className="bg-destructive/10 p-3 rounded-lg border border-destructive/20 text-sm">
+                      <p className="font-bold">Force Delete Impact:</p>
+                      <ul className="list-disc list-inside mt-1">
+                        <li>Deletes the department: <strong>{deptToDelete?.name}</strong></li>
+                        <li>Permanently deletes <strong>{deleteStatus.userCount}</strong> associated user accounts.</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    Are you sure you want to delete the department{" "}
+                    <strong>{deptToDelete?.name}</strong>? This action cannot
+                    be undone.
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setDeptToDelete(null)}
+                disabled={deleteStatus.isDeleting}
+              >
+                Cancel
+              </Button>
+              {deleteStatus.showWarning ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteDept(deptToDelete, true)}
+                  disabled={deleteStatus.isDeleting}
+                >
+                  {deleteStatus.isDeleting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Force Delete Department & Users
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteDept(deptToDelete, false)}
+                  disabled={deleteStatus.isDeleting}
+                >
+                  {deleteStatus.isDeleting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Delete Department
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
@@ -596,6 +855,9 @@ function DepartmentModal({ open, onClose, dept, setDept, onSave }) {
       <DialogContent className="max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Department Access Control</DialogTitle>
+          <DialogDescription>
+            Configure page-level access permissions for this department.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
           <Input
