@@ -73,9 +73,17 @@ export const deleteRole = async (id: number) => {
 export const addDepartment = async (newDept: any) => {
   try {
     return await apiClient.post("/users/departments/", newDept);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error adding department:", err);
-    throw new Error("Failed to add department.");
+    let errorMessage = "Failed to add department.";
+    if (err.response?.data) {
+       const data = err.response.data;
+       if (data.name && Array.isArray(data.name)) errorMessage = data.name[0];
+       else if (data.detail) errorMessage = data.detail;
+       else if (typeof data === 'string') errorMessage = data;
+       else errorMessage = JSON.stringify(data);
+    }
+    throw new Error(errorMessage);
   }
 };
 
@@ -83,9 +91,17 @@ export const addDepartment = async (newDept: any) => {
 export const editDepartment = async (id: number, updatedDept: any) => {
   try {
     return await apiClient.put(`/users/departments/${id}/`, updatedDept);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error updating department:", err);
-    throw new Error("Failed to update department.");
+    let errorMessage = "Failed to update department.";
+    if (err.response?.data) {
+       const data = err.response.data;
+       if (data.name && Array.isArray(data.name)) errorMessage = data.name[0];
+       else if (data.detail) errorMessage = data.detail;
+       else if (typeof data === 'string') errorMessage = data;
+       else errorMessage = JSON.stringify(data);
+    }
+    throw new Error(errorMessage);
   }
 };
 
@@ -106,9 +122,18 @@ export const addUser = async (newUserPayload: any) => {
   try {
     const response = await apiClient.post("/users/users/", newUserPayload);
     return response.data;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error adding user:", err);
-    throw new Error("Failed to add user.");
+    let errorMessage = "Failed to add user.";
+    if (err.response?.data) {
+       const data = err.response.data;
+       if (data.email && Array.isArray(data.email)) errorMessage = data.email[0];
+       else if (data.username && Array.isArray(data.username)) errorMessage = data.username[0];
+       else if (data.detail) errorMessage = data.detail;
+       else if (typeof data === 'string') errorMessage = data;
+       else errorMessage = JSON.stringify(data);
+    }
+    throw new Error(errorMessage);
   }
 };
 
@@ -117,9 +142,18 @@ export const editUser = async (id: number, updatedUserPayload: any) => {
   try {
     const response = await apiClient.put(`/users/users/${id}/`, updatedUserPayload);
     return response.data;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error updating user:", err);
-    throw new Error("Failed to update user.");
+    let errorMessage = "Failed to update user.";
+    if (err.response?.data) {
+       const data = err.response.data;
+       if (data.email && Array.isArray(data.email)) errorMessage = data.email[0];
+       else if (data.username && Array.isArray(data.username)) errorMessage = data.username[0];
+       else if (data.detail) errorMessage = data.detail;
+       else if (typeof data === 'string') errorMessage = data;
+       else errorMessage = JSON.stringify(data);
+    }
+    throw new Error(errorMessage);
   }
 };
 

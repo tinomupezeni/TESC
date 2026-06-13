@@ -22,6 +22,17 @@ import { Institution } from "@/lib/types/academic.types";
 import { Skeleton } from "@/components/ui/skeleton";
 import RegisterInst from "@/modules/institutions/RegisterInst";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 /**
  * Loading Skeleton component
  */
@@ -43,6 +54,7 @@ export default function Institutions() {
   const [registerInst, setRegisterInst] = useState(false);
   const [editingInstitution, setEditingInstitution] =
     useState<Institution | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // --- Fetch institutions ---
   const {
@@ -63,8 +75,14 @@ export default function Institutions() {
   });
 
   const handleDelete = (id: number) => {
-    if (!window.confirm("Delete this institution permanently?")) return;
-    deleteMutation.mutate(id);
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      deleteMutation.mutate(deleteId);
+      setDeleteId(null);
+    }
   };
 
   const handleModalClose = (isOpen: boolean) => {
@@ -232,6 +250,28 @@ export default function Institutions() {
         onOpenChange={handleModalClose}
         institutionToEdit={editingInstitution}
       />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              institution and all associated data including students, staff, and programs.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Institution
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

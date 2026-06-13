@@ -16,10 +16,13 @@ class InstitutionAdminLogin(APIView):
         if not user:
             raise AuthenticationFailed("Invalid credentials")
 
-        try:
-            admin = user.inst_admin
-        except InstitutionAdmin.DoesNotExist:
-            raise AuthenticationFailed("Not an institution admin")
+        if not user.institution:
+            try:
+                admin = user.inst_admin
+                user.institution = admin.institution
+                user.save()
+            except InstitutionAdmin.DoesNotExist:
+                raise AuthenticationFailed("User is not associated with any institution")
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -28,7 +31,7 @@ class InstitutionAdminLogin(APIView):
         return Response({
             "message": "Login successful",
             "username": username,
-            "institution_id": admin.institution.id,
+            "institution_id": user.institution.id,
             "must_change_password": user.must_change_password,
             "tokens": {
                 "access": str(access),

@@ -15,7 +15,7 @@ from ..services.academic_services import (
      ProgramService, FacilityService, StudentService
 )
 from instauth.models import InstitutionAdmin
-from users.models import CustomUser
+from users.models import CustomUser, Role, Department as UserDepartment
 
 
 class FacilityViewSet(viewsets.ModelViewSet):
@@ -62,8 +62,18 @@ class InstitutionViewSet(viewsets.ModelViewSet):
                 email=email,
                 password=default_password,
                 first_name=institution.name,
-                is_staff=True # Adjust permissions as needed
+                is_staff=True, # Adjust permissions as needed
+                institution=institution,
+                level='1' # Full Access
             )
+
+            # Create/Get Super Admin Role for this institution
+            super_admin_role, _ = Role.objects.get_or_create(
+                institution=institution,
+                name='Super Admin',
+                defaults={'description': 'Full administrative access to the institution.'}
+            )
+            user.role = super_admin_role
             user.must_change_password = True
             user.save()
 
@@ -109,6 +119,23 @@ class InstitutionViewSet(viewsets.ModelViewSet):
             student_count=Count('students', distinct=True),
             staff_count=Count('staff_members', distinct=True)
         )
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Manually handle deletion of related objects to avoid IntegrityErrors
+        and ensure clean cleanup of institutional data.
+        """
+        instance = self.get_object()
+        with transaction.atomic():
+            # 1. Delete Roles and Departments (from users app)
+            Role.objects.filter(institution=instance).delete()
+            UserDepartment.objects.filter(institution=instance).delete()
+            
+            # 2. Deleting InstitutionAdmin will cascade to the associated CustomUser
+            InstitutionAdmin.objects.filter(institution=instance).delete()
+            
+            # 3. Perform standard deletion (will cascade to Students, Facilities, etc.)
+            return super().destroy(request, *args, **kwargs)
 
 class ProgramViewSet(viewsets.ModelViewSet):
     queryset = Program.objects.all()

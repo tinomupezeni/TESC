@@ -38,8 +38,6 @@ export interface IseopProgram {
 const ENDPOINTS = {
   STUDENTS: "/iseop/students/",
   PROGRAMS: "/iseop/programs/",
-  STUDENTS: "/iseop/students/",
-  PROGRAMS: "/iseop/programs/",
 };
 
 // ----------------- STUDENTS -----------------

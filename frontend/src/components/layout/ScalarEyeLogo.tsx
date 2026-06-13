@@ -1,7 +1,5 @@
 import React from 'react';
 
-import React from 'react';
-
 export const ScalarEyeLogo = ({ className = "w-10 h-10" }) => (
   <svg 
     viewBox="0 0 100 100" 
@@ -55,6 +53,6 @@ export const ScalarEyeLogo = ({ className = "w-10 h-10" }) => (
 );
 
 export const coat_of_arms = 'https://www.pngplay.com/wp-content/uploads/10/Zimbabwe-Flag-Background-PNG-Image.png'
-export const bg_image = 'https://www.uz.ac.zw/images/uzfrontgallery_2/Campus%20Overview_2.png'
+export const bg_image = 'https://www.uz.ac.zw/images/Campus%20Overview.png'
 export const scalareye_logo_svg = ScalarEyeLogo;
 

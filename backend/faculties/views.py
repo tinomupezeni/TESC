@@ -43,7 +43,7 @@ class FacultyViewSet(viewsets.ModelViewSet):
              return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        FacultyService.create_faculty(serializer.validated_data)
+        serializer.instance = FacultyService.create_faculty(serializer.validated_data)
 
     def destroy(self, _request, *args, **kwargs):
         instance = self.get_object()
@@ -114,7 +114,7 @@ class ProgramViewSet(viewsets.ModelViewSet):
              return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        ProgramService.create_program(serializer.validated_data)
+        serializer.instance = ProgramService.create_program(serializer.validated_data)
 
     def perform_update(self, serializer):
         ProgramService.update_program(serializer.instance, serializer.validated_data)

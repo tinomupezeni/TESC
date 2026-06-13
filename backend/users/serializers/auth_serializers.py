@@ -43,8 +43,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'last_name': user.last_name,
             'level': user.level,
             'must_change_password': user.must_change_password,
-            'role': {'name': user.role.name} if user.role else None,
+            'role': {
+                'id': user.role.id,
+                'name': user.role.name
+            } if user.role else None,
             'department': {
+                'id': user.department.id,
                 'name': user.department.name,
                 'permissions': user.department.permissions
             } if user.department else None,

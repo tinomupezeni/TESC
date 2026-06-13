@@ -17,6 +17,8 @@ import Facilities from "./pages/Facilities";
 import Innovation from "./pages/Innovation";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -160,6 +162,17 @@ const App = () => {
               <ProtectedRoute>
                 <DashboardLayout>
                   <Users />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/help"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Help />
                 </DashboardLayout>
               </ProtectedRoute>
             }
