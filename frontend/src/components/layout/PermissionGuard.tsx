@@ -8,9 +8,11 @@ export const PermissionGuard = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
   const hasNotified = useRef(false);
+
+  if (loading) return null; // Wait for user data to load before making permission decisions
 
   const userPermissions = user?.department?.permissions || [];
   const userLevel = user?.level;

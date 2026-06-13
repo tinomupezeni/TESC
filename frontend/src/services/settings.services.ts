@@ -93,12 +93,13 @@ export const editDepartment = async (id, updatedDept) => {
 };
 
 /** Deletes a department by ID. */
-export const deleteDepartment = async (id) => {
+export const deleteDepartment = async (id, force = false) => {
   try {
-    return await apiClient.delete(`/users/departments/${id}/`);
-  } catch (err) {
+    const url = `/users/departments/${id}/${force ? "?force=true" : ""}`;
+    return await apiClient.delete(url);
+  } catch (err: any) {
     console.error("Error deleting department:", err);
-    throw new Error("Failed to delete department.");
+    throw err;
   }
 };
 
@@ -107,29 +108,50 @@ export const deleteDepartment = async (id) => {
 /** Adds a new user. */
 export const addUser = async (newUserPayload) => {
   try {
-    return await apiClient.post("/users/users/", newUserPayload);
-  } catch (err) {
+    const response = await apiClient.post("/users/users/", newUserPayload);
+    return response.data;
+  } catch (err: any) {
     console.error("Error adding user:", err);
-    throw new Error("Failed to add user.");
+    let errorMessage = "Failed to add user.";
+    if (err.response?.data) {
+       const data = err.response.data;
+       if (data.email && Array.isArray(data.email)) errorMessage = data.email[0];
+       else if (data.username && Array.isArray(data.username)) errorMessage = data.username[0];
+       else if (data.detail) errorMessage = data.detail;
+       else if (typeof data === 'string') errorMessage = data;
+       else errorMessage = JSON.stringify(data);
+    }
+    throw new Error(errorMessage);
   }
 };
 
 /** Edits an existing user. */
 export const editUser = async (id, updatedUserPayload) => {
   try {
-    return await apiClient.put(`/users/users/${id}/`, updatedUserPayload);
-  } catch (err) {
+    const response = await apiClient.put(`/users/users/${id}/`, updatedUserPayload);
+    return response.data;
+  } catch (err: any) {
     console.error("Error updating user:", err);
-    throw new Error("Failed to update user.");
+    let errorMessage = "Failed to update user.";
+    if (err.response?.data) {
+       const data = err.response.data;
+       if (data.email && Array.isArray(data.email)) errorMessage = data.email[0];
+       else if (data.username && Array.isArray(data.username)) errorMessage = data.username[0];
+       else if (data.detail) errorMessage = data.detail;
+       else if (typeof data === 'string') errorMessage = data;
+       else errorMessage = JSON.stringify(data);
+    }
+    throw new Error(errorMessage);
   }
 };
 
 /** Deletes a user by ID. (Provided in prompt, keeping for completeness) */
-export const deleteUser = async (id) => {
+export const deleteUser = async (id, force = false) => {
   try {
-    return await apiClient.delete(`/users/users/${id}/`);
-  } catch (err) {
+    const url = `/users/users/${id}/${force ? "?force=true" : ""}`;
+    return await apiClient.delete(url);
+  } catch (err: any) {
     console.error("Error deleting user:", err);
-    throw new Error("Failed to delete user.");
+    throw err;
   }
 };

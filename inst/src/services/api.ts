@@ -10,6 +10,9 @@ const getBaseURL = () => {
       return `${protocol}//${hostname}:8000/api`;
     }
     // Otherwise assume standard production routing (/api proxied by nginx)
+    if (hostname.endsWith(".zchpc.ac.zw")) {
+      return `${protocol}//${hostname}/api`;
+    }
     return `${protocol}//${hostname}/api`;
   }
   return "https://tesc.zchpc.ac.zw/api";
@@ -63,11 +66,14 @@ apiClient.interceptors.response.use(
     // Check if error is 401 and not a retry
     if (error.response?.status === 401 && !originalRequest._retry) {
       
-      // Safety check: Prevent infinite loop if the refresh endpoint itself returns 401
-      if (originalRequest.url?.includes("/instauth/token/refresh/")) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/";
+      // Safety check: Prevent infinite loop if the refresh OR login endpoint itself returns 401
+      if (originalRequest.url?.includes("/instauth/login/") || originalRequest.url?.includes("/instauth/token/refresh/")) {
+        // Only redirect to home if it was the refresh token that failed
+        if (originalRequest.url?.includes("/instauth/token/refresh/")) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            window.location.href = "/";
+        }
         return Promise.reject(error);
       }
 

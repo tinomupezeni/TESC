@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -29,6 +30,7 @@ import {
   SidebarHeader, // Ensure you have this or use a div
   SidebarFooter, // Ensure you have this
   SidebarRail,   // Optional: for resizing
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -73,7 +75,7 @@ const menuGroups = [
     items: [
       { title: "User Management", url: "/dashboard/users", icon: Users },
       { title: "Settings", url: "/dashboard/settings", icon: Settings2 },
-      { title: "Help", url: "#", icon: Lightbulb },
+      { title: "Help", url: "/dashboard/help", icon: Lightbulb },
       
     ]
   }
@@ -81,6 +83,16 @@ const menuGroups = [
 
 export default function AppSidebar() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // 📱 Auto-hide sidebar on mobile after navigation
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [location.pathname, isMobile, setOpenMobile]);
 
   const userPermissions = user?.department?.permissions || [];
   const userLevel = user?.level;
@@ -194,7 +206,7 @@ export default function AppSidebar() {
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>

@@ -38,7 +38,7 @@ import {
   MoreVertical, 
   Filter, 
   Loader2, 
-  ChevronLeft, 
+  ChevronLeft,
   ChevronRight,
   Pencil,
   Trash2 // Imported Trash icon
@@ -324,22 +324,110 @@ const Students = () => {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Student Profile</DialogTitle>
+            <DialogDescription>Detailed information for {selectedStudent?.full_name}</DialogDescription>
           </DialogHeader>
           {selectedStudent && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Student ID</p>
-                  <p className="font-medium">{selectedStudent.student_id}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Full Name</p>
-                  <p className="font-medium">{selectedStudent.full_name}</p>
-                </div>
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Personal Information */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Personal Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-muted-foreground">Full Name:</span>
+                      <span className="font-medium">{selectedStudent.full_name}</span>
+                      
+                      <span className="text-muted-foreground">Gender:</span>
+                      <span className="font-medium">{selectedStudent.gender || 'N/A'}</span>
+                      
+                      <span className="text-muted-foreground">Date of Birth:</span>
+                      <span className="font-medium">{selectedStudent.date_of_birth || 'N/A'}</span>
+                      
+                      <span className="text-muted-foreground">National ID:</span>
+                      <span className="font-medium">{selectedStudent.national_id || 'N/A'}</span>
+                      
+                      <span className="text-muted-foreground">Disability:</span>
+                      <span className="font-medium">{selectedStudent.disability_type || 'None'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Academic Information */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Academic Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-muted-foreground">Student ID:</span>
+                      <span className="font-medium">{selectedStudent.student_id}</span>
+                      
+                      <span className="text-muted-foreground">Program:</span>
+                      <span className="font-medium">{selectedStudent.program_name || 'N/A'}</span>
+                      
+                      <span className="text-muted-foreground">Enrollment Year:</span>
+                      <span className="font-medium">{selectedStudent.enrollment_year}</span>
+                      
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className="font-medium">
+                        <Badge variant="outline">{selectedStudent.status}</Badge>
+                      </span>
+
+                      {selectedStudent.status === 'Dropout' && (
+                        <>
+                          <span className="text-muted-foreground">Dropout Reason:</span>
+                          <span className="font-medium text-destructive">{selectedStudent.dropout_reason || 'Unspecified'}</span>
+                        </>
+                      )}
+
+                      {selectedStudent.status === 'Graduated' && (
+                        <>
+                          <span className="text-muted-foreground">Graduation Year:</span>
+                          <span className="font-medium">{selectedStudent.graduation_year || 'N/A'}</span>
+                          <span className="text-muted-foreground">Final Grade:</span>
+                          <span className="font-medium">{selectedStudent.final_grade || 'N/A'}</span>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+
+              {/* Work for Fees Information (if applicable) */}
+              {selectedStudent.is_work_for_fees && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Work For Fees details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground block">Enrolled:</span>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">Yes</Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground block">Work Area:</span>
+                        <span className="font-medium">{selectedStudent.work_area || 'Not Assigned'}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground block">Hours Pledged:</span>
+                        <span className="font-medium">{selectedStudent.hours_pledged || 0} hrs</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </DialogContent>

@@ -34,7 +34,8 @@ interface UserInfo {
 // --- 2. Define the Context Shape ---
 interface AuthContextType {
   accessToken: string | null;
-  user: UserInfo | null; // 🚨 Added user state
+  user: UserInfo | null;
+  loading: boolean; // 🚨 Added loading state
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -51,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const [user, setUser] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true); // 🚨 Start in loading state
 
   // Function to handle user login
   const login = async (email: string, password: string) => {
@@ -59,9 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
     });
 
-    const { access, refresh, user: fetchedUser } = response.data; // 🚨 Destructure 'user' data
-
-    console.log(fetchedUser);
+    const { access, refresh, user: fetchedUser } = response.data;
 
     // Store tokens
     localStorage.setItem("accessToken", access);
@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccessToken(access);
     setUser(fetchedUser);
 
-    return fetchedUser; // 🚨 Store the entire user object in context
+    return fetchedUser;
   };
 
   // Function to handle user logout
@@ -79,8 +79,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     setAccessToken(null);
-    setUser(null); // 🚨 Clear user state on logout
-    navigate("/"); // Redirect to login page after logout
+    setUser(null);
+    setLoading(false);
+    navigate("/");
   };
 
   useEffect(() => {
@@ -96,16 +97,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             "Failed to fetch user profile on load. Logging out.",
             error
           );
-          logout(); // Log out if the token is invalid or expired
+          logout();
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     fetchUserOnLoad();
-  }, [accessToken]); // Rerun when the token changes
+  }, [accessToken]);
 
   const authContextValue: AuthContextType = {
     accessToken,
-    user, // 🚨 Added user to context value
+    user,
+    loading, // 🚨 Added loading to context value
     login,
     logout,
   };
