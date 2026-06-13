@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from users.models import CustomUser, Role
-from .user_management_serializers import InstitutionUserSerializer
+from ..serializers.user_management_serializers import InstitutionUserSerializer
 from ..models import InstitutionAdmin
 
 class InstitutionUserViewSet(viewsets.ModelViewSet):

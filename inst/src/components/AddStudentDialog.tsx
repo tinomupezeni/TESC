@@ -462,20 +462,6 @@ export function AddStudentDialog({
                 </div>
               </div>
 
-                        <SelectItem key={d.id} value={d.id.toString()}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedFacultyId && filteredDepartments.length === 0 && (
-                    <p className="text-[10px] text-destructive">
-                      No departments in this faculty.
-                    </p>
-                  )}
-                </div>
-              </div>
-
               {/* 3. Program Select (Actual Value) */}
               <div className="space-y-2">
                 <Label htmlFor="program">Program *</Label>

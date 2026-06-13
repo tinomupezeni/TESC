@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -32,6 +33,9 @@ function UserModal({
           <DialogTitle>
             {editing ? "Edit System User" : "Add New User"}
           </DialogTitle>
+          <DialogDescription>
+            {editing ? "Update details for the selected user." : "Create a new user account with specific access levels."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">

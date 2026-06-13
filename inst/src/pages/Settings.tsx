@@ -14,14 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -36,8 +28,6 @@ import {
   Bell,
   Upload,
   ShieldCheck,
-  Circle,
-  CheckCircle2,
   Copy,
   Check,
   Search,
@@ -47,32 +37,6 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import {
-  fetchRoles,
-  fetchDepartments,
-  fetchUsers,
-  addDepartment,
-  editDepartment,
-  addUser,
-  editUser,
-  deleteUser,
-} from "../services/settings.services";
-import Users from "@/modules/settings/Users";
-import UserModal from "@/modules/settings/UserModal";
-
-const INSTITUTION_PAGES = [
-  { name: "Dashboard", url: "/dashboard" },
-  { name: "Students", url: "/dashboard/students" },
-  { name: "ISEOP Stats", url: "/dashboard/special-enrollment" },
-  { name: "Staff", url: "/dashboard/staff" },
-  { name: "Faculties", url: "/dashboard/faculties" },
-  { name: "Programs", url: "/dashboard/programs" },
-  { name: "Graduates", url: "/dashboard/graduates" },
-  { name: "Facilities", url: "/dashboard/facilities" },
-  { name: "Innovation", url: "/dashboard/innovation" },
-  { name: "Reports", url: "/dashboard/reports" },
-  { name: "Settings", url: "/dashboard/settings" },
-];
 
 const Settings = () => {
   const { user: currentUser, updatePassword } = useAuth();
@@ -86,10 +50,6 @@ const Settings = () => {
   });
 
   const [createdCredentials, setCreatedCredentials] = useState<any>(null);
-  const [roles, setRoles] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [editingItem, setEditingItem] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // States for Security
@@ -241,12 +201,6 @@ const Settings = () => {
               <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               Profile
             </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="access" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
-                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                Access Control
-              </TabsTrigger>
-            )}
             <TabsTrigger value="security" className="gap-2 text-xs sm:text-sm whitespace-nowrap">
               <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               Security
@@ -323,93 +277,6 @@ const Settings = () => {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {isAdmin && (
-          <TabsContent value="access" className="space-y-6 px-1">
-            <Card className="border-none sm:border">
-                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
-                  <div>
-                    <CardTitle className="text-lg sm:text-xl">Departments & Access</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">Create departments and assign page access permissions</CardDescription>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="w-full sm:w-auto h-9"
-                    onClick={() => {
-                      setEditingItem(null);
-                      setNewDept({
-                        name: "",
-                        description: "",
-                        permissions: [],
-                      });
-                      setOpenDeptModal(true);
-                    }}
-                  >
-                    Add Department
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-0 sm:p-6 pt-0 sm:pt-0">
-                  <div className="rounded-md border overflow-x-auto mx-1 sm:mx-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs">Department</TableHead>
-                        <TableHead className="text-xs hidden sm:table-cell">Permissions</TableHead>
-                        <TableHead className="text-right text-xs">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loading ? (
-                         <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader2 className="h-4 w-4 animate-spin inline mr-2"/>Loading...</TableCell></TableRow>
-                      ) : departments.length === 0 ? (
-                        <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-xs">No departments created.</TableCell></TableRow>
-                      ) : (
-                        departments.map((dep: any) => (
-                          <TableRow key={dep.id}>
-                            <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-3">
-                              {dep.name}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-[10px] sm:text-xs hidden sm:table-cell">
-                              {dep.permissions?.length || 0} Pages Accessible
-                            </TableCell>
-                            <TableCell className="text-right py-2 sm:py-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 px-2"
-                                onClick={() => {
-                                  setEditingItem(dep);
-                                  setNewDept(dep);
-                                  setOpenDeptModal(true);
-                                }}
-                              >
-                                Edit
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Users
-                users={users}
-                setEditingItem={setEditingItem}
-                setNewUser={setNewUser}
-                setOpenUserModal={setOpenUserModal}
-                editUserHandler={editUserHandler}
-                deleteUserHandler={async (id) => {
-                    if(confirm("Delete user?")) {
-                        await deleteUser(id);
-                        refreshData();
-                    }
-                }}
-              />
-          </TabsContent>
-        )}
 
         <TabsContent value="security" className="space-y-4 px-1">
           <Card className="border-none sm:border">
@@ -587,87 +454,8 @@ const Settings = () => {
           </DialogContent>
         </Dialog>
 
-        <DepartmentModal
-          open={openDeptModal}
-          onClose={() => setOpenDeptModal(false)}
-          dept={newDept}
-          setDept={setNewDept}
-          onSave={async () => {
-            try {
-                if (editingItem) await editDepartment((editingItem as any).id, newDept);
-                else await addDepartment({ ...newDept, institution: currentUser?.institution?.id });
-                setOpenDeptModal(false);
-                refreshData();
-                toast.success("Department updated");
-            } catch(err) {
-                toast.error("Error saving department");
-            }
-          }}
-        />
-
-        <UserModal
-          open={openUserModal}
-          onClose={() => setOpenUserModal(false)}
-          user={newUser}
-          setUser={setNewUser}
-          onSave={saveUser}
-          departments={departments}
-          roles={roles}
-          editing={!!editingItem}
-        />
     </div>
   );
 };
-
-function DepartmentModal({ open, onClose, dept, setDept, onSave }: any) {
-  const togglePage = (url: string) => {
-    const current = dept.permissions || [];
-    const updated = current.includes(url)
-      ? current.filter((p: string) => p !== url)
-      : [...current, url];
-    setDept({ ...dept, permissions: updated });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl w-[95vw] overflow-hidden flex flex-col max-h-[90vh] p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="text-xl sm:text-2xl">Access Control</DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">Assign page access permissions to this department</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4 flex-1 overflow-y-auto pr-1 sm:pr-2">
-          <Input
-            placeholder="Department Name (e.g. Finance)"
-            value={dept.name}
-            className="h-10 sm:h-11"
-            onChange={(e) => setDept({ ...dept, name: e.target.value })}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border p-3 sm:p-4 rounded-xl bg-muted/20">
-            {INSTITUTION_PAGES.map((page) => (
-              <div
-                key={page.url}
-                onClick={() => togglePage(page.url)}
-                className="flex items-center gap-3 cursor-pointer hover:bg-background p-3 rounded-lg border border-transparent hover:border-border transition-all"
-              >
-                {dept.permissions?.includes(page.url) ? (
-                  <CheckCircle2 className="text-green-600 h-5 w-5 shrink-0" />
-                ) : (
-                  <Circle className="text-muted-foreground/30 h-5 w-5 shrink-0" />
-                )}
-                <span className="text-xs sm:text-sm font-medium">{page.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <DialogFooter className="pt-4 border-t gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={onClose} className="h-9 sm:h-10 text-xs sm:text-sm">
-            Cancel
-          </Button>
-          <Button onClick={onSave} className="h-9 sm:h-10 text-xs sm:text-sm">Save Permissions</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export default Settings;

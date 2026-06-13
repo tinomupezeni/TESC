@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from ..models import InstitutionAdmin
 from users.models import CustomUser
+from users.serializers.settings_serializers import DepartmentSerializer
 
 
 class InstitutionAdminSerializer(serializers.ModelSerializer):
@@ -35,9 +36,10 @@ class InstitutionAdminSerializer(serializers.ModelSerializer):
         return inst_admin
 
 
-
 class UserProfileSerializer(serializers.ModelSerializer):
     institution = serializers.SerializerMethodField()
+    role_name = serializers.CharField(source='role.name', read_only=True)
+    department = DepartmentSerializer(read_only=True)
 
     class Meta:
         model = CustomUser
@@ -48,12 +50,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "institution",
+            "role_name",
+            "department",
+            "level",
             "must_change_password",
             "is_active",
             "date_joined",
         ]
     
     def get_institution(self, obj):
+        if obj.institution:
+             return {
+                "id": obj.institution.id,
+                "name": obj.institution.name,
+            }
         try:
             inst_admin = InstitutionAdmin.objects.get(user=obj)
             return {
