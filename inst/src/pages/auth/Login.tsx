@@ -84,7 +84,7 @@ const Login = () => {
       style={{ backgroundImage: `url(${bg_image})` }}
     >
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-[1px] sm:backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-black/70" />
       
       <Card className="w-full max-w-[420px] shadow-2xl rounded-2xl relative z-10 border-white/10 bg-white/95 dark:bg-slate-950/95 overflow-hidden">
         <CardHeader className="space-y-1 text-center pb-4 sm:pb-6 p-6 sm:p-8">
