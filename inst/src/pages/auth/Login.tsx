@@ -11,14 +11,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Building2, Loader2, Mail, Lock, Eye, EyeOff, Check, ChevronsUpDown } from "lucide-react";
 import { bg_image } from "@/components/layout/ScalarEyeLogo";
 import { ScalarEyeLogo } from "@/components/layout/ScalarEyeLogo";
 import {
@@ -27,7 +33,8 @@ import {
 } from "@/services/auth.services";
 import { getAllInstitutions } from "@/services/institution.service";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext"; // Import useAuth
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -38,6 +45,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [open, setOpen] = useState(false);
   
   // UI States
   const [error, setError] = useState("");
@@ -109,27 +117,56 @@ const Login = () => {
               </Alert>
             )}
 
-            {/* 1. Institution Selection */}
+            {/* 1. Searchable Institution Selection */}
             <div className="space-y-1.5">
               <Label htmlFor="institution" className="text-xs sm:text-sm font-medium">Institution Name</Label>
-              <Select 
-                onValueChange={(value) => setSelectedInstId(value)} 
-                disabled={isLoading || isLoadingInsts}
-              >
-                <SelectTrigger id="institution" className="h-10 sm:h-11 bg-slate-50/50 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground truncate">
-                    <Building2 className="h-4 w-4 shrink-0" />
-                    <SelectValue placeholder={isLoadingInsts ? "Loading list..." : "Select institution"} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px]">
-                  {institutions?.map((inst: any) => (
-                    <SelectItem key={inst.id} value={inst.id.toString()} className="text-xs sm:text-sm">
-                      {inst.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between h-10 sm:h-11 bg-slate-50/50 text-xs sm:text-sm font-normal"
+                    disabled={isLoading || isLoadingInsts}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      {selectedInstId
+                        ? institutions?.find((inst: any) => inst.id.toString() === selectedInstId)?.name
+                        : "Select institution"}
+                    </div>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search institution..." className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>No institution found.</CommandEmpty>
+                      <CommandGroup>
+                        {institutions?.map((inst: any) => (
+                          <CommandItem
+                            key={inst.id}
+                            value={inst.name}
+                            onSelect={() => {
+                              setSelectedInstId(inst.id.toString());
+                              setOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedInstId === inst.id.toString() ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {inst.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* 2. Email Input */}
