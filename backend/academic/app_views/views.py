@@ -1,12 +1,13 @@
 # academic/views.py
 from django.db import transaction
-from rest_framework import viewsets, status, serializers
+from rest_framework import viewsets, status, serializers, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count
-from ..models import Institution, Facility
-from faculties.models import Program
+from django.db.models import Count, OuterRef, Subquery, IntegerField, Value
+from django.db.models.functions import Coalesce
+from ..models import Institution, Facility, Student
+from faculties.models import Program, Department as FacultyDepartment
 from ..serializers.academic_serializers import (
     InstitutionSerializer, ProgramSerializer, FacilitySerializer,
     StudentWriteSerializer, StudentReadSerializer
@@ -34,6 +35,11 @@ class FacilityViewSet(viewsets.ModelViewSet):
 class InstitutionViewSet(viewsets.ModelViewSet):
     queryset = Institution.objects.all()
     serializer_class = InstitutionSerializer
+
+    def get_permissions(self):
+        if self.action == 'list':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
     def perform_create(self, serializer):
         with transaction.atomic():
@@ -135,13 +141,50 @@ class InstitutionViewSet(viewsets.ModelViewSet):
             )
     def get_queryset(self):
         """
-        Annotate institutions with staff count, program count, and system user count.
+        🚀 High Performance implementation using Subqueries.
+        Avoids the Cartesian Product issue (joining multiple tables) which causes
+        hangs when data volume is high (e.g. 9,000+ students).
         """
-        return Institution.objects.annotate(
-            program_count=Count('faculties__departments__programs', distinct=True),   
-            student_count=Count('students', distinct=True),
-            staff_count=Count('staff_members', distinct=True),
-            user_count=Count('users', distinct=True)
+        queryset = Institution.objects.all()
+        
+        # If public list (unauthenticated login dropdown), return minimal data fast
+        if self.action == 'list' and not self.request.user.is_authenticated:
+            return queryset.only('id', 'name')
+
+        # 1. Student Count Subquery
+        students_subquery = Student.objects.filter(
+            institution=OuterRef('pk')
+        ).values('institution').annotate(
+            count=Count('id')
+        ).values('count')
+
+        # 2. Staff Count Subquery
+        from staff.models import Staff
+        staff_subquery = Staff.objects.filter(
+            institution=OuterRef('pk')
+        ).values('institution').annotate(
+            count=Count('id')
+        ).values('count')
+
+        # 3. User Count Subquery
+        users_subquery = CustomUser.objects.filter(
+            institution=OuterRef('pk')
+        ).values('institution').annotate(
+            count=Count('id')
+        ).values('count')
+
+        # 4. Program Count Subquery
+        programs_subquery = Program.objects.filter(
+            department__faculty__institution=OuterRef('pk')
+        ).values('department__faculty__institution').annotate(
+            count=Count('id')
+        ).values('count')
+
+        return queryset.annotate(
+            student_count=Coalesce(Subquery(students_subquery, output_field=IntegerField()), Value(0)),
+            staff_count=Coalesce(Subquery(staff_subquery, output_field=IntegerField()), Value(0)),
+            user_count=Coalesce(Subquery(users_subquery, output_field=IntegerField()), Value(0)),
+            program_count=Coalesce(Subquery(programs_subquery, output_field=IntegerField()), Value(0))
         )
 
     def destroy(self, request, *args, **kwargs):

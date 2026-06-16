@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import {
   Building,
   MapPin,
@@ -15,6 +16,8 @@ import {
   LayoutGrid,
   ShieldCheck,
   ExternalLink,
+  Search,
+  X
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -60,6 +63,7 @@ export default function Institutions() {
   const [editingInstitution, setEditingInstitution] =
     useState<Institution | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // --- Fetch institutions ---
   const {
@@ -71,6 +75,19 @@ export default function Institutions() {
     queryKey: ["institutions"],
     queryFn: getAllInstitutions,
   });
+
+  // --- Filtered Institutions ---
+  const filteredInstitutions = useMemo(() => {
+    if (!institutions) return [];
+    if (!searchQuery.trim()) return institutions;
+    
+    const query = searchQuery.toLowerCase();
+    return institutions.filter((i: Institution) => 
+      i.name.toLowerCase().includes(query) || 
+      i.location.toLowerCase().includes(query) ||
+      i.type.toLowerCase().includes(query)
+    );
+  }, [institutions, searchQuery]);
 
   // --- Delete mutation ---
   const deleteMutation = useMutation({
@@ -133,13 +150,34 @@ export default function Institutions() {
               </p>
             </div>
 
-            <Button
-              onClick={() => setRegisterInst(true)}
-              className="w-full md:w-auto shadow-md hover:shadow-lg transition-all"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Register Institution
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-64 md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search institutions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9 h-10 shadow-sm"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <Button
+                onClick={() => setRegisterInst(true)}
+                className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Register Institution
+              </Button>
+            </div>
           </div>
 
           {/* Stats Section */}
@@ -243,16 +281,24 @@ export default function Institutions() {
               </div>
             )}
 
-            {!isLoading && institutions?.length === 0 && (
+            {!isLoading && filteredInstitutions.length === 0 && (
                  <div className="lg:col-span-2 text-center p-12 bg-muted/20 rounded-2xl border border-dashed border-muted-foreground/30">
-                 <Building className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                 <div className="font-bold mb-2 text-lg">No Institutions Found</div>
-                 <p className="text-muted-foreground text-sm max-w-xs mx-auto">There are currently no registered educational institutions in the system.</p>
-                 <Button onClick={() => setRegisterInst(true)} variant="outline" className="mt-6">Add First Institution</Button>
+                 {searchQuery ? <Search className="h-12 w-12 mx-auto mb-4 opacity-20" /> : <Building className="h-12 w-12 mx-auto mb-4 opacity-20" />}
+                 <div className="font-bold mb-2 text-lg">
+                   {searchQuery ? `No results for "${searchQuery}"` : "No Institutions Found"}
+                 </div>
+                 <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                   {searchQuery ? "Try adjusting your search terms to find what you're looking for." : "There are currently no registered educational institutions in the system."}
+                 </p>
+                 {searchQuery ? (
+                   <Button onClick={() => setSearchQuery("")} variant="outline" className="mt-6">Clear Search</Button>
+                 ) : (
+                   <Button onClick={() => setRegisterInst(true)} variant="outline" className="mt-6">Add First Institution</Button>
+                 )}
                </div>
             )}
 
-            {institutions?.map((institution: Institution) => {
+            {filteredInstitutions.map((institution: Institution) => {
               const utilization =
                 institution.capacity > 0
                   ? (institution.student_count / institution.capacity) * 100
@@ -352,7 +398,7 @@ export default function Institutions() {
                             style={{ width: `${Math.min(utilization, 100)}%` }} 
                          />
                       </div>
-                      <div className="text-[9px] sm:text-xs text-muted-foreground text-right italic">
+                      <div className="text-[9px] sm:text-[10px] text-muted-foreground text-right italic">
                         {institution.student_count.toLocaleString()} / {institution.capacity.toLocaleString()} max students
                       </div>
                     </div>
