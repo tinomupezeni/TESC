@@ -8,6 +8,12 @@ interface Institution {
   id: number;
   name: string;
   email?: string;
+  type?: string;
+  location?: string;
+  address?: string;
+  capacity?: number;
+  established?: number;
+  status?: string;
 }
 
 interface User {
@@ -17,6 +23,7 @@ interface User {
   first_name: string;
   last_name: string;
   role: string;
+  level: string;
   must_change_password: boolean;
   institution: Institution; // Changed from institution_id to object
 }
@@ -27,6 +34,8 @@ interface AuthContextType {
   login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  updatePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,8 +83,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate("/login");
   };
 
+  const updatePassword = async (oldPassword, newPassword) => {
+    try {
+      await apiClient.patch("/users/profile/", {
+        old_password: oldPassword,
+        new_password: newPassword,
+      });
+    } catch (error: any) {
+      throw error.response?.data?.error || error.response?.data?.detail || "Failed to update password";
+    }
+  };
+
+  const refreshProfile = async () => {
+    await fetchProfile();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updatePassword, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

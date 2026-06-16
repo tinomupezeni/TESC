@@ -60,6 +60,7 @@ export interface Institution {
   facilities: Facility[];
   student_count: number;
   program_count: number;
+  user_count: number;
 }
 
 export interface InstitutionWriteData {

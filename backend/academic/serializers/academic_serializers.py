@@ -20,14 +20,15 @@ class InstitutionSerializer(serializers.ModelSerializer):
     # Add these two lines
     program_count = serializers.IntegerField(read_only=True)
     student_count = serializers.IntegerField(read_only=True)
+    user_count = serializers.IntegerField(read_only=True)
     staff_count = serializers.SerializerMethodField(read_only=True)
 
 
     class Meta:
         model = Institution
         fields = [
-            'id', 'name', 'type', 'location', 'address', 'capacity', 
-            'staff', 'status', 'established', 'facilities', 'facility_ids','student_count', 'program_count','staff_count', 
+            'id', 'name', 'email', 'type', 'location', 'address', 'capacity', 
+            'staff', 'status', 'established', 'facilities', 'facility_ids','student_count', 'program_count','staff_count', 'user_count',
         ]
     def get_staff_count(self, obj):
         return obj.staff_members.count()  # Related name from Staff model

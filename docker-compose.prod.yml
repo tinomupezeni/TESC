@@ -75,7 +75,7 @@ services:
       - main_net
     restart: unless-stopped
 
-volumes:
+volumes:  
   postgres_data:
 
 networks:

@@ -44,116 +44,138 @@ const App = () => {
             element={<ForcePasswordChange />}
           />
 
-          {/* Dashboard routes wrapped with DashboardLayout and PermissionGuard */}
+          {/* Dashboard routes wrapped with ProtectedRoute, DashboardLayout and PermissionGuard */}
           <Route
             path="/dashboard"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/students"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Students />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Students />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/staff"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Staff />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Staff />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
          
           <Route
             path="/dashboard/programs"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Programs />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Programs />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/graduates"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Graduates />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Graduates />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/special-enrollment"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <EnrolmentSupport />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <EnrolmentSupport />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/facilities"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Facilities />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Facilities />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/faculties"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Faculties />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Faculties />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/reports"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Reports />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Reports />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/innovation"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Innovation />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Innovation />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/settings"
             element={
-              <PermissionGuard>
-                <DashboardLayout>
-                  <Settings />
-                </DashboardLayout>
-              </PermissionGuard>
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Settings />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
             }
           />
           <Route

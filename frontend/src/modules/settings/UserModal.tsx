@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 function UserModal({
   open,
@@ -22,6 +23,7 @@ function UserModal({
   user,
   setUser,
   onSave,
+  isLoading,
   departments,
   roles,
   editing,
@@ -102,10 +104,11 @@ function UserModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={onSave}>
+          <Button onClick={onSave} disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {editing ? "Update User" : "Create User"}
           </Button>
         </DialogFooter>

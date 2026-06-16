@@ -90,6 +90,29 @@ class InstitutionViewSet(viewsets.ModelViewSet):
                 "note": "Please change this password immediately on first login."
             }
 
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_email = instance.email
+        
+        with transaction.atomic():
+            institution = serializer.save()
+            new_email = institution.email
+            
+            if old_email != new_email and new_email:
+                # Sync the admin user's email/username if it matched the old institution email
+                admin_link = InstitutionAdmin.objects.filter(institution=institution).first()
+                if admin_link:
+                    user = admin_link.user
+                    if user.email == old_email:
+                        # Check if new email is already taken by another user
+                        if CustomUser.objects.filter(email=new_email).exclude(id=user.id).exists():
+                            raise serializers.ValidationError(
+                                {"email": "A user with this new email already exists."}
+                            )
+                        user.email = new_email
+                        user.username = new_email
+                        user.save()
+
     def create(self, request, *args, **kwargs):
         # We wrap the standard create logic to inject the credentials into the response
         try:
@@ -112,12 +135,13 @@ class InstitutionViewSet(viewsets.ModelViewSet):
             )
     def get_queryset(self):
         """
-        Annotate institutions with staff count and program count.
+        Annotate institutions with staff count, program count, and system user count.
         """
         return Institution.objects.annotate(
             program_count=Count('faculties__departments__programs', distinct=True),   
             student_count=Count('students', distinct=True),
-            staff_count=Count('staff_members', distinct=True)
+            staff_count=Count('staff_members', distinct=True),
+            user_count=Count('users', distinct=True)
         )
 
     def destroy(self, request, *args, **kwargs):

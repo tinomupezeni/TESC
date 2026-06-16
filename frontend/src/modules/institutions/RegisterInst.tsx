@@ -247,7 +247,6 @@ export default function RegisterInst({
                     placeholder="e.g., admin@poly.ac.zw"
                     value={formData.email}
                     onChange={handleInputChange}
-                    disabled={isEditMode} // Usually better not to change email/username on edit
                   />
                   {apiErrors.email && (
                     <p className="text-xs text-red-500">{apiErrors.email[0]}</p>

@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth, updatePassword } from "@/contexts/AuthContext";
+import apiClient from "@/services/api";
 
 import {
   fetchRoles,
@@ -75,7 +76,7 @@ const SYSTEM_PAGES = [
 ];
 
 export default function SettingsPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
   const isSystemAdmin = currentUser?.level === "1";
 
   const [createdCredentials, setCreatedCredentials] = useState(null);
@@ -90,6 +91,12 @@ export default function SettingsPage() {
     new: false,
     confirm: false,
   });
+
+  // Action Loading States
+  const [isSavingDept, setIsSavingDept] = useState(false);
+  const [isSavingUser, setIsSavingUser] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // States for System Management
   const [newDept, setNewDept] = useState({
@@ -170,8 +177,25 @@ export default function SettingsPage() {
 
   // --- Profile Actions ---
   const handleUpdateProfile = async () => {
-    toast.success("Profile information updated successfully");
-    // Implementation: await api.patch('/users/profile/', profileData);
+    if (!profileData.firstName || !profileData.lastName || !profileData.email) {
+      return toast.error("Please fill in all fields");
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      const response = await apiClient.patch("/users/profile/", {
+        first_name: profileData.firstName,
+        last_name: profileData.lastName,
+        email: profileData.email,
+      });
+      // Update local auth context
+      updateUser(response.data);
+      toast.success("Profile information updated successfully");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to update profile");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
   };
 
   // --- System User Handlers ---
@@ -199,6 +223,7 @@ export default function SettingsPage() {
       return toast.error("New password must be at least 8 characters");
     }
 
+    setIsChangingPassword(true);
     try {
       // 2. API Call (using the service or auth context)
       await updatePassword(passwordData.old, passwordData.new);
@@ -214,10 +239,13 @@ export default function SettingsPage() {
           ? err
           : err.error || "Failed to update password";
       toast.error(errorMsg);
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
   const saveUser = async () => {
+    setIsSavingUser(true);
     const roleObj = roles.find((r) => r.name === newUser.role);
     const deptObj = departments.find((d) => d.name === newUser.department);
     const payload = {
@@ -254,6 +282,8 @@ export default function SettingsPage() {
       refreshData();
     } catch (err: any) {
       toast.error(err.message || "Error saving user");
+    } finally {
+      setIsSavingUser(false);
     }
   };
 
@@ -391,11 +421,23 @@ export default function SettingsPage() {
                     <label className="text-xs sm:text-sm font-medium">Email Address</label>
                     <Input
                       value={profileData.email}
-                      disabled
-                      className="bg-muted h-9 sm:h-10"
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          email: e.target.value,
+                        })
+                      }
+                      className="h-9 sm:h-10"
                     />
                   </div>
-                  <Button onClick={handleUpdateProfile} className="w-full sm:w-auto h-9 sm:h-10">Update Profile</Button>
+                  <Button
+                    onClick={handleUpdateProfile}
+                    disabled={isUpdatingProfile}
+                    className="w-full sm:w-auto h-9 sm:h-10"
+                  >
+                    {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Profile
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -491,7 +533,9 @@ export default function SettingsPage() {
                     variant="outline"
                     className="w-full h-9 sm:h-10"
                     onClick={handleChangePassword}
+                    disabled={isChangingPassword}
                   >
+                    {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Update Password
                   </Button>
                 </CardContent>
@@ -668,12 +712,20 @@ export default function SettingsPage() {
           onClose={() => setOpenDeptModal(false)}
           dept={newDept}
           setDept={setNewDept}
+          isLoading={isSavingDept}
           onSave={async () => {
-            if (editingItem) await editDepartment(editingItem.id, newDept);
-            else await addDepartment(newDept);
-            setOpenDeptModal(false);
-            refreshData();
-            toast.success("Department permissions updated");
+            setIsSavingDept(true);
+            try {
+              if (editingItem) await editDepartment(editingItem.id, newDept);
+              else await addDepartment(newDept);
+              setOpenDeptModal(false);
+              refreshData();
+              toast.success("Department permissions updated");
+            } catch (err: any) {
+              toast.error(err.message || "Error saving department");
+            } finally {
+              setIsSavingDept(false);
+            }
           }}
         />
 
@@ -683,6 +735,7 @@ export default function SettingsPage() {
           user={newUser}
           setUser={setNewUser}
           onSave={saveUser}
+          isLoading={isSavingUser}
           departments={departments}
           roles={roles}
           editing={!!editingItem}
@@ -841,7 +894,7 @@ export default function SettingsPage() {
 }
 
 // Separate Permission Matrix Component for the Modal
-function DepartmentModal({ open, onClose, dept, setDept, onSave }) {
+function DepartmentModal({ open, onClose, dept, setDept, onSave, isLoading }) {
   const togglePage = (url) => {
     const current = dept.permissions || [];
     const updated = current.includes(url)
@@ -886,7 +939,10 @@ function DepartmentModal({ open, onClose, dept, setDept, onSave }) {
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={onSave}>Save Department Permissions</Button>
+          <Button onClick={onSave} disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Department Permissions
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

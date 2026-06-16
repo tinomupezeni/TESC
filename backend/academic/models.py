@@ -68,6 +68,7 @@ class Institution(models.Model):
     province = models.CharField(max_length=50, choices=PROVINCES, default='Harare')
     has_innovation_hub = models.BooleanField(default=False)
     name = models.CharField(max_length=255, unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
     type = models.CharField(max_length=50, choices=INSTITUTION_TYPES)
     location = models.CharField(max_length=100)
     address = models.TextField(blank=True)

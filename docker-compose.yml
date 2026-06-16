@@ -4,14 +4,17 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "8081:8081"
+      - "8082:8082"
+      - "8000:8000"
       - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       # - ./certs:/etc/nginx/certs
     depends_on:
       - backend
-      - frontend_client
-      - frontend_admin
+      - frontend_client_v2
+      - frontend_admin_v2
     networks:
       - main_net
 
@@ -45,29 +48,22 @@ services:
       - DB_HOST=db  # Crucial: Overrides 'localhost' so it finds the 'db' service
       - DB_PORT=5432
 
-    ports:
-      - "8000:8000"
-      
     depends_on:
       - db
     networks:
       - main_net
 
   # --- Frontend 1 (Student/Public) ---
-  frontend_client:
+  frontend_client_v2:
     image: tinotenda762/tesc-main:latest
     build: ./frontend 
-    ports:
-      - "8081:80"
     networks:
       - main_net
 
   # --- Frontend 2 (Institution/Admin) ---
-  frontend_admin:
+  frontend_admin_v2:
     image: tinotenda762/tesc-inst:latest
     build: ./inst
-    ports:
-      - "8082:80"
     networks:
       - main_net
 

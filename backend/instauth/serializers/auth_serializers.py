@@ -59,16 +59,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
     
     def get_institution(self, obj):
-        if obj.institution:
-             return {
-                "id": obj.institution.id,
-                "name": obj.institution.name,
-            }
-        try:
-            inst_admin = InstitutionAdmin.objects.get(user=obj)
-            return {
-                "id": inst_admin.institution.id,
-                "name": inst_admin.institution.name,
-            }
-        except InstitutionAdmin.DoesNotExist:
-            return None
+        inst = obj.institution
+        if not inst:
+            try:
+                inst_admin = InstitutionAdmin.objects.get(user=obj)
+                inst = inst_admin.institution
+            except InstitutionAdmin.DoesNotExist:
+                return None
+        
+        return {
+            "id": inst.id,
+            "name": inst.name,
+            "email": inst.email,
+            "type": inst.type,
+            "location": inst.location,
+            "address": inst.address,
+            "capacity": inst.capacity,
+            "established": inst.established,
+            "status": inst.status,
+            "province": inst.province,
+        }

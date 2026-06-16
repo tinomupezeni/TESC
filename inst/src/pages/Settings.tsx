@@ -21,6 +21,13 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Building2,
@@ -37,9 +44,45 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import apiClient from "@/services/api";
+import {
+    fetchRoles,
+    fetchDepartments,
+    fetchUsers,
+    addDepartment,
+    editDepartment,
+    addUser,
+    editUser,
+    deleteUser,
+    deleteDepartment,
+  } from "../services/settings.services";
+
+const INSTITUTION_TYPES = [
+    "Polytechnic",
+    "Teachers College",
+    "Industrial Training",
+    "Other",
+  ];
+  const INSTITUTION_STATUSES = [
+    "Active",
+    "Renovation",
+    "Closed",
+  ];
+  const INSTITUTION_LOCATION = [
+    "HARARE",
+    "BULAWAYO",
+    "MANICALAND",
+    "MASHONALAND CENTRAL",
+    "MASHONALAND EAST",
+    "MASHONALAND WEST",
+    "MASVINGO",
+    "MATABELELAND NORTH",
+    "MATABELELAND SOUTH",
+    "MIDLANDS",
+  ];
 
 const Settings = () => {
-  const { user: currentUser, updatePassword } = useAuth();
+  const { user: currentUser, updatePassword, refreshProfile } = useAuth();
   const isAdmin = currentUser?.level === "1";
 
   const [notifications, setNotifications] = useState({
@@ -51,6 +94,8 @@ const Settings = () => {
 
   const [createdCredentials, setCreatedCredentials] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // States for Security
   const [passwordData, setPasswordData] = useState({
@@ -63,6 +108,24 @@ const Settings = () => {
     new: false,
     confirm: false,
   });
+
+  // Institution Profile State
+  const [instData, setInstData] = useState({
+    name: currentUser?.institution?.name || "",
+    email: currentUser?.institution?.email || "",
+    type: currentUser?.institution?.type || "Polytechnic",
+    location: currentUser?.institution?.location || "HARARE",
+    address: currentUser?.institution?.address || "",
+    capacity: currentUser?.institution?.capacity || 5000,
+    established: currentUser?.institution?.established || new Date().getFullYear(),
+    status: currentUser?.institution?.status || "Active",
+    province: currentUser?.institution?.province || "Harare",
+  });
+
+  const [roles, setRoles] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   const [newDept, setNewDept] = useState({
     name: "",
@@ -80,6 +143,22 @@ const Settings = () => {
 
   const [openDeptModal, setOpenDeptModal] = useState(false);
   const [openUserModal, setOpenUserModal] = useState(false);
+
+  useEffect(() => {
+    if (currentUser?.institution) {
+      setInstData({
+        name: currentUser.institution.name || "",
+        email: currentUser.institution.email || "",
+        type: currentUser.institution.type || "Polytechnic",
+        location: currentUser.institution.location || "HARARE",
+        address: currentUser.institution.address || "",
+        capacity: currentUser.institution.capacity || 5000,
+        established: currentUser.institution.established || 2000,
+        status: currentUser.institution.status || "Active",
+        province: currentUser.institution.province || "Harare",
+      });
+    }
+  }, [currentUser]);
 
   const refreshData = useCallback(async () => {
     if (!isAdmin) return;
@@ -109,8 +188,18 @@ const Settings = () => {
     toast.success("Copied to clipboard");
   };
 
-  const handleSaveProfile = () => {
-    toast.success("Institution profile updated successfully");
+  const handleSaveProfile = async () => {
+    if (!currentUser?.institution?.id) return;
+    setIsSavingProfile(true);
+    try {
+      await apiClient.patch(`/academic/institutions/${currentUser.institution.id}/`, instData);
+      toast.success("Institution profile updated successfully");
+      await refreshProfile();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to update institution profile");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleSaveSecurity = async () => {
@@ -124,6 +213,7 @@ const Settings = () => {
         return toast.error("New password must be at least 8 characters");
       }
   
+      setIsChangingPassword(true);
       try {
         await updatePassword(passwordData.old, passwordData.new);
         toast.success("Password changed successfully");
@@ -131,6 +221,8 @@ const Settings = () => {
       } catch (err) {
         const errorMsg = typeof err === "string" ? err : "Failed to update password";
         toast.error(errorMsg);
+      } finally {
+        setIsChangingPassword(false);
       }
   };
 
@@ -213,7 +305,6 @@ const Settings = () => {
         </div>
 
         <TabsContent value="profile" className="space-y-4 px-1">
-          {/* ... Existing profile content ... */}
           <Card className="border-none sm:border">
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-lg sm:text-xl">Institution Information</CardTitle>
@@ -227,18 +318,28 @@ const Settings = () => {
                   <Label htmlFor="institution-name" className="text-xs sm:text-sm">Institution Name</Label>
                   <Input
                     id="institution-name"
-                    defaultValue={currentUser?.institution?.name || "Mutare Polytechnic"}
+                    value={instData.name}
+                    onChange={(e) => setInstData({...instData, name: e.target.value})}
                     className="h-9 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="institution-type" className="text-xs sm:text-sm">Type</Label>
-                  <Input
-                    id="institution-type"
-                    defaultValue={currentUser?.institution?.type || "Polytechnic"}
-                    disabled
-                    className="h-9 sm:h-10 text-xs sm:text-sm bg-muted"
-                  />
+                  <Select
+                    value={instData.type}
+                    onValueChange={(value) => setInstData({...instData, type: value})}
+                  >
+                    <SelectTrigger id="institution-type">
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INSTITUTION_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -247,19 +348,71 @@ const Settings = () => {
                 <Input
                   id="email"
                   type="email"
-                  defaultValue={currentUser?.institution?.email || "admin@institution.ac.zw"}
+                  value={instData.email}
+                  onChange={(e) => setInstData({...instData, email: e.target.value})}
                   className="h-9 sm:h-10 text-xs sm:text-sm"
                 />
               </div>
 
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-xs sm:text-sm">Phone Number</Label>
-                  <Input id="phone" defaultValue="+263 20 123 4567" className="h-9 sm:h-10 text-xs sm:text-sm" />
+                    <Label htmlFor="location" className="text-xs sm:text-sm">Province (Location)</Label>
+                    <Select
+                        value={instData.location}
+                        onValueChange={(value) => setInstData({...instData, location: value})}
+                    >
+                        <SelectTrigger id="location">
+                            <SelectValue placeholder="Select province" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {INSTITUTION_LOCATION.map((province) => (
+                                <SelectItem key={province} value={province}>
+                                    {province}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="province" className="text-xs sm:text-sm">Province</Label>
-                  <Input id="province" defaultValue="Manicaland" disabled className="h-9 sm:h-10 text-xs sm:text-sm bg-muted" />
+                  <Label htmlFor="established" className="text-xs sm:text-sm">Established Year</Label>
+                  <Input 
+                    id="established" 
+                    type="number"
+                    value={instData.established} 
+                    onChange={(e) => setInstData({...instData, established: parseInt(e.target.value) || 2000})}
+                    className="h-9 sm:h-10 text-xs sm:text-sm" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="capacity" className="text-xs sm:text-sm">Full Capacity</Label>
+                  <Input 
+                    id="capacity" 
+                    type="number"
+                    value={instData.capacity} 
+                    onChange={(e) => setInstData({...instData, capacity: parseInt(e.target.value) || 0})}
+                    className="h-9 sm:h-10 text-xs sm:text-sm" 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="status" className="text-xs sm:text-sm">Status</Label>
+                  <Select
+                    value={instData.status}
+                    onValueChange={(value) => setInstData({...instData, status: value})}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INSTITUTION_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -267,13 +420,17 @@ const Settings = () => {
                 <Label htmlFor="address" className="text-xs sm:text-sm">Physical Address</Label>
                 <Textarea
                   id="address"
-                  defaultValue="123 Education Drive, Mutare, Zimbabwe"
+                  value={instData.address}
+                  onChange={(e) => setInstData({...instData, address: e.target.value})}
                   rows={3}
                   className="text-xs sm:text-sm"
                 />
               </div>
 
-              <Button onClick={handleSaveProfile} className="w-full sm:w-auto h-9 sm:h-10">Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="w-full sm:w-auto h-9 sm:h-10">
+                {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -344,13 +501,15 @@ const Settings = () => {
                 </Button>
               </div>
 
-              <Button onClick={handleSaveSecurity} className="w-full sm:w-auto h-9 sm:h-10">Update Password</Button>
+              <Button onClick={handleSaveSecurity} disabled={isChangingPassword} className="w-full sm:w-auto h-9 sm:h-10">
+                {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Password
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-4 px-1">
-           {/* ... Existing notifications content ... */}
            <Card className="border-none sm:border">
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-lg sm:text-xl">Notification Preferences</CardTitle>

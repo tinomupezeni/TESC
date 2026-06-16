@@ -23,8 +23,14 @@ import {
   Edit,
   Save,
   X,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useAuth, updatePassword } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // Updated type definition for the ScalarEye profile
 type ProfileData = {
@@ -36,12 +42,31 @@ type ProfileData = {
 };
 
 const Profile = () => {
+  const { user: authUser, updateUser } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [formData, setFormData] = useState<Partial<ProfileData>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Password Change States
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    old: false,
+    new: false,
+    confirm: false,
+  });
+  const [passwordData, setPasswordData] = useState({
+    old: "",
+    new: "",
+    confirm: "",
+  });
+
+  const toggleVisibility = (field: "old" | "new" | "confirm") => {
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
 
   const initials = profile
     ? `${profile.first_name[0] || ""}${profile.last_name[0] || ""}`
@@ -69,23 +94,52 @@ const Profile = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSaving(true);
     setError(null);
     setSuccess(null);
     try {
-      const response = await apiClient.put("/users/profile/", formData); // Correct URL
+      const response = await apiClient.patch("/users/profile/", formData); // Use PATCH for partial updates
       setProfile(response.data);
       setFormData(response.data);
+      updateUser(response.data); // Update AuthContext
       setIsEditing(false);
       setSuccess("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (err: any) {
       const errorData = err.response?.data;
       const messages = errorData
-        ? Object.values(errorData).flat().join(" ")
+        ? typeof errorData === "string" 
+          ? errorData 
+          : Object.values(errorData).flat().join(" ")
         : "Failed to update profile.";
       setError(messages);
+      toast.error(messages);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordData.old || !passwordData.new) {
+      return toast.error("Please fill in both current and new passwords");
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      return toast.error("New passwords do not match");
+    }
+    if (passwordData.new.length < 8) {
+      return toast.error("New password must be at least 8 characters");
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await updatePassword(passwordData.old, passwordData.new);
+      toast.success("Password changed successfully");
+      setPasswordData({ old: "", new: "", confirm: "" });
+    } catch (err: any) {
+      const errorMsg = typeof err === "string" ? err : err.error || "Failed to update password";
+      toast.error(errorMsg);
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -96,12 +150,19 @@ const Profile = () => {
   };
 
   if (isLoading && !profile) {
-    return <div className="p-8">Loading ScalarEye Profile...</div>;
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading ScalarEye Profile...</span>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
     <DashboardLayout>
-      <div className="mx-auto p-4 md:p-8 bg-gray-50 dark:bg-transparent min-h-screen">
+      <div className="mx-auto p-4 md:p-8 bg-gray-50 dark:bg-transparent min-h-screen space-y-8">
         <Card className="max-w-3xl mx-auto shadow-lg">
           <CardHeader className="bg-gray-100 dark:bg-muted/50 p-4 sm:p-6 rounded-t-lg">
             <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
@@ -202,13 +263,14 @@ const Profile = () => {
                       variant="outline"
                       className="w-full sm:w-auto h-10"
                       onClick={handleCancel}
+                      disabled={isSaving}
                     >
                       <X className="mr-2 h-4 w-4" />
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={isLoading} className="w-full sm:w-auto h-10">
-                      <Save className="mr-2 h-4 w-4" />
-                      {isLoading ? "Saving..." : "Save Changes"}
+                    <Button type="submit" disabled={isSaving} className="w-full sm:w-auto h-10">
+                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                      {isSaving ? "Saving..." : "Save Changes"}
                     </Button>
                   </>
                 ) : (
@@ -220,6 +282,110 @@ const Profile = () => {
               </CardFooter>
             </form>
           </CardContent>
+        </Card>
+
+        {/* Change Password Card */}
+        <Card className="max-w-3xl mx-auto shadow-lg">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Lock className="h-4 w-4" /> Change Password
+            </CardTitle>
+            <CardDescription>
+              Ensure your account is using a long, random password to stay secure.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Current Password */}
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    className="h-9 sm:h-10 pr-10"
+                    type={showPasswords.old ? "text" : "password"}
+                    placeholder="Enter current password"
+                    value={passwordData.old}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        old: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibility("old")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary"
+                  >
+                    {showPasswords.old ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="hidden md:block"></div>
+
+              {/* New Password */}
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">New Password</Label>
+                <div className="relative">
+                  <Input
+                    className="h-9 sm:h-10 pr-10"
+                    type={showPasswords.new ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={passwordData.new}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        new: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibility("new")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary"
+                  >
+                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">Confirm New Password</Label>
+                <div className="relative">
+                  <Input
+                    className="h-9 sm:h-10 pr-10"
+                    type={showPasswords.confirm ? "text" : "password"}
+                    placeholder="Confirm new password"
+                    value={passwordData.confirm}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        confirm: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibility("confirm")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary"
+                  >
+                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end p-4 sm:p-6 pt-0">
+            <Button
+              className="w-full sm:w-auto h-10"
+              onClick={handleChangePassword}
+              disabled={isChangingPassword}
+            >
+              {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update Password
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </DashboardLayout>

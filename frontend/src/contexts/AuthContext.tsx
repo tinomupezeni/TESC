@@ -38,6 +38,7 @@ interface AuthContextType {
   loading: boolean; // 🚨 Added loading state
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<UserInfo>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,6 +85,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate("/");
   };
 
+  // Function to update user in state
+  const updateUser = (userData: Partial<UserInfo>) => {
+    setUser((prev) => (prev ? { ...prev, ...userData } : null));
+  };
+
   useEffect(() => {
     const fetchUserOnLoad = async () => {
       if (accessToken) {
@@ -114,6 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loading, // 🚨 Added loading to context value
     login,
     logout,
+    updateUser,
   };
 
   return (
