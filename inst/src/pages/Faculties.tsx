@@ -16,7 +16,8 @@ import {
   Briefcase,
   MapPin,
   Mail,
-  Loader2, // Added loader icon
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import {
   Dialog,
@@ -26,17 +27,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 // Components & Services
 import { AddFacultyDialog } from "@/components/AddFacultyDialog";
-import { ManageDepartmentsDialog } from "@/components/ManageDepartmentsDialog"; // Import new dialog
-import { getFaculties, Faculty } from "@/services/faculties.services"; // Updated import path
+import { ManageDepartmentsDialog } from "@/components/ManageDepartmentsDialog";
+import { getFaculties, Faculty, deleteFaculty } from "@/services/faculties.services";
 import { useAuth } from "@/context/AuthContext";
 
 const Faculties = () => {
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const { user } = useAuth();
 
   const fetchFaculties = async () => {
@@ -62,7 +76,20 @@ const Faculties = () => {
 
   useEffect(() => {
     fetchFaculties();
-  }, [user]); // Add user dependency
+  }, [user]);
+
+  const handleDelete = async (id: number) => {
+    try {
+      setDeletingId(id);
+      await deleteFaculty(id);
+      toast.success("Faculty deleted successfully");
+      setFaculties((prev) => prev.filter((f) => f.id !== id));
+    } catch (error) {
+      toast.error("Failed to delete faculty. It may have linked departments or staff.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredFaculties = faculties.filter((faculty) => {
     const query = searchQuery.toLowerCase();
@@ -114,15 +141,44 @@ const Faculties = () => {
            <p className="text-sm sm:text-base">No faculties found matching your search.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"> {/* Responsive grid */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredFaculties.map((faculty) => (
             <Card
                 key={faculty.id}
-                className="hover:shadow-lg transition-all duration-200 group flex flex-col h-full mx-1 border-none sm:border"
+                className="hover:shadow-lg transition-all duration-200 group flex flex-col h-full mx-1 border-none sm:border relative"
             >
+                {/* Delete Button - Absolute Positioned Top Right */}
+                <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon" className="h-8 w-8 shadow-sm">
+                        {deletingId === faculty.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-white" />}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="w-[95vw] sm:w-full">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs sm:text-sm">
+                          This will permanently delete the <strong>{faculty.name}</strong> faculty. 
+                          This action cannot be undone and may fail if there are linked departments or records.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="text-xs sm:text-sm h-9 sm:h-10">Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDelete(faculty.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm h-9 sm:h-10"
+                        >
+                          Delete Faculty
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
                 <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 mr-8">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                         <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
                         <Badge variant="outline" className="text-[10px] sm:text-xs">
