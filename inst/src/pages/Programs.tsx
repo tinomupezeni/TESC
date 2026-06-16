@@ -150,8 +150,8 @@ const Programs = () => {
                 <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                        {deletingId === program.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      <Button variant="destructive" size="icon" className="h-8 w-8 shadow-sm">
+                        {deletingId === program.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-white" />}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="w-[95vw] sm:w-full">

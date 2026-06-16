@@ -20,6 +20,11 @@ interface DepartmentInfo {
   name: string;
 }
 
+interface InstitutionInfo {
+  id: number;
+  name: string;
+}
+
 interface UserInfo {
   id: number;
   email: string;
@@ -27,6 +32,7 @@ interface UserInfo {
   last_name: string;
   level: string;
   must_change_password: boolean;
+  institution: InstitutionInfo | null;
   role: RoleInfo | null;
   department: DepartmentInfo | null;
 }
@@ -63,6 +69,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const { access, refresh, user: fetchedUser } = response.data;
+
+    // 🚨 Block Institution Users from Main Dashboard
+    if (fetchedUser.institution) {
+      throw new Error("Institution accounts are not authorized to access the main dashboard. Please use the Institution Portal.");
+    }
 
     // Store tokens
     localStorage.setItem("accessToken", access);
