@@ -21,13 +21,21 @@ interface GroupBySelectorProps {
   fields: ReportField[];
   value: string | null;
   onChange: (value: string | null) => void;
+  institutionId?: number | null;
 }
 
 export function GroupBySelector({
   fields,
   value,
   onChange,
+  institutionId,
 }: GroupBySelectorProps) {
+
+  // Filter out institution_name if this is the institutional portal
+  const filteredFields = institutionId 
+    ? fields.filter(f => f.key !== 'institution_name')
+    : fields;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -51,7 +59,7 @@ export function GroupBySelector({
             </Label>
           </div>
 
-          {fields.map((field) => (
+          {filteredFields.map((field) => (
             <div key={field.key} className="flex items-center space-x-2 py-2">
               <RadioGroupItem value={field.key} id={`group-${field.key}`} />
               <Label

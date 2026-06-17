@@ -16,6 +16,7 @@ interface ColumnSelectorProps {
   selectedColumns: string[];
   defaultColumns: string[];
   onChange: (columns: string[]) => void;
+  institutionId?: number | null;
 }
 
 export function ColumnSelector({
@@ -23,7 +24,14 @@ export function ColumnSelector({
   selectedColumns,
   defaultColumns,
   onChange,
+  institutionId,
 }: ColumnSelectorProps) {
+  
+  // Filter out institution_name if this is the institutional portal
+  const filteredFields = institutionId 
+    ? fields.filter(f => f.key !== 'institution_name')
+    : fields;
+
   const toggleColumn = (key: string) => {
     if (selectedColumns.includes(key)) {
       // Don't allow deselecting all columns
@@ -36,16 +44,19 @@ export function ColumnSelector({
   };
 
   const selectAll = () => {
-    onChange(fields.map((f) => f.key));
+    onChange(filteredFields.map((f) => f.key));
   };
 
   const selectDefault = () => {
-    onChange(defaultColumns);
+    const validDefaults = defaultColumns.filter(
+      col => filteredFields.some(f => f.key === col)
+    );
+    onChange(validDefaults);
   };
 
   const selectNone = () => {
     // Keep at least the first column
-    onChange([fields[0]?.key].filter(Boolean));
+    onChange([filteredFields[0]?.key].filter(Boolean));
   };
 
   return (
@@ -69,7 +80,7 @@ export function ColumnSelector({
 
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-3">
-          {fields.map((field) => {
+          {filteredFields.map((field) => {
             const isSelected = selectedColumns.includes(field.key);
             const isDefault = defaultColumns.includes(field.key);
 

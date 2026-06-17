@@ -511,14 +511,6 @@ const Staff = () => {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-muted-foreground">
-                        Institution:
-                      </span>
-                      <p className="font-medium">
-                        {selectedStaff.institution_name}
-                      </p>
-                    </div>
-                    <div>
                       <span className="text-muted-foreground">Faculty:</span>
                       <p className="font-medium">
                         {selectedStaff.faculty_name || "N/A"}

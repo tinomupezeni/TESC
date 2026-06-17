@@ -110,7 +110,13 @@ export function ReportBuilder({
     try {
       const data = await getReportSchema(reportType);
       setSchema(data);
-      setSelectedColumns(data.default_columns);
+      
+      // Auto-filter default columns if it's the institutional portal
+      const defaults = institutionId 
+        ? data.default_columns.filter((c: string) => c !== 'institution_name')
+        : data.default_columns;
+        
+      setSelectedColumns(defaults);
       setTitle(data.title);
     } catch (err) {
       setSchemaError('Failed to load report schema');
@@ -250,6 +256,7 @@ export function ReportBuilder({
                     selectedColumns={selectedColumns}
                     defaultColumns={schema.default_columns}
                     onChange={setSelectedColumns}
+                    institutionId={institutionId}
                   />
                 </TabsContent>
 
@@ -259,6 +266,7 @@ export function ReportBuilder({
                       fields={schema.groupable_fields}
                       value={groupBy}
                       onChange={setGroupBy}
+                      institutionId={institutionId}
                     />
                     <FormatSelector
                       format={format}
