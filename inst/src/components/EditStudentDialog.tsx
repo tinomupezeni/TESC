@@ -37,7 +37,6 @@ import {
 const STUDENT_STATUS_CHOICES = [
   { value: "Active", label: "Active" },
   { value: "Attachment", label: "On Attachment" },
-  { value: "Graduated", label: "Graduated" },
   { value: "Suspended", label: "Suspended" },
   { value: "Deferred", label: "Deferred" },
   { value: "Dropout", label: "Dropout" },
@@ -762,43 +761,6 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 </div>
             )}
             {/* ----------------------------------------------- */}
-
-            {/* Conditional Fields: GRADUATED */}
-            {formData.status === "Graduated" && (
-              <div className="grid grid-cols-2 gap-4 p-3 border border-green-500/50 rounded-md bg-green-500/10">
-                <div className="space-y-2">
-                  <Label htmlFor="graduation_year">Graduation Year</Label>
-                  <Input
-                    id="graduation_year"
-                    type="number"
-                    value={formData.graduation_year || ""}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="final_grade">Final Grade</Label>
-                  <Select
-                    onValueChange={(val) =>
-                      handleSelectChange("final_grade", val)
-                    }
-                    value={formData.final_grade || ""}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select final grade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FINAL_GRADE_CHOICES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
 
             {/* Conditional Fields: DROPOUT */}
             {formData.status === "Dropout" && (
