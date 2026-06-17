@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // FIXED: Added missing import
 import { StudentView } from "@/components/student view";
 import {
   Select,
@@ -213,20 +214,12 @@ export default function Students() {
 
   if (isLoading && specialLoading) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-        <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white shadow-2xl border animate-in zoom-in-95 duration-300">
-          <div className="relative">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Users className="h-5 w-5 text-primary/50" />
-            </div>
-          </div>
-          <div className="space-y-1 text-center">
-            <h3 className="font-bold text-lg">Synchronizing Student Records</h3>
-            <p className="text-sm text-muted-foreground animate-pulse">Fetching live data from central registry...</p>
-          </div>
+      <DashboardLayout>
+        <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
+          <p className="text-sm text-muted-foreground font-medium">Loading Student Records...</p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
