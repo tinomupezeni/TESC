@@ -22,13 +22,21 @@ class InstitutionalIsolationMixin:
         if user.is_authenticated and user.is_superuser:
             return queryset
 
-        # 2. Block access if user is not authenticated or has no institution
-        if not user.is_authenticated or not hasattr(user, 'institution') or not user.institution:
-            # If it's a list action and unauthenticated, some views might allow it (e.g. login dropdowns)
-            # But generally, we want to return nothing for sensitive data.
+        # 2. Block access if user is not authenticated
+        if not user.is_authenticated:
             return queryset.none()
 
-        # 3. Apply the institutional filter
-        # We use the institution object from the authenticated user
-        filter_kwargs = {self.institution_lookup_path: user.institution}
+        # 3. Identify the Institution Context
+        user_inst = getattr(user, 'institution', None)
+
+        # If no direct institution, check via InstitutionAdmin relationship
+        if not user_inst and hasattr(user, "inst_admin"):
+            user_inst = user.inst_admin.institution
+
+        # 4. Security Guardrail
+        if not user_inst:
+            return queryset.none()
+
+        # 5. Apply the institutional filter
+        filter_kwargs = {self.institution_lookup_path: user_inst}
         return queryset.filter(**filter_kwargs)
