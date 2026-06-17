@@ -138,14 +138,14 @@ class DynamicReportService:
             'students': {
                 'institution_name': 'institution_id',
                 'program_name': 'program_id',
-                'program_level': 'program__level',
-                'program_category': 'program__category',
+                'program_level': 'selected_level',
+                'program_category': 'selected_category',
             },
             'graduates': {
                 'institution_name': 'institution_id',
                 'program_name': 'program_id',
-                'program_level': 'program__level',
-                'program_category': 'program__category',
+                'program_level': 'selected_level',
+                'program_category': 'selected_category',
             }
         }
         return mapping.get(report_type, {}).get(key, key)
@@ -179,8 +179,8 @@ class DynamicReportService:
                 'enrollment_year': 'enrollment_year',
                 'institution_name': 'institution__name',
                 'program_name': 'program__name',
-                'program_level': 'program__level',
-                'program_category': 'program__category',
+                'program_level': 'selected_level',
+                'program_category': 'selected_category',
                 'disability_type': 'disability_type',
                 'is_iseop': 'is_iseop',
                 'is_work_for_fees': 'is_work_for_fees',
@@ -193,8 +193,8 @@ class DynamicReportService:
                 'final_grade': 'final_grade',
                 'institution_name': 'institution__name',
                 'program_name': 'program__name',
-                'program_level': 'program__level',
-                'program_category': 'program__category',
+                'program_level': 'selected_level',
+                'program_category': 'selected_category',
                 'disability_type': 'disability_type',
                 'is_iseop': 'is_iseop',
             }
@@ -240,8 +240,8 @@ class DynamicReportService:
             'faculty_name': lambda o: o.faculty.name if hasattr(o, 'faculty') and o.faculty else '',
             'department_name': lambda o: o.department.name if hasattr(o, 'department') and o.department else '',
             'program_name': lambda o: o.program.name if hasattr(o, 'program') and o.program else '',
-            'program_level': lambda o: o.program.level if hasattr(o, 'program') and o.program else '',
-            'program_category': lambda o: o.program.category if hasattr(o, 'program') and o.program else '',
+            'program_level': lambda o: getattr(o, 'selected_level', ''),
+            'program_category': lambda o: getattr(o, 'selected_category', ''),
         }
 
         if key in relation_map:
@@ -273,6 +273,7 @@ class DynamicReportService:
             Dictionary containing:
                 - data: List of records or aggregated data
                 - total: Total record count
+                - metrics: Dictionary of summary metrics (male/female/etc)
                 - columns: Column definitions for selected columns
                 - is_aggregated: Whether data is aggregated
                 - group_by: Group by field (if aggregated)
@@ -297,6 +298,26 @@ class DynamicReportService:
 
         total = queryset.count()
 
+        # --- NEW: Calculate Summary Metrics ---
+        metrics = {
+            'total': total,
+            'male_count': 0,
+            'female_count': 0,
+            'other_count': 0,
+            'male_pct': 0,
+            'female_pct': 0,
+        }
+
+        if report_type in ['students', 'graduates']:
+            # Use filters from build_queryset to keep metrics accurate to the report scope
+            metrics['male_count'] = queryset.filter(gender='Male').count()
+            metrics['female_count'] = queryset.filter(gender='Female').count()
+            metrics['other_count'] = total - (metrics['male_count'] + metrics['female_count'])
+            
+            if total > 0:
+                metrics['male_pct'] = round((metrics['male_count'] / total) * 100, 1)
+                metrics['female_pct'] = round((metrics['female_count'] / total) * 100, 1)
+
         # Handle aggregated reports
         if group_by:
             aggregated = DynamicReportService.apply_aggregation(
@@ -308,27 +329,19 @@ class DynamicReportService:
             field_def = get_field_by_key(report_type, group_by)
             group_label = field_def['label'] if field_def else group_by
 
-            # Get the actual DB field name
-            group_field_map = {
-                'staff': {
+            # Map for human readable display
+            actual_field = group_by
+            if report_type == 'staff':
+                actual_field = {
                     'institution_name': 'institution__name',
                     'faculty_name': 'faculty__name',
                     'department_name': 'department__name',
-                },
-                'students': {
+                }.get(group_by, group_by)
+            elif report_type in ['students', 'graduates']:
+                 actual_field = {
                     'institution_name': 'institution__name',
                     'program_name': 'program__name',
-                    'program_level': 'program__level',
-                    'program_category': 'program__category',
-                },
-                'graduates': {
-                    'institution_name': 'institution__name',
-                    'program_name': 'program__name',
-                    'program_level': 'program__level',
-                    'program_category': 'program__category',
-                }
-            }
-            actual_field = group_field_map.get(report_type, {}).get(group_by, group_by)
+                }.get(group_by, group_by)
 
             data = []
             for item in aggregated:
@@ -347,6 +360,7 @@ class DynamicReportService:
             return {
                 'data': data,
                 'total': total,
+                'metrics': metrics,
                 'is_aggregated': True,
                 'group_by': group_by,
                 'group_label': group_label,
@@ -375,6 +389,7 @@ class DynamicReportService:
         return {
             'data': data,
             'total': total,
+            'metrics': metrics,
             'is_aggregated': False,
             'group_by': None,
             'columns': column_defs

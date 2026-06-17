@@ -100,6 +100,14 @@ export interface ReportColumn {
 export interface ReportDataResponse {
   data: Record<string, unknown>[];
   total: number;
+  metrics?: {
+    total: number;
+    male_count: number;
+    female_count: number;
+    other_count: number;
+    male_pct: number;
+    female_pct: number;
+  };
   columns: ReportColumn[];
   is_aggregated: boolean;
   group_by: string | null;

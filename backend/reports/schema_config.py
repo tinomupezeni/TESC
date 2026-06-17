@@ -33,7 +33,11 @@ STAFF_POSITIONS = ['Professor', 'Lecturer', 'Assistant', 'Admin', 'Other']
 STAFF_QUALIFICATIONS = ['PhD', 'Masters', 'Bachelors', 'Diploma', 'Certificate', 'Other']
 
 # Program levels
-PROGRAM_LEVELS = ['Certificate', 'Diploma', 'Bachelors', 'Masters', 'PhD', 'Other']
+PROGRAM_LEVELS = [
+    'Class 4', 'Class 3', 'Class 2', 'Class 1',
+    'National Certificate', 'National Foundation Certificate',
+    'Certificate', 'Diploma', 'Bachelors', 'Masters', 'PhD', 'Other'
+]
 
 # Program categories
 PROGRAM_CATEGORIES = ['STEM', 'HEALTH', 'BUSINESS', 'SOCIAL', 'HUMANITIES', 'EDUCATION', 'LAW', 'VOCATIONAL', 'INTERDISCIPLINARY']

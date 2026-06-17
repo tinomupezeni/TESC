@@ -371,10 +371,14 @@ class ProfessionalPDFGenerator:
         table.setStyle(TableStyle(style_commands))
         return table
 
-    def _create_summary_stats(self, total: int, group_label: str = None) -> list:
-        """Create summary statistics section."""
+    def _create_summary_stats(self, report_data: dict) -> list:
+        """Create summary statistics section with metrics."""
         elements = []
+        total = report_data.get('total', 0)
+        group_label = report_data.get('group_label')
+        metrics = report_data.get('metrics', {})
 
+        # --- Row 1: Basic Totals ---
         stats_data = [[
             Paragraph("Total Records", self.styles['StatLabel']),
             Paragraph(f"{total:,}", self.styles['StatValue'])
@@ -392,10 +396,44 @@ class ProfessionalPDFGenerator:
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('LEFTPADDING', (0, 0), (-1, -1), 10),
         ]))
-
         elements.append(stats_table)
-        elements.append(Spacer(1, 20))
 
+        # --- Row 2: Metrics (Gender Breakdown & Ratios) ---
+        if metrics and (metrics.get('male_count') or metrics.get('female_count')):
+            elements.append(Spacer(1, 10))
+            
+            # Label Row
+            elements.append(Paragraph("Gender Distribution", ParagraphStyle(
+                'MetricHeading', parent=self.styles['Normal'], fontSize=9, fontName='Helvetica-Bold', textColor=SCALAREYE_BLUE
+            )))
+            elements.append(Spacer(1, 5))
+
+            metric_data = [
+                [
+                    Paragraph("Male Students", self.styles['StatLabel']),
+                    Paragraph(f"{metrics.get('male_count', 0):,}", self.styles['StatValue']),
+                    Paragraph("Ratio", self.styles['StatLabel']),
+                    Paragraph(f"{metrics.get('male_pct', 0)}%", self.styles['StatValue']),
+                ],
+                [
+                    Paragraph("Female Students", self.styles['StatLabel']),
+                    Paragraph(f"{metrics.get('female_count', 0):,}", self.styles['StatValue']),
+                    Paragraph("Ratio", self.styles['StatLabel']),
+                    Paragraph(f"{metrics.get('female_pct', 0)}%", self.styles['StatValue']),
+                ]
+            ]
+
+            metric_table = Table(metric_data, colWidths=[100, 80, 100, 80])
+            metric_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 0.2, colors.lightgrey),
+                ('BACKGROUND', (0, 0), (-1, -1), ROW_ALT),
+            ]))
+            elements.append(metric_table)
+
+        elements.append(Spacer(1, 20))
         return elements
 
     def generate(self, report_data: dict) -> BytesIO:
@@ -410,6 +448,7 @@ class ProfessionalPDFGenerator:
                 - is_aggregated: Whether data is aggregated
                 - group_by: Group by field (if aggregated)
                 - group_label: Human-readable group label
+                - metrics: Summary metrics (optional)
 
         Returns:
             BytesIO buffer containing the PDF
@@ -441,11 +480,8 @@ class ProfessionalPDFGenerator:
             group_by=report_data.get('group_label')
         ))
 
-        # Summary stats
-        elements.extend(self._create_summary_stats(
-            total=report_data.get('total', 0),
-            group_label=report_data.get('group_label')
-        ))
+        # Summary stats & Metrics
+        elements.extend(self._create_summary_stats(report_data))
 
         # Data table
         data_table = self._create_data_table(

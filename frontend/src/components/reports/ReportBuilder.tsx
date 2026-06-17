@@ -294,18 +294,55 @@ export function ReportBuilder({
                     </div>
 
                     {previewData ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-4 text-sm">
-                          <Badge variant="outline">
-                            Total: {previewData.total.toLocaleString()}
-                          </Badge>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                          <Card className="bg-muted/30">
+                            <CardContent className="p-3">
+                              <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Records</p>
+                              <p className="text-xl font-bold">{previewData.total.toLocaleString()}</p>
+                            </CardContent>
+                          </Card>
+                          
+                          {previewData.metrics && (
+                            <>
+                              <Card className="bg-blue-50/50 dark:bg-blue-900/10">
+                                <CardContent className="p-3">
+                                  <div className="flex justify-between items-start">
+                                    <p className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400">Male</p>
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">{previewData.metrics.male_pct}%</Badge>
+                                  </div>
+                                  <p className="text-xl font-bold">{previewData.metrics.male_count.toLocaleString()}</p>
+                                </CardContent>
+                              </Card>
+                              
+                              <Card className="bg-pink-50/50 dark:bg-pink-900/10">
+                                <CardContent className="p-3">
+                                  <div className="flex justify-between items-start">
+                                    <p className="text-[10px] uppercase font-bold text-pink-600 dark:text-pink-400">Female</p>
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">{previewData.metrics.female_pct}%</Badge>
+                                  </div>
+                                  <p className="text-xl font-bold">{previewData.metrics.female_count.toLocaleString()}</p>
+                                </CardContent>
+                              </Card>
+
+                              <Card className="bg-muted/30">
+                                <CardContent className="p-3">
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Other / Not Spec.</p>
+                                  <p className="text-xl font-bold">{previewData.metrics.other_count.toLocaleString()}</p>
+                                </CardContent>
+                              </Card>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 text-sm px-1">
                           {previewData.showing && (
-                            <span className="text-muted-foreground">
-                              Showing {previewData.showing} of {previewData.total}
+                            <span className="text-xs text-muted-foreground italic">
+                              * Preview showing first {previewData.showing} of {previewData.total} total records
                             </span>
                           )}
                           {previewData.is_aggregated && (
-                            <Badge>Grouped by {previewData.group_label}</Badge>
+                            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">Grouped by {previewData.group_label}</Badge>
                           )}
                         </div>
 
