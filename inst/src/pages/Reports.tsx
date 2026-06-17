@@ -10,6 +10,7 @@ import {
   Activity
 } from "lucide-react";
 import { ReportBuilder } from "@/components/reports";
+import { useAuth } from "@/context/AuthContext";
 
 const reportCategories = [
   {
@@ -29,6 +30,7 @@ const reportCategories = [
 ];
 
 const Reports = () => {
+  const { user } = useAuth();
   const [selectedReportType, setSelectedReportType] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
@@ -85,6 +87,7 @@ const Reports = () => {
           open={isBuilderOpen}
           onOpenChange={setIsBuilderOpen}
           reportType={selectedReportType as any}
+          institutionId={user?.institution?.id}
         />
       )}
     </div>

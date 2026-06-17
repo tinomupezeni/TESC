@@ -275,7 +275,7 @@ class DynamicReportService:
                 - filters: Dictionary of filters
                 - columns: List of columns to include
                 - group_by: Optional field to group by
-                - institution_id: Optional institution filter
+                - user: The authenticated user to enforce institutional isolation
 
         Returns:
             Dictionary containing:
@@ -290,7 +290,7 @@ class DynamicReportService:
         filters = config.get('filters', {})
         columns = config.get('columns', [])
         group_by = config.get('group_by')
-        institution_id = config.get('institution_id')
+        user = config.get('user')
 
         # Get schema and default columns if none specified
         schema = get_schema(report_type)
@@ -301,7 +301,7 @@ class DynamicReportService:
         queryset = DynamicReportService.build_queryset(
             report_type=report_type,
             filters=filters,
-            institution_id=institution_id
+            user=user
         )
 
         total = queryset.count()

@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from django.db.models import Count, OuterRef, Subquery, IntegerField, Value
 from django.db.models.functions import Coalesce
+from core.mixins import InstitutionalIsolationMixin
 from ..models import Institution, Facility, Student
 from faculties.models import Program, Department as FacultyDepartment
 from ..serializers.academic_serializers import (

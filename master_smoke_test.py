@@ -13,7 +13,8 @@ smoke_tests = [
     "smoke_test_auth_block.py",
     "smoke_test_faculty_delete.py",
     "smoke_test_program_options.py",
-    "smoke_test_inst_crud.py"
+    "smoke_test_inst_crud.py",
+    "smoke_test_report_isolation.py"
 ]
 
 def run_test(script_path):

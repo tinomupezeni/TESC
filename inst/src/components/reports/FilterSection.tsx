@@ -278,14 +278,16 @@ export function FilterSection({
 
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-4">
-          {fields.map((field) => (
-            <div key={field.key} className="space-y-2">
-              <Label className="text-sm text-muted-foreground">
-                {field.label}
-              </Label>
-              {renderFilter(field)}
-            </div>
-          ))}
+          {fields
+            .filter((field) => !(field.key === 'institution_name' && institutionId))
+            .map((field) => (
+              <div key={field.key} className="space-y-2">
+                <Label className="text-sm text-muted-foreground">
+                  {field.label}
+                </Label>
+                {renderFilter(field)}
+              </div>
+            ))}
         </div>
       </ScrollArea>
 
