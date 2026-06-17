@@ -9,6 +9,7 @@ from .app_views.admin_views import (
 from .app_views.student_views import StudentViewSet
 from .app_views.facility_views import FacilityViewSet
 from .app_views.payments_views import PaymentViewSet
+from .app_views.graduate_views import GraduateViewSet
 
 router = DefaultRouter()
 router.register(r'students', StudentViewSet, basename='student')
@@ -16,6 +17,7 @@ router.register(r'institutions', views.InstitutionViewSet, basename='institution
 router.register(r'programs', views.ProgramViewSet, basename='program')
 router.register(r'facilities', FacilityViewSet, basename='facility')
 router.register(r'payments', PaymentViewSet, basename='payment')
+router.register(r'graduates-mgmt', GraduateViewSet, basename='graduate-mgmt')
 
 
 urlpatterns = [
