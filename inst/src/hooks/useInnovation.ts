@@ -14,10 +14,12 @@ export const useInnovationData = (institutionId: number | undefined) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isSilentRefresh = false) => {
     if (!institutionId) return;
 
-    setLoading(true);
+    if (!isSilentRefresh) {
+      setLoading(true);
+    }
     setError(null);
     try {
       // Fetch all data in parallel for speed
@@ -37,7 +39,9 @@ export const useInnovationData = (institutionId: number | undefined) => {
       setError("Failed to load dashboard data");
       toast.error("Could not load innovation data.");
     } finally {
-      setLoading(false);
+      if (!isSilentRefresh) {
+        setLoading(false);
+      }
     }
   }, [institutionId]);
 
@@ -53,6 +57,6 @@ export const useInnovationData = (institutionId: number | undefined) => {
     grants,
     loading,
     error,
-    refresh: fetchData // Expose this function to reload data after a form submission
+    refresh: () => fetchData(true) // Expose this function to reload data silently after a form submission
   };
 };
