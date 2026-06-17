@@ -98,6 +98,18 @@ const WORK_AREA_OPTIONS = [
   { value: "Other", label: "Other (Specify)" },
 ];
 
+const PROGRAM_CATEGORIES = {
+  "STEM": "STEM (Science, Tech, Engineering, Math)",
+  "HEALTH": "Health Sciences & Medicine",
+  "BUSINESS": "Business & Management",
+  "SOCIAL": "Social Sciences",
+  "HUMANITIES": "Humanities & Arts",
+  "EDUCATION": "Education & Teaching",
+  "LAW": "Law & Legal Studies",
+  "VOCATIONAL": "Vocational & Technical Training",
+  "INTERDISCIPLINARY": "Interdisciplinary Studies",
+};
+
 export function AddStudentDialog({
   onStudentAdded,
 }: {
@@ -127,6 +139,8 @@ export function AddStudentDialog({
     status: "Active",
     is_work_for_fees: false,
     disability_type: "None",
+    selected_level: "",
+    selected_category: "",
   });
 
   // --- 1. Fetch Data on Open ---
@@ -175,8 +189,14 @@ export function AddStudentDialog({
   // Filter Programs based on selected Department
   const filteredPrograms = useMemo(() => {
     if (!selectedDeptId) return [];
-    return programs.filter((p) => p.department.toString() === selectedDeptId);
+    return programs.filter((p) => p.department?.toString() === selectedDeptId);
   }, [programs, selectedDeptId]);
+
+  // Get selected program object
+  const activeProgram = useMemo(() => {
+    if (!formData.program) return null;
+    return programs.find(p => p.id.toString() === formData.program.toString());
+  }, [programs, formData.program]);
 
   // --- Handlers ---
 
@@ -189,7 +209,15 @@ export function AddStudentDialog({
     field: keyof CreateStudentData,
     value: string
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      // Reset dependent fields
+      if (field === 'program') {
+        next.selected_level = "";
+        next.selected_category = "";
+      }
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -206,12 +234,14 @@ export function AddStudentDialog({
         !formData.program
       ) {
         toast.error("Please fill in all required fields");
+        setIsLoading(false);
         return;
       }
 
       // Validations for work for fees
       if (isWorkForFees && (!selectedWorkArea || !formData.hours_pledged)) {
         toast.error("Please specify work area and hours pledged");
+        setIsLoading(false);
         return;
       }
 
@@ -232,25 +262,19 @@ export function AddStudentDialog({
       // 2. Handle Work Area strictly
       if (isWorkForFees) {
         if (selectedWorkArea === "Other" && formData.work_area_other) {
-          // Send the specific string for "Other"
           finalPayload.work_area = formData.work_area_other;
         } else {
-          // Send the value from options
           finalPayload.work_area = selectedWorkArea;
         }
-        // --- FIX: Parse hours to Integer ---
         finalPayload.hours_pledged = parseInt(formData.hours_pledged as any, 10);
       } else {
-        // If NOT working for fees, work_area MUST be null
         finalPayload.work_area = null;
-        finalPayload.hours_pledged = 0; // Reset hours
+        finalPayload.hours_pledged = 0;
       }
 
       // Remove the temporary fields from the payload
       delete finalPayload.disability_other;
       delete finalPayload.work_area_other;
-
-      console.log("Submitting Payload:", finalPayload);
 
       await createStudent(finalPayload as CreateStudentData);
 
@@ -263,6 +287,8 @@ export function AddStudentDialog({
         status: "Active",
         is_work_for_fees: false,
         disability_type: "None",
+        selected_level: "",
+        selected_category: "",
       });
       setSelectedFacultyId("");
       setSelectedDeptId("");
@@ -413,7 +439,6 @@ export function AddStudentDialog({
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* 1. Faculty Select (Filter Depts) */}
                 <div className="space-y-2">
                   <Label>Faculty *</Label>
                   <Select
@@ -433,7 +458,6 @@ export function AddStudentDialog({
                   </Select>
                 </div>
 
-                {/* 2. Department Select (Filter Programs) */}
                 <div className="space-y-2">
                   <Label>Department *</Label>
                   <Select
@@ -454,21 +478,16 @@ export function AddStudentDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedFacultyId && filteredDepartments.length === 0 && (
-                    <p className="text-[10px] text-destructive">
-                      No departments in this faculty.
-                    </p>
-                  )}
                 </div>
               </div>
 
-              {/* 3. Program Select (Actual Value) */}
               <div className="space-y-2">
                 <Label htmlFor="program">Program *</Label>
                 <Select
                   onValueChange={(val) => handleSelectChange("program", val)}
                   disabled={!selectedDeptId || filteredPrograms.length === 0}
                   required
+                  value={formData.program?.toString()}
                 >
                   <SelectTrigger
                     className={!formData.program ? "border-amber-400" : ""}
@@ -483,12 +502,47 @@ export function AddStudentDialog({
                     ))}
                   </SelectContent>
                 </Select>
-                {selectedDeptId && filteredPrograms.length === 0 && (
-                  <p className="text-[10px] text-destructive">
-                    No programs in this department.
-                  </p>
-                )}
               </div>
+
+              {/* 🚨 Specific Selection of Level and Category 🚨 */}
+              {activeProgram && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-2">
+                    <Label>Study Level *</Label>
+                    <Select
+                      onValueChange={(val) => handleSelectChange("selected_level", val)}
+                      value={formData.selected_level}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeProgram.levels?.map((l) => (
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Study Category *</Label>
+                    <Select
+                      onValueChange={(val) => handleSelectChange("selected_category", val)}
+                      value={formData.selected_category}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeProgram.categories?.map((c) => (
+                          <SelectItem key={c} value={c}>{PROGRAM_CATEGORIES[c as keyof typeof PROGRAM_CATEGORIES] || c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="enrollment_year">Enrollment Year</Label>

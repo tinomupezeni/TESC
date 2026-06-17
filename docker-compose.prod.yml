@@ -78,6 +78,18 @@ services:
 volumes:  
   postgres_data:
 
+
+
+
+
+
+
+
+
+
+
+
+          
 networks:
   main_net:
     driver: bridge

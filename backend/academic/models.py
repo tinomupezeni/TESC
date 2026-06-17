@@ -158,6 +158,10 @@ class Student(models.Model):
         related_name='students'
     )
 
+    # 🚨 Selection from program's multiple options
+    selected_level = models.CharField(max_length=100, null=True, blank=True)
+    selected_category = models.CharField(max_length=100, null=True, blank=True)
+
     
     is_work_for_fees = models.BooleanField(default=False)
     is_iseop = models.BooleanField(default=False)

@@ -18,8 +18,10 @@ export interface Institution {
   status: 'Active' | 'Renovation' | 'Closed';
   established: number;
   facilities: Facility[];
-  student_count: number; // <-- ADD THIS
-  program_count: number; // <-- ADD THIS
+  student_count: number; 
+  program_count: number;
+  user_count?: number; // Added
+  staff_count?: number; // Added
 }
 
 // For InstitutionSerializer (Write)
@@ -39,9 +41,23 @@ export interface InstitutionWriteData {
 export interface Program {
   id: number;
   name: string;
-  level: 'NC' | 'ND' | 'HND' | '1.1' | '2.1' | '3.1' | 'Other';
-  institution: number; // This is the ID
-  institution_name: string; // This is the string name
+  code: string;
+  levels: string[]; // List of levels
+  categories: string[]; // List of categories
+  institution: number; 
+  institution_name: string; 
+  department?: number;
+  department_name?: string;
+  duration?: number;
+  description?: string;
+  coordinator?: string;
+  student_capacity?: number;
+  modules?: string;
+  entry_requirements?: string;
+  
+  // Deprecated single fields
+  level?: string;
+  category?: string;
 }
 
 // From StudentReadSerializer
@@ -53,11 +69,18 @@ export interface Student {
   first_name: string;
   last_name: string;
   gender: 'Male' | 'Female' | 'Other';
-  date_of_birth: string | null; // Dates come as strings
+  date_of_birth: string | null; 
   enrollment_year: number;
-  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred';
-  institution: string; // StringRelatedField
-  program: string; // StringRelatedField
+  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred' | 'Dropout';
+  institution: string; 
+  program: string; 
+  program_name?: string;
+  selected_level?: string;
+  selected_category?: string;
+  is_work_for_fees?: boolean;
+  work_area?: string;
+  hours_pledged?: number;
+  disability_type?: string;
   created_at: string;
 }
 
@@ -68,11 +91,17 @@ export interface StudentWriteData {
   first_name: string;
   last_name: string;
   gender: 'Male' | 'Female' | 'Other';
-  date_of_birth?: string | null; // Format: 'YYYY-MM-DD'
+  date_of_birth?: string | null; 
   enrollment_year: number;
-  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred';
-  institution: number; // ID of the institution
-  program: number; // ID of the program
+  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred' | 'Dropout';
+  institution: number; 
+  program: number; 
+  selected_level?: string;
+  selected_category?: string;
+  is_work_for_fees?: boolean;
+  work_area?: string | null;
+  hours_pledged?: number;
+  disability_type?: string;
 }
 
 export interface PaginatedResponse<T> {

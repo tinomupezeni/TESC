@@ -66,17 +66,17 @@ const FINAL_GRADE_CHOICES = [
   { value: "Fail", label: "Fail" },
 ];
 
-const PROGRAM_CATEGORIES = [
-  { value: "STEM", label: "STEM (Science, Tech, Engineering, Math)" },
-  { value: "HEALTH", label: "Health Sciences & Medicine" },
-  { value: "BUSINESS", label: "Business & Management" },
-  { value: "SOCIAL", label: "Social Sciences" },
-  { value: "HUMANITIES", label: "Humanities & Arts" },
-  { value: "EDUCATION", label: "Education & Teaching" },
-  { value: "LAW", label: "Law & Legal Studies" },
-  { value: "VOCATIONAL", label: "Vocational & Technical Training" },
-  { value: "INTERDISCIPLINARY", label: "Interdisciplinary Studies" },
-];
+const PROGRAM_CATEGORIES = {
+  "STEM": "STEM (Science, Tech, Engineering, Math)",
+  "HEALTH": "Health Sciences & Medicine",
+  "BUSINESS": "Business & Management",
+  "SOCIAL": "Social Sciences",
+  "HUMANITIES": "Humanities & Arts",
+  "EDUCATION": "Education & Teaching",
+  "LAW": "Law & Legal Studies",
+  "VOCATIONAL": "Vocational & Technical Training",
+  "INTERDISCIPLINARY": "Interdisciplinary Studies",
+};
 
 // --- Updated Disability & Work Options ---
 const DISABILITY_OPTIONS = [
@@ -193,6 +193,8 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
         graduation_year: studentExt.graduation_year || null,
         final_grade: studentExt.final_grade || null,
         dropout_reason: studentExt.dropout_reason || null,
+        selected_level: studentExt.selected_level || "",
+        selected_category: studentExt.selected_category || "",
         // New fields
         hours_pledged: studentExt.hours_pledged || 0,
         fee_status: studentExt.fee_status || "PartiallyPaid"
@@ -233,13 +235,13 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
 
           // Retain previously saved values for dropdowns
           const currentProgram = progData?.find(
-            (p) => p.id === student.program
+            (p) => p.id.toString() === student.program.toString()
           );
           if (currentProgram) {
-            setSelectedDeptId(currentProgram.department.toString());
+            setSelectedDeptId(currentProgram.department?.toString() || "");
             
             const currentDept = deptData?.find(
-              (d) => d.id === currentProgram.department
+              (d) => d.id.toString() === currentProgram.department?.toString()
             );
             if (currentDept) {
               setSelectedFacultyId(currentDept.faculty.toString());
@@ -254,7 +256,10 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
       };
 
       if (student.institution) {
-        loadAcademicData(student.institution);
+        // Find institution ID from name or use directly if it's already ID
+        // Note: student.institution might be a string name or ID based on serializer
+        const instId = typeof student.institution === 'number' ? student.institution : 1; 
+        loadAcademicData(instId);
       }
 
       setError("");
@@ -271,8 +276,13 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
 
   const filteredPrograms = useMemo(() => {
     if (!selectedDeptId) return [];
-    return programs.filter((p) => p.department.toString() === selectedDeptId);
+    return programs.filter((p) => p.department?.toString() === selectedDeptId);
   }, [programs, selectedDeptId]);
+
+  const activeProgram = useMemo(() => {
+    if (!formData.program) return null;
+    return programs.find(p => p.id.toString() === formData.program.toString());
+  }, [programs, formData.program]);
 
   // --- 3. Handlers ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -289,7 +299,14 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
     if (field === "enrollment_year" || field === "graduation_year") {
       finalValue = parseInt(value, 10);
     }
-    setFormData((prev) => ({ ...prev, [field]: finalValue }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: finalValue };
+      if (field === 'program') {
+        next.selected_level = "";
+        next.selected_category = "";
+      }
+      return next;
+    });
 
     // Reset specific fields when status changes
     if (field === "status") {
@@ -326,7 +343,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
           ? formData.date_of_birth 
           : null,
         program: parseInt(formData.program as any, 10),
-        institution: student.institution,
+        institution: typeof student.institution === 'number' ? student.institution : 1, 
         graduation_year: formData.status === "Graduated" ? formData.graduation_year : null,
         final_grade: formData.status === "Graduated" ? formData.final_grade : null,
         dropout_reason: formData.status === "Dropout" ? formData.dropout_reason : null,
@@ -371,11 +388,6 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
       setIsLoading(false);
     }
   };
-
-  // Find the selected program object to display its category
-  const selectedProgramObj = useMemo(() => {
-    return programs.find(p => p.id.toString() === formData.program?.toString());
-  }, [programs, formData.program]);
 
   return (
     <Dialog open={!!student} onOpenChange={onClose}>
@@ -560,14 +572,45 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label>Program Category</Label>
-              <Input 
-                value={selectedProgramObj?.category ? PROGRAM_CATEGORIES.find(c => c.value === selectedProgramObj.category)?.label : "N/A"} 
-                disabled 
-                className="bg-muted"
-              />
-            </div>
+            {/* 🚨 Specific Selection of Level and Category 🚨 */}
+            {activeProgram && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-2">
+                  <Label>Study Level *</Label>
+                  <Select
+                    onValueChange={(val) => handleSelectChange("selected_level", val)}
+                    value={formData.selected_level}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeProgram.levels?.map((l) => (
+                        <SelectItem key={l} value={l}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Study Category *</Label>
+                  <Select
+                    onValueChange={(val) => handleSelectChange("selected_category", val)}
+                    value={formData.selected_category}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeProgram.categories?.map((c) => (
+                        <SelectItem key={c} value={c}>{PROGRAM_CATEGORIES[c as keyof typeof PROGRAM_CATEGORIES] || c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

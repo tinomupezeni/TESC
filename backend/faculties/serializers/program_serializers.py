@@ -13,13 +13,15 @@ class ProgramSerializer(serializers.ModelSerializer):
             'id', 
             'department', 
             'department_name',
-            'faculty_name',     # Optional: Show faculty name via department
-            'institution_name', # Optional: Show institution name via department
+            'faculty_name',     
+            'institution_name',
             'name', 
-            'category',
+            'levels',     # NEW
+            'categories', # NEW
             'code', 
             'duration', 
-            'level', 
+            'level',      # Deprecated
+            'category',   # Deprecated
             'description', 
             'coordinator', 
             'student_capacity', 

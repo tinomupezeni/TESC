@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 // New imports for Combobox
 import { 
   Plus, Loader2, AlertCircle, Check, ChevronsUpDown 
@@ -57,6 +58,12 @@ const PROGRAM_CATEGORIES = [
   { value: "INTERDISCIPLINARY", label: "Interdisciplinary Studies" },
 ];
 
+const PROGRAM_LEVELS = [
+  "Class 4", "Class 3", "Class 2", "Class 1",
+  "National Certificate", "National Foundation Certificate",
+  "Certificate", "Diploma", "Bachelors", "Masters", "PhD", "Other"
+];
+
 export function AddProgramDialog({ institutionId = 1, onSuccess }: { institutionId?: number, onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,11 +82,11 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     code: "",
     faculty: "",
     department: "",
-    category: "", // Now stores the 'value' (e.g., "STEM")
+    categories: [] as string[], 
     duration: "",
-    level: "",
+    levels: [] as string[],
     description: "",
-    coordinator: "", // Stores the name string
+    coordinator: "", 
     student_capacity: "",
     modules: "",
     entry_requirements: "",
@@ -137,13 +144,23 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     });
   };
 
+  const toggleSelection = (field: 'categories' | 'levels', value: string) => {
+    setFormData((prev) => {
+      const current = prev[field];
+      const next = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return { ...prev, [field]: next };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (!formData.faculty || !formData.department || !formData.category) {
-        toast.error("Please fill in all required fields including Faculty, Department, and Category.");
+      if (!formData.faculty || !formData.department || formData.categories.length === 0 || formData.levels.length === 0) {
+        toast.error("Please fill in all required fields including Faculty, Department, and at least one Category/Level.");
         setLoading(false);
         return;
       }
@@ -152,11 +169,11 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
         department: parseInt(formData.department),
         name: formData.name,
         code: formData.code,
-        category: formData.category, // This now sends "STEM", "HEALTH", etc.
+        categories: formData.categories, 
         duration: parseInt(formData.duration),
-        level: formData.level,
+        levels: formData.levels,
         description: formData.description,
-        coordinator: formData.coordinator, // Sends the name string
+        coordinator: formData.coordinator,
         student_capacity: parseInt(formData.student_capacity) || 0,
         modules: formData.modules,
         entry_requirements: formData.entry_requirements,
@@ -186,230 +203,238 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
           Add Program
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Program</DialogTitle>
-          <DialogDescription>Create a new academic program under a specific department.</DialogDescription>
+          <DialogDescription>Create a new academic program with multiple levels and categories.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit} className="space-y-6 py-2">
           
-          {/* Row 1: Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Program Name *</Label>
-            <Input 
-              id="name" 
-              value={formData.name} 
-              onChange={handleChange} 
-              placeholder="e.g., Bachelor of Science in Computer Science" 
-              required 
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+               {/* Program Name */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Program Name *</Label>
+                <Input 
+                  id="name" 
+                  value={formData.name} 
+                  onChange={handleChange} 
+                  placeholder="e.g., Bachelor of Science in Computer Science" 
+                  required 
+                />
+              </div>
 
-          {/* Row 2: Code & Duration */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Program Code *</Label>
-              <Input 
-                id="code" 
-                value={formData.code} 
-                onChange={handleChange} 
-                placeholder="e.g. BSCS" 
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration (Years) *</Label>
-              <Input 
-                id="duration" 
-                type="number" 
-                value={formData.duration} 
-                onChange={handleChange} 
-                placeholder="4" 
-                min="1"
-                required 
-              />
-            </div>
-          </div>
-
-          <div className="p-4 bg-muted/30 rounded-md border space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">Academic Placement</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
+              {/* Code & Duration */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="faculty">Faculty *</Label>
-                    <Select 
-                        value={formData.faculty} 
-                        onValueChange={(val) => handleSelectChange("faculty", val)}
-                        disabled={loadingData}
-                        required
-                    >
-                        <SelectTrigger id="faculty">
-                        <SelectValue placeholder={loadingData ? "Loading..." : "Select faculty"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {faculties.map((fac) => (
-                            <SelectItem key={fac.id} value={String(fac.id)}>{fac.name}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+                  <Label htmlFor="code">Program Code *</Label>
+                  <Input 
+                    id="code" 
+                    value={formData.code} 
+                    onChange={handleChange} 
+                    placeholder="e.g. BSCS" 
+                    required 
+                  />
                 </div>
-
                 <div className="space-y-2">
-                    <Label htmlFor="department">Department *</Label>
-                    <Select 
-                        value={formData.department} 
-                        onValueChange={(val) => handleSelectChange("department", val)}
-                        disabled={!formData.faculty || filteredDepartments.length === 0}
-                        required
-                    >
-                        <SelectTrigger id="department">
-                        <SelectValue placeholder={!formData.faculty ? "Select faculty first" : "Select department"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {filteredDepartments.map((dept) => (
-                            <SelectItem key={dept.id} value={String(dept.id)}>{dept.name}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+                  <Label htmlFor="duration">Duration (Years) *</Label>
+                  <Input 
+                    id="duration" 
+                    type="number" 
+                    value={formData.duration} 
+                    onChange={handleChange} 
+                    placeholder="4" 
+                    min="1"
+                    required 
+                  />
                 </div>
-            </div>
+              </div>
 
-            {/* Program Category */}
-            <div className="space-y-2">
-                <Label htmlFor="category">Program Category *</Label>
-                <Select 
-                    value={formData.category} 
-                    onValueChange={(val) => handleSelectChange("category", val)}
-                    required
-                >
-                    <SelectTrigger id="category">
-                        <SelectValue placeholder="Select program category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {/* --- FIX: Mapping updated objects --- */}
-                        {PROGRAM_CATEGORIES.map((cat) => (
-                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-          </div>
-
-          {/* Row 4: Coordinator & Level */}
-          <div className="grid grid-cols-2 gap-4">
-            
-            {/* --- COORDINATOR COMBOBOX --- */}
-            <div className="space-y-2 flex flex-col">
-              <Label>Coordinator (Optional)</Label>
-              <Popover open={openCoordinatorBox} onOpenChange={setOpenCoordinatorBox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openCoordinatorBox}
-                    className="w-full justify-between pl-3 text-left font-normal"
-                  >
-                    {formData.coordinator ? (
-                        <span className="flex items-center text-foreground">
-                            {formData.coordinator}
-                        </span>
-                    ) : (
-                        <span className="text-muted-foreground">Select staff member...</span>
-                    )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search staff..." />
-                    <CommandList>
-                        <CommandEmpty>No staff found.</CommandEmpty>
-                        <CommandGroup className="max-h-[200px] overflow-auto">
-                            <CommandItem
-                                onSelect={() => {
-                                    setFormData(prev => ({ ...prev, coordinator: "" }));
-                                    setOpenCoordinatorBox(false);
-                                }}
-                                className="text-muted-foreground italic"
-                            >
-                                None (Clear)
-                            </CommandItem>
-                            
-                            {staffList.map((staff) => (
-                            <CommandItem
-                                key={staff.id}
-                                value={staff.full_name}
-                                onSelect={() => {
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        coordinator: staff.full_name 
-                                    }));
-                                    setOpenCoordinatorBox(false);
-                                }}
-                            >
-                                <Check
-                                className={cn(
-                                    "mr-2 h-4 w-4",
-                                    formData.coordinator === staff.full_name ? "opacity-100" : "opacity-0"
-                                )}
-                                />
-                                <div className="flex flex-col">
-                                    <span>{staff.full_name}</span>
-                                    <span className="text-xs text-muted-foreground">{staff.position}</span>
-                                </div>
-                            </CommandItem>
+              <div className="p-4 bg-muted/30 rounded-md border space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Academic Placement</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="faculty">Faculty *</Label>
+                        <Select 
+                            value={formData.faculty} 
+                            onValueChange={(val) => handleSelectChange("faculty", val)}
+                            disabled={loadingData}
+                            required
+                        >
+                            <SelectTrigger id="faculty">
+                            <SelectValue placeholder={loadingData ? "Loading..." : "Select faculty"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                            {faculties.map((fac) => (
+                                <SelectItem key={fac.id} value={String(fac.id)}>{fac.name}</SelectItem>
                             ))}
-                        </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="department">Department *</Label>
+                        <Select 
+                            value={formData.department} 
+                            onValueChange={(val) => handleSelectChange("department", val)}
+                            disabled={!formData.faculty || filteredDepartments.length === 0}
+                            required
+                        >
+                            <SelectTrigger id="department">
+                            <SelectValue placeholder={!formData.faculty ? "Select faculty first" : "Select department"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                            {filteredDepartments.map((dept) => (
+                                <SelectItem key={dept.id} value={String(dept.id)}>{dept.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                 {/* Coordinator */}
+                <div className="space-y-2 flex flex-col">
+                  <Label>Coordinator (Optional)</Label>
+                  <Popover open={openCoordinatorBox} onOpenChange={setOpenCoordinatorBox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openCoordinatorBox}
+                        className="w-full justify-between pl-3 text-left font-normal"
+                      >
+                        {formData.coordinator ? (
+                            <span className="flex items-center text-foreground truncate">
+                                {formData.coordinator}
+                            </span>
+                        ) : (
+                            <span className="text-muted-foreground">Select staff member...</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search staff..." />
+                        <CommandList>
+                            <CommandEmpty>No staff found.</CommandEmpty>
+                            <CommandGroup className="max-h-[200px] overflow-auto">
+                                <CommandItem
+                                    onSelect={() => {
+                                        setFormData(prev => ({ ...prev, coordinator: "" }));
+                                        setOpenCoordinatorBox(false);
+                                    }}
+                                    className="text-muted-foreground italic"
+                                >
+                                    None (Clear)
+                                </CommandItem>
+                                
+                                {staffList.map((staff) => (
+                                <CommandItem
+                                    key={staff.id}
+                                    value={staff.full_name}
+                                    onSelect={() => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            coordinator: staff.full_name 
+                                        }));
+                                        setOpenCoordinatorBox(false);
+                                    }}
+                                >
+                                    <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        formData.coordinator === staff.full_name ? "opacity-100" : "opacity-0"
+                                    )}
+                                    />
+                                    <div className="flex flex-col">
+                                        <span>{staff.full_name}</span>
+                                        <span className="text-xs text-muted-foreground">{staff.position}</span>
+                                    </div>
+                                </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="level">Level *</Label>
-              <Select 
-                value={formData.level} 
-                onValueChange={(val) => handleSelectChange("level", val)}
-                required
-              >
-                <SelectTrigger id="level"><SelectValue placeholder="Select level" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Certificate">Certificate</SelectItem>
-                  <SelectItem value="Diploma">Diploma</SelectItem>
-                  <SelectItem value="Bachelors">Bachelors</SelectItem>
-                  <SelectItem value="Masters">Masters</SelectItem>
-                  <SelectItem value="PhD">PhD</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              {/* Program Levels - Multi Select */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Available Levels *</Label>
+                <div className="grid grid-cols-2 gap-3 p-4 bg-muted/20 rounded-lg border max-h-[200px] overflow-y-auto">
+                  {PROGRAM_LEVELS.map((level) => (
+                    <div key={level} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`level-${level}`} 
+                        checked={formData.levels.includes(level)}
+                        onCheckedChange={() => toggleSelection('levels', level)}
+                      />
+                      <label 
+                        htmlFor={`level-${level}`}
+                        className="text-xs font-medium leading-none cursor-pointer"
+                      >
+                        {level}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Program Categories - Multi Select */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Program Categories *</Label>
+                <div className="space-y-2 p-4 bg-muted/20 rounded-lg border max-h-[200px] overflow-y-auto">
+                  {PROGRAM_CATEGORIES.map((cat) => (
+                    <div key={cat.value} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`cat-${cat.value}`} 
+                        checked={formData.categories.includes(cat.value)}
+                        onCheckedChange={() => toggleSelection('categories', cat.value)}
+                      />
+                      <label 
+                        htmlFor={`cat-${cat.value}`}
+                        className="text-xs font-medium leading-none cursor-pointer"
+                      >
+                        {cat.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Row 5: Capacity & Description */}
-          <div className="space-y-2">
-              <Label htmlFor="student_capacity">Student Capacity</Label>
-              <Input 
-                id="student_capacity" 
-                type="number" 
-                value={formData.student_capacity} 
-                onChange={handleChange} 
-                placeholder="100" 
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+              <div className="space-y-2">
+                  <Label htmlFor="student_capacity">Student Capacity</Label>
+                  <Input 
+                    id="student_capacity" 
+                    type="number" 
+                    value={formData.student_capacity} 
+                    onChange={handleChange} 
+                    placeholder="100" 
+                  />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Program Description</Label>
+                <Textarea 
+                  id="description" 
+                  value={formData.description} 
+                  onChange={handleChange} 
+                  placeholder="Brief description of the program..." 
+                  rows={2} 
+                />
+              </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Program Description</Label>
-            <Textarea 
-              id="description" 
-              value={formData.description} 
-              onChange={handleChange} 
-              placeholder="Brief description of the program..." 
-              rows={3} 
-            />
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>

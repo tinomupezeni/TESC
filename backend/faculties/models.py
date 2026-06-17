@@ -9,6 +9,12 @@ FACULTY_STATUSES = [
 ]
 
 PROGRAM_LEVELS = [
+    ('Class 4', 'Class 4'),
+    ('Class 3', 'Class 3'),
+    ('Class 2', 'Class 2'),
+    ('Class 1', 'Class 1'),
+    ('National Certificate', 'National Certificate'),
+    ('National Foundation Certificate', 'National Foundation Certificate'),
     ('Certificate', 'Certificate'),
     ('Diploma', 'Diploma'),
     ('Bachelors', 'Bachelors'),
@@ -85,10 +91,15 @@ class Program(models.Model):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, help_text="e.g., BSCS")
     duration = models.PositiveIntegerField(help_text="Duration in years")
-    level = models.CharField(max_length=50, choices=PROGRAM_LEVELS)
     
-    # --- This field now uses the corrected tuples ---
-    category = models.CharField(max_length=100, choices=PROGRAM_CATEGORIES)
+    # --- Refactored to support multiple selections ---
+    levels = models.JSONField(default=list, help_text="List of levels applicable to this program (e.g. ['Class 4', 'Class 3'])")
+    categories = models.JSONField(default=list, help_text="List of categories (e.g. ['STEM', 'VOCATIONAL'])")
+    
+    # Keep old fields for a moment to prevent immediate crash if any logic relies on them, 
+    # but marked as deprecated/optional. We'll migrate data in a separate step.
+    level = models.CharField(max_length=50, choices=PROGRAM_LEVELS, null=True, blank=True)
+    category = models.CharField(max_length=100, choices=PROGRAM_CATEGORIES, null=True, blank=True)
     
     description = models.TextField(blank=True)
     coordinator = models.CharField(max_length=100, blank=True, help_text="Program Coordinator Name")

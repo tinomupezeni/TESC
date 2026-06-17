@@ -53,7 +53,7 @@ class ProgramSerializer(serializers.ModelSerializer):
     class Meta:
         model = Program
         fields = [
-            'id', 'name', 'level', 'institution', 'institution_name'
+            'id', 'name', 'levels', 'categories', 'institution', 'institution_name'
         ]
         # 'institution' is write-only, 'institution_name' is read-only
         extra_kwargs = {
@@ -72,7 +72,8 @@ class StudentWriteSerializer(serializers.ModelSerializer):
         fields = [
             'student_id', 'national_id', 'first_name', 'last_name', 
             'gender', 'date_of_birth', 'enrollment_year', 'status',
-            'institution', 'program', 'dropout_reason', 'is_work_for_fees',
+            'institution', 'program', 'selected_level', 'selected_category', 
+            'dropout_reason', 'is_work_for_fees',
             'work_area', 'hours_pledged', 'disability_type', 'graduation_year', 'final_grade'
         ]
         # You could add validation here, e.g., to ensure program
@@ -93,8 +94,8 @@ class StudentReadSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'student_id', 'national_id', 'full_name', 'first_name', 'last_name',
             'gender', 'date_of_birth', 'enrollment_year', 'status',
-            'institution', 'program', 'program_name', 'created_at',
-            'dropout_reason', 'is_work_for_fees', 'work_area', 'hours_pledged',
+            'institution', 'program', 'program_name', 'selected_level', 'selected_category', 
+            'created_at', 'dropout_reason', 'is_work_for_fees', 'work_area', 'hours_pledged',
             'disability_type', 'graduation_year', 'final_grade'
         ]
 class PaymentSerializer(serializers.ModelSerializer):
