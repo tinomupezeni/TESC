@@ -8,6 +8,20 @@ from django.forms.models import model_to_dict
 
 class StudentService:
     @staticmethod
+    def normalize_gender(gender_str):
+        """Standardizes gender values into 'Male', 'Female', or 'Other'."""
+        if not gender_str or pd.isna(gender_str):
+            return "Other"
+            
+        g = str(gender_str).strip().lower()
+        if g in ['m', 'male']:
+            return "Male"
+        elif g in ['f', 'female']:
+            return "Female"
+        else:
+            return "Other"
+
+    @staticmethod
     def _validate_student_data(data):
         """Helper to validate conditional fields based on model constraints"""
         if data.get('is_work_for_fees'):
@@ -35,6 +49,9 @@ class StudentService:
         # Run custom validation first
         StudentService._validate_student_data(validated_data)
 
+        if 'gender' in validated_data:
+            validated_data['gender'] = StudentService.normalize_gender(validated_data['gender'])
+
         if validated_data.get('status') == 'Graduated':
             if not validated_data.get('graduation_year'):
                 raise ValidationError("Graduation year is required for graduated students.")
@@ -57,6 +74,9 @@ class StudentService:
         try:
             with transaction.atomic():
                 protected_fields = ['id', 'institution']
+
+                if 'gender' in validated_data:
+                    validated_data['gender'] = StudentService.normalize_gender(validated_data['gender'])
 
                 # Temporarily update instance for validation
                 for attr, value in validated_data.items():
@@ -214,7 +234,7 @@ class StudentService:
                         first_name=row.get('first_name'),
                         last_name=row.get('last_name'),
                         national_id=row.get('national_id'),
-                        gender=str(row.get('gender', 'Other')).capitalize(),
+                        gender=StudentService.normalize_gender(row.get('gender')),
                         enrollment_year=row.get('enrollment_year') or 2025,
                         program=program_obj,
                         status=status,
