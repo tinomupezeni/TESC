@@ -79,9 +79,13 @@ export interface InstitutionWriteData {
 export interface Program {
   id: number;
   name: string;
-  level: 'NC' | 'ND' | 'HND' | '1.1' | '2.1' | '3.1' | 'Other';
+  levels: string[];     // NEW: Array of levels
+  categories: string[]; // NEW: Array of categories
   institution: number;
   institution_name: string;
+  // Deprecated
+  level?: string;
+  category?: string;
 }
 
 export interface Student {
@@ -89,6 +93,8 @@ export interface Student {
   student_id: string;
   national_id: string | null;
   program_name: string;
+  selected_level?: string;    // NEW
+  selected_category?: string; // NEW
   program_category: string; 
   institution_name: string;
   type: string;
@@ -98,9 +104,10 @@ export interface Student {
   gender: 'Male' | 'Female' | 'Other';
   date_of_birth: string | null;
   enrollment_year: number;
-  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred';
+  status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred' | 'Dropout';
   institution: string;
   program: string;
+  disability_type?: string;   // NEW
   created_at: string;
 }
 

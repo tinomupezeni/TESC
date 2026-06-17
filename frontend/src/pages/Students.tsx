@@ -73,6 +73,8 @@ export default function Students() {
   const [selectedGender, setSelectedGender] = useState("all");
   const [selectedInstType, setSelectedInstType] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all"); // NEW
+  const [selectedLevel, setSelectedLevel] = useState("all");       // NEW
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
 
   // --- PAGINATION STATE ---
@@ -103,7 +105,9 @@ export default function Students() {
       programs: Array.from(new Set(allStudents.map(s => s.program_name))).filter(Boolean).sort(),
       genders: Array.from(new Set(allStudents.map(s => s.gender))).filter(Boolean).sort(),
       types: Array.from(new Set(allStudents.map(s => s.type))).filter(Boolean).sort(),
-      years: Array.from(new Set(allStudents.map(s => s.enrollment_year?.toString()))).filter(Boolean).sort().reverse()
+      years: Array.from(new Set(allStudents.map(s => s.enrollment_year?.toString()))).filter(Boolean).sort().reverse(),
+      categories: Array.from(new Set(allStudents.map(s => s.selected_category))).filter(Boolean).sort(), // NEW
+      levels: Array.from(new Set(allStudents.map(s => s.selected_level))).filter(Boolean).sort()        // NEW
     };
   }, [allStudents]);
 
@@ -115,6 +119,8 @@ export default function Students() {
     setSelectedGender("all");
     setSelectedInstType("all");
     setSelectedYear("all");
+    setSelectedCategory("all"); // NEW
+    setSelectedLevel("all");    // NEW
     setCurrentPage(1);
   };
 
@@ -138,10 +144,14 @@ export default function Students() {
         selectedInstType === "all" || student.type === selectedInstType;
       const matchesYear =
         selectedYear === "all" || student.enrollment_year?.toString() === selectedYear;
+      const matchesCategory =
+        selectedCategory === "all" || student.selected_category === selectedCategory; // NEW
+      const matchesLevel =
+        selectedLevel === "all" || student.selected_level === selectedLevel;       // NEW
 
-      return matchesSearch && matchesStatus && matchesInst && matchesProg && matchesGender && matchesInstType && matchesYear;
+      return matchesSearch && matchesStatus && matchesInst && matchesProg && matchesGender && matchesInstType && matchesYear && matchesCategory && matchesLevel;
     });
-  }, [allStudents, searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear]);
+  }, [allStudents, searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear, selectedCategory, selectedLevel]);
 
   // --- PAGINATION LOGIC ---
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
@@ -154,7 +164,7 @@ export default function Students() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear]);
+  }, [searchTerm, selectedStatus, selectedInstitution, selectedProgram, selectedGender, selectedInstType, selectedYear, selectedCategory, selectedLevel]);
 
   // --- EXPORT LOGIC ---
   const exportData = (type: 'csv' | 'excel') => {
@@ -243,8 +253,8 @@ export default function Students() {
 
           {/* FILTERS SECTION - Hides in print */}
           <Card className="p-4 border-blue-100 shadow-sm print:hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <div className="relative lg:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-9 gap-4">
+              <div className="relative xl:col-span-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search..."
@@ -278,6 +288,24 @@ export default function Students() {
                 </SelectContent>
               </Select>
 
+              {/* NEW: Category Filter */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {filterOptions.categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              {/* NEW: Level Filter */}
+              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                <SelectTrigger><SelectValue placeholder="Level" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  {filterOptions.levels.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
               <Select value={selectedGender} onValueChange={setSelectedGender}>
                 <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
                 <SelectContent>
@@ -294,20 +322,22 @@ export default function Students() {
                 </SelectContent>
               </Select>
 
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Attachment">Attachment</SelectItem>
-                  <SelectItem value="Graduated">Graduated</SelectItem>
-                  <SelectItem value="Suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2 xl:col-span-1">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Attachment">Attachment</SelectItem>
+                    <SelectItem value="Graduated">Graduated</SelectItem>
+                    <SelectItem value="Suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Button variant="ghost" onClick={resetFilters} className="text-slate-500 font-bold hover:text-blue-600 lg:col-span-1">
-                <RotateCcw className="h-4 w-4 mr-2" /> Reset
-              </Button>
+                <Button variant="ghost" size="icon" onClick={resetFilters} title="Reset Filters" className="shrink-0 text-slate-500 hover:text-blue-600">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </Card>
 
