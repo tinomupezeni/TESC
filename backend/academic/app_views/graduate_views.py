@@ -131,7 +131,21 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
             else:
                 df = pd.read_excel(file_obj)
 
-            df.columns = [c.strip().lower().replace(' ', '_') for c in df.columns]
+            # Standardize headers
+            df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
+
+            # 1. Strict Column Validation
+            required_columns = [
+                'student_id', 'first_name', 'last_name', 
+                'gender', 'program_code', 'graduation_year', 'final_grade'
+            ]
+            
+            missing_cols = [col for col in required_columns if col not in df.columns]
+            if missing_cols:
+                return Response({
+                    "detail": "Invalid file format.", 
+                    "errors": [f"Missing required columns: {', '.join(missing_cols)}"]
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             # Cache programs by code
             prog_cache = {
@@ -143,19 +157,21 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
             updated_count = 0
             created_count = 0
 
+            # 2. Row-by-Row Processing with Error Aggregation
             with transaction.atomic():
                 for index, row in df.iterrows():
-                    row_num = index + 2
+                    row_num = index + 2  # Excel rows usually start at 1, +1 for header
                     try:
                         student_id = str(row.get('student_id', '')).strip()
                         if not student_id or pd.isna(row.get('student_id')):
+                            errors.append(f"Row {row_num}: Student ID is empty.")
                             continue
 
                         grad_year = row.get('graduation_year')
                         final_grade = str(row.get('final_grade', '')).strip()
 
                         if pd.isna(grad_year) or not final_grade or final_grade.lower() == 'nan':
-                            errors.append(f"Row {row_num}: Graduation Year and Final Grade are required.")
+                            errors.append(f"Row {row_num} (Student {student_id}): Graduation Year and Final Grade are required.")
                             continue
 
                         # Check if student exists in this institution
@@ -174,17 +190,28 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
                             program = prog_cache.get(prog_code)
                             
                             if not program:
-                                errors.append(f"Row {row_num}: Program code '{prog_code}' not found in your institution.")
+                                errors.append(f"Row {row_num} (Student {student_id}): Program code '{prog_code}' not found in your institution.")
                                 continue
+                                
+                            first_name = str(row.get('first_name', '')).strip()
+                            last_name = str(row.get('last_name', '')).strip()
+                            
+                            if not first_name or not last_name or first_name.lower() == 'nan' or last_name.lower() == 'nan':
+                                errors.append(f"Row {row_num} (Student {student_id}): First Name and Last Name are required for new records.")
+                                continue
+
+                            enrollment_year = row.get('enrollment_year')
+                            if pd.isna(enrollment_year):
+                                enrollment_year = int(grad_year) - program.duration
 
                             Student.objects.create(
                                 institution=institution,
                                 student_id=student_id,
-                                national_id=row.get('national_id'),
-                                first_name=row.get('first_name'),
-                                last_name=row.get('last_name'),
+                                national_id=row.get('national_id', ''),
+                                first_name=first_name,
+                                last_name=last_name,
                                 gender=row.get('gender', 'Other'),
-                                enrollment_year=row.get('enrollment_year', int(grad_year)-program.duration),
+                                enrollment_year=enrollment_year,
                                 program=program,
                                 status='Graduated',
                                 graduation_year=int(grad_year),
@@ -195,8 +222,10 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
                     except Exception as e:
                         errors.append(f"Row {row_num}: {str(e)}")
 
-            if errors:
-                return Response({"detail": "Bulk upload completed with errors.", "errors": errors, "updated": updated_count, "created": created_count}, status=status.HTTP_207_MULTI_STATUS)
+                # 3. Fail the entire transaction if there are any errors
+                if errors:
+                    # Rollback the transaction intentionally
+                    raise ValidationError({"detail": "Bulk upload failed due to data errors.", "errors": errors})
 
             return Response({
                 "message": f"Successfully processed graduates.",
@@ -204,8 +233,11 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
                 "created": created_count
             }, status=status.HTTP_201_CREATED)
 
+        except ValidationError as e:
+            # Catch our intentional rollback
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": "An unexpected error occurred reading the file.", "errors": [str(e)]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['get'], url_path='eligible')
     def eligible_for_graduation(self, request):
