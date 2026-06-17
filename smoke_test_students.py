@@ -3,9 +3,9 @@ import sys
 import uuid
 import datetime
 
-BASE_URL = "http://127.0.0.1:8081/api"
+BASE_URL = "https://localhost/api"
 ADMIN_EMAIL = "admin@scalareye.com"
-ADMIN_PASSWORD = "Admin@123"
+ADMIN_PASSWORD = "scalareye@123"
 
 def smoke_test_students():
     print("🚀 Starting Smoke Test for Student Details (Read/Write/Update)...")
@@ -16,7 +16,7 @@ def smoke_test_students():
         "email": ADMIN_EMAIL,
         "password": ADMIN_PASSWORD
     }
-    login_response = requests.post(f"{BASE_URL}/users/token/", json=login_payload)
+    login_response = requests.post(f"{BASE_URL}/users/token/", json=login_payload, verify=False)
     
     if login_response.status_code != 200:
         print(f"❌ Login failed: {login_response.status_code}")
@@ -29,7 +29,7 @@ def smoke_test_students():
 
     # We need a target institution
     print("Fetching institution for context...")
-    inst_res = requests.get(f"{BASE_URL}/academic/institutions/", headers=headers)
+    inst_res = requests.get(f"{BASE_URL}/academic/institutions/", headers=headers, verify=False)
     if inst_res.status_code != 200 or not inst_res.json():
         print("❌ No institutions found. Creating one...")
         create_inst_res = requests.post(f"{BASE_URL}/academic/institutions/", json={
@@ -38,7 +38,7 @@ def smoke_test_students():
             "location": "HARARE",
             "established": 2020,
             "email": f"inst_{uuid.uuid4().hex[:4]}@test.com"
-        }, headers=headers)
+        }, headers=headers, verify=False)
         if create_inst_res.status_code != 201:
             print("❌ Failed to create institution")
             sys.exit(1)
@@ -55,12 +55,12 @@ def smoke_test_students():
         "institution": institution_id,
         "description": "Smoke Faculty",
         "location": "Test"
-    }, headers=headers)
+    }, headers=headers, verify=False)
     
     if fac_res.status_code != 201:
         print(f"❌ Failed to create faculty: {fac_res.status_code}")
         print(fac_res.text)
-        if delete_inst_at_end: requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers)
+        if delete_inst_at_end: requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers, verify=False)
         sys.exit(1)
     
     fac_id = fac_res.json()["id"]
@@ -71,13 +71,13 @@ def smoke_test_students():
         "code": uuid.uuid4().hex[:4].upper(),
         "faculty": fac_id,
         "institution": institution_id
-    }, headers=headers)
+    }, headers=headers, verify=False)
     
     if dept_res.status_code != 201:
         print(f"❌ Failed to create department: {dept_res.status_code}")
         print(dept_res.text)
-        requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers)
-        if delete_inst_at_end: requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers, verify=False)
+        if delete_inst_at_end: requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers, verify=False)
         sys.exit(1)
     
     dept_id = dept_res.json()["id"]
@@ -90,14 +90,14 @@ def smoke_test_students():
         "department": dept_id,
         "duration": 1,
         "category": "STEM"
-    }, headers=headers)
+    }, headers=headers, verify=False)
     
     if prog_res.status_code != 201:
         print(f"❌ Failed to create program: {prog_res.status_code}")
         print(prog_res.text)
-        requests.delete(f"{BASE_URL}/faculties/departments/{dept_id}/", headers=headers)
-        requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers)
-        if delete_inst_at_end: requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/faculties/departments/{dept_id}/", headers=headers, verify=False)
+        requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers, verify=False)
+        if delete_inst_at_end: requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers, verify=False)
         sys.exit(1)
         
     prog_id = prog_res.json()["id"]
@@ -118,7 +118,7 @@ def smoke_test_students():
     }
     
     print(f"--- Creating Student: {student_id} ---")
-    student_response = requests.post(f"{BASE_URL}/academic/students/", json=student_payload, headers=headers)
+    student_response = requests.post(f"{BASE_URL}/academic/students/", json=student_payload, headers=headers, verify=False)
     
     student_db_id = None
     if student_response.status_code == 201:
@@ -131,7 +131,7 @@ def smoke_test_students():
     # 3. Read Student back
     if student_db_id:
         print(f"--- Verifying Student Details via GET ---")
-        get_response = requests.get(f"{BASE_URL}/academic/students/{student_db_id}/", headers=headers)
+        get_response = requests.get(f"{BASE_URL}/academic/students/{student_db_id}/", headers=headers, verify=False)
         if get_response.status_code == 200:
             print("✅ GET successful")
         else:
@@ -140,12 +140,12 @@ def smoke_test_students():
     # 4. Cleanup
     print("--- Final Cleanup ---")
     if student_db_id:
-        requests.delete(f"{BASE_URL}/academic/students/{student_db_id}/", headers=headers)
-    requests.delete(f"{BASE_URL}/faculties/programs/{prog_id}/", headers=headers)
-    requests.delete(f"{BASE_URL}/faculties/departments/{dept_id}/", headers=headers)
-    requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/academic/students/{student_db_id}/", headers=headers, verify=False)
+    requests.delete(f"{BASE_URL}/faculties/programs/{prog_id}/", headers=headers, verify=False)
+    requests.delete(f"{BASE_URL}/faculties/departments/{dept_id}/", headers=headers, verify=False)
+    requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers, verify=False)
     if delete_inst_at_end:
-        requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/academic/institutions/{institution_id}/", headers=headers, verify=False)
     print("✅ All test data deleted successfully.")
 
     print("\n✨ STUDENTS SMOKE TEST PASSED!")

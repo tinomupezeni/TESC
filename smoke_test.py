@@ -2,7 +2,7 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "http://127.0.0.1:8081/api"
+BASE_URL = "https://localhost/api"
 
 def smoke_test():
     print("🚀 Starting Smoke Test...")
@@ -23,7 +23,7 @@ def smoke_test():
     }
 
     print(f"--- Registering Institution: {inst_name} ---")
-    response = requests.post(f"{BASE_URL}/academic/institutions/", json=payload)
+    response = requests.post(f"{BASE_URL}/academic/institutions/", json=payload, verify=False)
     
     if response.status_code != 201:
         print(f"❌ Failed to register institution: {response.status_code}")
@@ -49,7 +49,7 @@ def smoke_test():
         "username": email,
         "password": password
     }
-    login_response = requests.post(f"{BASE_URL}/instauth/login/", json=login_payload)
+    login_response = requests.post(f"{BASE_URL}/instauth/login/", json=login_payload, verify=False)
     
     if login_response.status_code != 200:
         print(f"❌ Login failed: {login_response.status_code}")
@@ -65,7 +65,7 @@ def smoke_test():
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
-    profile_response = requests.get(f"{BASE_URL}/instauth/profile/", headers=headers)
+    profile_response = requests.get(f"{BASE_URL}/instauth/profile/", headers=headers, verify=False)
     
     if profile_response.status_code != 200:
         print(f"❌ Failed to fetch profile: {profile_response.status_code}")

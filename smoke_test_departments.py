@@ -2,9 +2,9 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "http://127.0.0.1:8081/api"
+BASE_URL = "https://localhost/api"
 ADMIN_EMAIL = "admin@scalareye.com"
-ADMIN_PASSWORD = "Admin@123"
+ADMIN_PASSWORD = "scalareye@123"
 
 def smoke_test_departments():
     print("🚀 Starting Smoke Test for Departments & Users...")
@@ -15,7 +15,7 @@ def smoke_test_departments():
         "email": ADMIN_EMAIL,
         "password": ADMIN_PASSWORD
     }
-    login_response = requests.post(f"{BASE_URL}/users/token/", json=login_payload)
+    login_response = requests.post(f"{BASE_URL}/users/token/", json=login_payload, verify=False)
     
     if login_response.status_code != 200:
         print(f"❌ Login failed: {login_response.status_code}")
@@ -37,7 +37,7 @@ def smoke_test_departments():
     }
     
     print(f"--- Creating Department: {dept_name} ---")
-    dept_response = requests.post(f"{BASE_URL}/users/departments/", json=dept_payload, headers=headers)
+    dept_response = requests.post(f"{BASE_URL}/users/departments/", json=dept_payload, headers=headers, verify=False)
     
     if dept_response.status_code != 201:
         print(f"❌ Failed to create department: {dept_response.status_code}")
@@ -59,12 +59,12 @@ def smoke_test_departments():
     }
     
     print(f"--- Creating User assigned to {dept_name} ---")
-    user_response = requests.post(f"{BASE_URL}/users/users/", json=user_payload, headers=headers)
+    user_response = requests.post(f"{BASE_URL}/users/users/", json=user_payload, headers=headers, verify=False)
     
     if user_response.status_code != 201:
         print(f"❌ Failed to create user: {user_response.status_code}")
         print(user_response.text)
-        requests.delete(f"{BASE_URL}/users/departments/{department_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/users/departments/{department_id}/", headers=headers, verify=False)
         sys.exit(1)
         
     user_id = user_response.json()["id"]
@@ -72,7 +72,7 @@ def smoke_test_departments():
     
     # 4. Verify user exists and has department
     print("--- Verifying User detail ---")
-    user_check = requests.get(f"{BASE_URL}/users/users/{user_id}/", headers=headers)
+    user_check = requests.get(f"{BASE_URL}/users/users/{user_id}/", headers=headers, verify=False)
     
     if user_check.status_code == 200:
         user_data = user_check.json()
@@ -86,8 +86,8 @@ def smoke_test_departments():
 
     # 5. Cleanup
     print("--- Final Cleanup ---")
-    requests.delete(f"{BASE_URL}/users/users/{user_id}/", headers=headers)
-    requests.delete(f"{BASE_URL}/users/departments/{department_id}/", headers=headers)
+    requests.delete(f"{BASE_URL}/users/users/{user_id}/", headers=headers, verify=False)
+    requests.delete(f"{BASE_URL}/users/departments/{department_id}/", headers=headers, verify=False)
     print("✅ User and Department deleted successfully.")
 
     print("\n✨ DEPARTMENTS SMOKE TEST PASSED!")

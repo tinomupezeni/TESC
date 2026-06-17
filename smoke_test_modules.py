@@ -2,9 +2,9 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "http://127.0.0.1:8081/api"
+BASE_URL = "https://localhost/api"
 ADMIN_EMAIL = "admin@scalareye.com"
-ADMIN_PASSWORD = "Admin@123"
+ADMIN_PASSWORD = "scalareye@123"
 
 def run_test():
     print("🚀 Starting Modules Smoke Test...")
@@ -15,7 +15,7 @@ def run_test():
         "email": ADMIN_EMAIL,
         "password": ADMIN_PASSWORD
     }
-    response = requests.post(f"{BASE_URL}/users/token/", json=login_payload)
+    response = requests.post(f"{BASE_URL}/users/token/", json=login_payload, verify=False)
     
     if response.status_code != 200:
         print(f"❌ Login failed: {response.status_code}")
@@ -29,7 +29,7 @@ def run_test():
 
     # Get a target institution
     print("Fetching institution for context...")
-    inst_res = requests.get(f"{BASE_URL}/academic/institutions/", headers=headers)
+    inst_res = requests.get(f"{BASE_URL}/academic/institutions/", headers=headers, verify=False)
     if inst_res.status_code != 200 or not inst_res.json():
         print("❌ No institutions found. Please run admin smoke test first to create one.")
         sys.exit(1)
@@ -47,7 +47,7 @@ def run_test():
         "current_usage": 10,
         "status": "Active"
     }
-    res = requests.post(f"{BASE_URL}/academic/facilities/", json=fac_payload, headers=headers)
+    res = requests.post(f"{BASE_URL}/academic/facilities/", json=fac_payload, headers=headers, verify=False)
     if res.status_code == 201:
         fac_id = res.json().get("id")
         if not fac_id:
@@ -56,9 +56,9 @@ def run_test():
         print(f"✅ Facility created (ID: {fac_id})")
         
         # Update
-        requests.patch(f"{BASE_URL}/academic/facilities/{fac_id}/", json={"capacity": 60}, headers=headers)
+        requests.patch(f"{BASE_URL}/academic/facilities/{fac_id}/", json={"capacity": 60}, headers=headers, verify=False)
         # Delete
-        requests.delete(f"{BASE_URL}/academic/facilities/{fac_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/academic/facilities/{fac_id}/", headers=headers, verify=False)
         print("✅ Facility update and delete successful")
     else:
         print(f"❌ Facility creation failed: {res.status_code}")
@@ -72,7 +72,7 @@ def run_test():
         "capacity": 100,
         "status": "Active"
     }
-    res = requests.post(f"{BASE_URL}/iseop/programs/", json=prog_payload, headers=headers)
+    res = requests.post(f"{BASE_URL}/iseop/programs/", json=prog_payload, headers=headers, verify=False)
     if res.status_code == 201:
         iseop_prog_id = res.json().get("id")
         print(f"✅ ISEOP Program created (ID: {iseop_prog_id})")
@@ -87,19 +87,19 @@ def run_test():
             "gender": "Female",
             "status": "Active/Enrolled"
         }
-        s_res = requests.post(f"{BASE_URL}/iseop/students/", json=stud_payload, headers=headers)
+        s_res = requests.post(f"{BASE_URL}/iseop/students/", json=stud_payload, headers=headers, verify=False)
         if s_res.status_code == 201:
             iseop_stud_id = s_res.json().get("id")
             print(f"✅ ISEOP Student created (ID: {iseop_stud_id})")
             
             # Delete student
-            requests.delete(f"{BASE_URL}/iseop/students/{iseop_stud_id}/", headers=headers)
+            requests.delete(f"{BASE_URL}/iseop/students/{iseop_stud_id}/", headers=headers, verify=False)
             print("✅ ISEOP Student delete successful")
         else:
             print(f"❌ ISEOP Student creation failed: {s_res.status_code}")
 
         # Delete program
-        requests.delete(f"{BASE_URL}/iseop/programs/{iseop_prog_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/iseop/programs/{iseop_prog_id}/", headers=headers, verify=False)
         print("✅ ISEOP Program delete successful")
     else:
         print(f"❌ ISEOP Program creation failed: {res.status_code}")
@@ -114,15 +114,15 @@ def run_test():
         "occupied": 5,
         "status": "High"
     }
-    res = requests.post(f"{BASE_URL}/innovation/hubs/", json=hub_payload, headers=headers)
+    res = requests.post(f"{BASE_URL}/innovation/hubs/", json=hub_payload, headers=headers, verify=False)
     if res.status_code == 201:
         hub_id = res.json().get("id")
         print(f"✅ Innovation Hub created (ID: {hub_id})")
         
         # Update
-        requests.patch(f"{BASE_URL}/innovation/hubs/{hub_id}/", json={"capacity": 25}, headers=headers)
+        requests.patch(f"{BASE_URL}/innovation/hubs/{hub_id}/", json={"capacity": 25}, headers=headers, verify=False)
         # Delete
-        requests.delete(f"{BASE_URL}/innovation/hubs/{hub_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/innovation/hubs/{hub_id}/", headers=headers, verify=False)
         print("✅ Hub delete successful")
     else:
         print(f"❌ Hub creation failed: {res.status_code}")
@@ -145,7 +145,7 @@ def run_test():
     
     for endpoint in analysis_endpoints:
         print(f"Fetching {endpoint}...")
-        res = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
+        res = requests.get(f"{BASE_URL}{endpoint}", headers=headers, verify=False)
         if res.status_code == 200:
             print(f"✅ {endpoint} OK")
         else:

@@ -2,9 +2,9 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "http://127.0.0.1:8081/api"
+BASE_URL = "https://localhost/api"
 ADMIN_EMAIL = "admin@scalareye.com"
-ADMIN_PASSWORD = "Admin@123"
+ADMIN_PASSWORD = "scalareye@123"
 
 def run_test():
     print("🚀 Starting Admin Smoke Test...")
@@ -15,7 +15,7 @@ def run_test():
         "email": ADMIN_EMAIL,
         "password": ADMIN_PASSWORD
     }
-    response = requests.post(f"{BASE_URL}/users/token/", json=login_payload)
+    response = requests.post(f"{BASE_URL}/users/token/", json=login_payload, verify=False)
     
     if response.status_code != 200:
         print(f"❌ Login failed: {response.status_code}")
@@ -47,7 +47,7 @@ def run_test():
     
     for endpoint in page_endpoints:
         print(f"Fetching {endpoint}...")
-        res = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
+        res = requests.get(f"{BASE_URL}{endpoint}", headers=headers, verify=False)
         if res.status_code == 200:
             print(f"✅ {endpoint} OK")
         else:
@@ -70,7 +70,7 @@ def run_test():
         "email": f"test_{uuid.uuid4().hex[:4]}@admin.com"
     }
     print(f"Creating institution: {inst_name}...")
-    res = requests.post(f"{BASE_URL}/academic/institutions/", json=create_payload, headers=headers)
+    res = requests.post(f"{BASE_URL}/academic/institutions/", json=create_payload, headers=headers, verify=False)
     if res.status_code == 201:
         inst_data = res.json()
         inst_id = inst_data["id"]
@@ -82,18 +82,18 @@ def run_test():
 
     # READ
     print(f"Reading institution {inst_id}...")
-    res = requests.get(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers)
+    res = requests.get(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers, verify=False)
     if res.status_code == 200:
         print("✅ Read successful")
     else:
         print(f"❌ Read failed: {res.status_code}")
-        requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers, verify=False)
         sys.exit(1)
 
     # UPDATE
     new_location = "BULAWAYO"
     print(f"Updating institution {inst_id} location to {new_location}...")
-    res = requests.patch(f"{BASE_URL}/academic/institutions/{inst_id}/", json={"location": new_location}, headers=headers)
+    res = requests.patch(f"{BASE_URL}/academic/institutions/{inst_id}/", json={"location": new_location}, headers=headers, verify=False)
     if res.status_code == 200:
         updated_data = res.json()
         if updated_data["location"] == new_location:
@@ -106,7 +106,7 @@ def run_test():
     # 4. Students CRUD (Admin Scope)
     print("--- Testing Students CRUD (Admin Scope) ---")
     # Need a program first, but let's see if we can find one
-    prog_res = requests.get(f"{BASE_URL}/faculties/programs/", headers=headers)
+    prog_res = requests.get(f"{BASE_URL}/faculties/programs/", headers=headers, verify=False)
     programs = prog_res.json()
     if programs and len(programs) > 0:
         target_prog = programs[0]
@@ -128,14 +128,14 @@ def run_test():
         }
 
         print(f"Creating student: {student_id}...")
-        res = requests.post(f"{BASE_URL}/academic/students/", json=student_payload, headers=headers)
+        res = requests.post(f"{BASE_URL}/academic/students/", json=student_payload, headers=headers, verify=False)
         if res.status_code == 201:
             student_data = res.json()
             student_pk = student_data.get("id")
             if student_pk:
                 print(f"✅ Created successfully (PK: {student_pk})")
                 # DELETE
-                requests.delete(f"{BASE_URL}/academic/students/{student_pk}/", headers=headers)
+                requests.delete(f"{BASE_URL}/academic/students/{student_pk}/", headers=headers, verify=False)
                 print("✅ Student deletion successful")
             else:
                 print("✅ Student created (PK not found in response)")
@@ -162,7 +162,7 @@ def run_test():
     }
 
     print(f"Creating staff member: {staff_id}...")
-    res = requests.post(f"{BASE_URL}/staff/members/", json=staff_payload, headers=headers)
+    res = requests.post(f"{BASE_URL}/staff/members/", json=staff_payload, headers=headers, verify=False)
     staff_pk = None
     if res.status_code == 201:
         staff_data = res.json()
@@ -177,7 +177,7 @@ def run_test():
     if staff_pk:
         # UPDATE
         print(f"Updating staff {staff_pk} position to 'Professor'...")
-        res = requests.patch(f"{BASE_URL}/staff/members/{staff_pk}/", json={"position": "Professor"}, headers=headers)
+        res = requests.patch(f"{BASE_URL}/staff/members/{staff_pk}/", json={"position": "Professor"}, headers=headers, verify=False)
         if res.status_code == 200:
             print("✅ Update successful")
         else:
@@ -185,7 +185,7 @@ def run_test():
 
         # DELETE
         print(f"Deleting staff {staff_pk}...")
-        res = requests.delete(f"{BASE_URL}/staff/members/{staff_pk}/", headers=headers)
+        res = requests.delete(f"{BASE_URL}/staff/members/{staff_pk}/", headers=headers, verify=False)
         if res.status_code == 204:
             print("✅ Staff Deletion successful")
         else:
@@ -193,7 +193,7 @@ def run_test():
 
     # FINAL CLEANUP
     print(f"--- Final Cleanup: Deleting institution {inst_id} ---")
-    res = requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers)
+    res = requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers, verify=False)
     if res.status_code == 204:
         print("✅ Cleanup successful")
     else:

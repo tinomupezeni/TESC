@@ -2,7 +2,7 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "http://127.0.0.1:8081/api"
+BASE_URL = "https://localhost/api"
 
 def run_test():
     print("🚀 Starting Institutional Smoke Test...")
@@ -23,7 +23,7 @@ def run_test():
     }
 
     print(f"--- Registering Institution: {inst_name} ---")
-    response = requests.post(f"{BASE_URL}/academic/institutions/", json=payload)
+    response = requests.post(f"{BASE_URL}/academic/institutions/", json=payload, verify=False)
     
     if response.status_code != 201:
         print(f"❌ Failed to register institution: {response.status_code}")
@@ -43,7 +43,7 @@ def run_test():
         "username": email,
         "password": password
     }
-    login_response = requests.post(f"{BASE_URL}/instauth/login/", json=login_payload)
+    login_response = requests.post(f"{BASE_URL}/instauth/login/", json=login_payload, verify=False)
     
     if login_response.status_code != 200:
         print(f"❌ Login failed: {login_response.status_code}")
@@ -80,7 +80,7 @@ def run_test():
     
     for endpoint in page_endpoints:
         print(f"Fetching {endpoint}...")
-        res = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
+        res = requests.get(f"{BASE_URL}{endpoint}", headers=headers, verify=False)
         if res.status_code == 200:
             print(f"✅ {endpoint} OK")
         else:
@@ -93,7 +93,7 @@ def run_test():
         "dean": "Dr. Smoke",
         "institution": inst_id
     }
-    res = requests.post(f"{BASE_URL}/faculties/faculties/", json=fac_payload, headers=headers)
+    res = requests.post(f"{BASE_URL}/faculties/faculties/", json=fac_payload, headers=headers, verify=False)
     if res.status_code == 201:
         fac_id = res.json()["id"]
         print(f"✅ Faculty created (ID: {fac_id})")
@@ -104,7 +104,7 @@ def run_test():
             "faculty": fac_id,
             "institution": inst_id
         }
-        d_res = requests.post(f"{BASE_URL}/faculties/departments/", json=dept_payload, headers=headers)
+        d_res = requests.post(f"{BASE_URL}/faculties/departments/", json=dept_payload, headers=headers, verify=False)
         if d_res.status_code == 201:
             dept_id = d_res.json()["id"]
             print(f"✅ Department created (ID: {dept_id})")
@@ -118,25 +118,25 @@ def run_test():
                 "duration": 1,
                 "category": "STEM"
             }
-            p_res = requests.post(f"{BASE_URL}/faculties/programs/", json=prog_payload, headers=headers)
+            p_res = requests.post(f"{BASE_URL}/faculties/programs/", json=prog_payload, headers=headers, verify=False)
             if p_res.status_code == 201:
                 prog_id = p_res.json()["id"]
                 print(f"✅ Program created (ID: {prog_id})")
-                requests.delete(f"{BASE_URL}/faculties/programs/{prog_id}/", headers=headers)
+                requests.delete(f"{BASE_URL}/faculties/programs/{prog_id}/", headers=headers, verify=False)
             else:
                 print(f"❌ Program creation failed: {p_res.status_code}")
             
-            requests.delete(f"{BASE_URL}/faculties/departments/{dept_id}/", headers=headers)
+            requests.delete(f"{BASE_URL}/faculties/departments/{dept_id}/", headers=headers, verify=False)
         else:
             print(f"❌ Department creation failed: {d_res.status_code}")
             
-        requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers)
+        requests.delete(f"{BASE_URL}/faculties/faculties/{fac_id}/", headers=headers, verify=False)
     else:
         print(f"❌ Faculty creation failed: {res.status_code}")
 
     # FINAL CLEANUP: Delete the institution
     print(f"--- Final Cleanup: Deleting institution {inst_id} ---")
-    res = requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers)
+    res = requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", headers=headers, verify=False)
     if res.status_code == 204:
         print("✅ Cleanup successful")
     else:
