@@ -126,7 +126,7 @@ class DynamicReportGenerateView(APIView):
             'filters': data.get('filters', {}),
             'columns': data.get('columns', []),
             'group_by': data.get('group_by'),
-            'institution_id': data.get('institution_id'),
+            'user': request.user, # PASS THE USER
         }
 
         # Generate report data
@@ -155,16 +155,20 @@ class DynamicReportGenerateView(APIView):
         schema = get_schema(report_type)
         title = data.get('title') or schema.get('title', f'{report_type.title()} Report')
 
-        # Get institution name if filtered
+        # Get institution name from authenticated user
         institution_name = None
-        institution_id = data.get('institution_id')
-        if institution_id:
-            from academic.models import Institution
-            try:
-                institution = Institution.objects.get(id=institution_id)
-                institution_name = institution.name
-            except Institution.DoesNotExist:
-                pass
+        if hasattr(request.user, 'institution') and request.user.institution:
+            institution_name = request.user.institution.name
+        elif request.user.is_superuser:
+            # For superusers, they might still provide an institution_id for the PDF header
+            institution_id = data.get('institution_id')
+            if institution_id:
+                from academic.models import Institution
+                try:
+                    institution = Institution.objects.get(id=institution_id)
+                    institution_name = institution.name
+                except Institution.DoesNotExist:
+                    pass
 
         try:
             pdf_buffer = generate_dynamic_report_pdf(

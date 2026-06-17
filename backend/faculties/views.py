@@ -11,24 +11,21 @@ from .models import Department, Faculty, Program
 from .serializers.faculty_serializer import FacultySerializer
 from .services.faculty_services import FacultyService
 
-class FacultyViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class FacultyViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
-    A simple ViewSet for viewing and editing faculties.
+    ViewSet for viewing and editing faculties with institutional isolation.
     """
     queryset = Faculty.objects.all()
     serializer_class = FacultySerializer
+    institution_lookup_path = 'institution'
 
     def get_queryset(self):
         """
-        Optionally restricts the returned faculties to a given institution.
+        Queryset is automatically filtered by InstitutionalIsolationMixin.
         """
-        # Removed .prefetch_related('departments') to prevent crash if model is missing
-        queryset = Faculty.objects.select_related('institution')
-        institution_id = self.request.query_params.get('institution')
-        
-        if institution_id is not None:
-            queryset = queryset.filter(institution_id=institution_id)
-            
+        queryset = super().get_queryset().select_related('institution')
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -64,12 +61,13 @@ class FacultyViewSet(viewsets.ModelViewSet):
         
 # faculties/views.py
 
-class ProgramViewSet(viewsets.ModelViewSet):
+class ProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
     ViewSet for viewing and editing programs.
     """
     queryset = Program.objects.all()
     serializer_class = ProgramSerializer
+    institution_lookup_path = 'department__faculty__institution'
 
     def get_queryset(self):
         """
@@ -78,7 +76,7 @@ class ProgramViewSet(viewsets.ModelViewSet):
         # OPTIMIZATION: Updated select_related path
         # Old: 'faculty', 'faculty__institution'
         # New: 'department', 'department__faculty', 'department__faculty__institution'
-        queryset = Program.objects.select_related(
+        queryset = super().get_queryset().select_related(
             'department', 
             'department__faculty', 
             'department__faculty__institution'
@@ -130,23 +128,18 @@ class ProgramViewSet(viewsets.ModelViewSet):
 
 # faculties/views.py
 
-class DepartmentViewSet(viewsets.ModelViewSet):
+class DepartmentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
+    institution_lookup_path = 'faculty__institution'
 
     def get_queryset(self):
         # Optimize query
-        queryset = Department.objects.select_related('faculty', 'faculty__institution')
+        queryset = super().get_queryset().select_related('faculty', 'faculty__institution')
         
         # 1. Filter by Faculty (existing)
         faculty_id = self.request.query_params.get('faculty')
         if faculty_id:
             queryset = queryset.filter(faculty_id=faculty_id)
-
-        # 2. Filter by Institution (NEW & CRITICAL)
-        # This allows fetching "All departments in this institution"
-        institution_id = self.request.query_params.get('institution')
-        if institution_id:
-            queryset = queryset.filter(faculty__institution_id=institution_id)
             
         return queryset

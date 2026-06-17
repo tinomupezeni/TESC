@@ -19,9 +19,12 @@ COLOR_MAP = {
     'Other': '#64748b',
 }
 
-class StaffViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class StaffViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Staff.objects.all()
     serializer_class = StaffSerializer
+    institution_lookup_path = 'institution'
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'employee_id', 'email'] 
     parser_classes = (MultiPartParser, FormParser, JSONParser)
@@ -30,11 +33,7 @@ class StaffViewSet(viewsets.ModelViewSet):
         """
         Filter staff by Institution and Faculty for data isolation.
         """
-        queryset = Staff.objects.select_related('institution', 'faculty', 'department')
-        
-        institution_id = self.request.query_params.get('institution_id') or self.request.query_params.get('institution')
-        if institution_id:
-            queryset = queryset.filter(institution_id=institution_id)
+        queryset = super().get_queryset().select_related('institution', 'faculty', 'department')
             
         faculty_id = self.request.query_params.get('faculty_id')
         if faculty_id:

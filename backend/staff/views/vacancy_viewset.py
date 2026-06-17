@@ -5,9 +5,12 @@ from ..serializers.staff_serializers import  VacancySerializer
 from ..services.staff_services import VacancyService
 
 
-class VacancyViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class VacancyViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Vacancy.objects.all()
     serializer_class = VacancySerializer
+    institution_lookup_path = 'institution'
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'department', 'faculty']
 
@@ -15,12 +18,7 @@ class VacancyViewSet(viewsets.ModelViewSet):
         """
         Filter vacancies by institution ID provided in query params.
         """
-        queryset = Vacancy.objects.select_related('institution')
-        
-        # Filter by Institution
-        institution_id = self.request.query_params.get('institution')
-        if institution_id:
-            queryset = queryset.filter(institution_id=institution_id)
+        queryset = super().get_queryset().select_related('institution')
             
         # Filter by Status (Optional)
         status_param = self.request.query_params.get('status')

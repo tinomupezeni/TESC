@@ -5,12 +5,15 @@ from ..models import Facility
 from ..serializers.facility_serializers import FacilitySerializer
 from ..services.facility_services import FacilityService
 
-class FacilityViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class FacilityViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing Institution Facilities.
     """
     queryset = Facility.objects.all()
     serializer_class = FacilitySerializer
+    institution_lookup_path = 'institution'
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'building', 'manager', 'description']
 
@@ -18,13 +21,8 @@ class FacilityViewSet(viewsets.ModelViewSet):
         """
         Filter facilities by Institution or Type.
         """
-        queryset = Facility.objects.select_related('institution')
+        queryset = super().get_queryset().select_related('institution')
         
-        # Filter by Institution
-        institution_id = self.request.query_params.get('institution_id')
-        if institution_id:
-            queryset = queryset.filter(institution_id=institution_id)
-
         # Filter by Facility Type
         f_type = self.request.query_params.get('type')
         if f_type:

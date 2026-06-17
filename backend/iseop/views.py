@@ -12,27 +12,26 @@ from .models import IseopProgram, IseopStudent
 from .serializers import IseopProgramSerializer, IseopStudentSerializer
 
 
-class IseopProgramViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class IseopProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = IseopProgram.objects.all()
     serializer_class = IseopProgramSerializer
     permission_classes = [IsAuthenticated]
+    institution_lookup_path = 'institution'
 
 
-class IseopStudentViewSet(viewsets.ModelViewSet):
+class IseopStudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     serializer_class = IseopStudentSerializer
     permission_classes = [IsAuthenticated]
+    institution_lookup_path = 'institution'
     lookup_field = "id"
 
     # -------------------------
     # LIST QUERYSET
     # -------------------------
     def get_queryset(self):
-        qs = IseopStudent.objects.all()
-        institution_id = self.request.query_params.get("institution_id")
-        print(institution_id)
-        if institution_id:
-            qs = qs.filter(institution__id=int(institution_id))
-        return qs
+        return super().get_queryset()
 
 
     def get_object(self):

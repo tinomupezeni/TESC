@@ -15,9 +15,15 @@ from faculties.models import Program
 from ..serializers.academic_serializers import PaymentSerializer
 
 
-class PaymentViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class PaymentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    institution_lookup_path = 'student__institution'
+
+    def get_queryset(self):
+        return super().get_queryset()
 
     # ------------------------------------------------------------------
     # RECORD PAYMENT

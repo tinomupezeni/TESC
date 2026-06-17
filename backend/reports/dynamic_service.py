@@ -22,14 +22,14 @@ class DynamicReportService:
         return apps.get_model(app_label, model_name)
 
     @staticmethod
-    def build_queryset(report_type: str, filters: dict = None, institution_id: int = None):
+    def build_queryset(report_type: str, filters: dict = None, user=None):
         """
         Build a queryset with filters applied.
 
         Args:
             report_type: Type of report (staff, students, graduates)
             filters: Dictionary of filter key-value pairs
-            institution_id: Optional institution ID to filter by
+            user: The authenticated user to enforce institutional isolation
 
         Returns:
             QuerySet with filters applied
@@ -39,14 +39,18 @@ class DynamicReportService:
 
         queryset = Model.objects.all()
 
+        # Apply institutional isolation
+        if user and not user.is_superuser:
+            if hasattr(user, 'institution') and user.institution:
+                queryset = queryset.filter(institution=user.institution)
+            else:
+                # If user has no institution and isn't a superuser, return nothing
+                return queryset.none()
+
         # Apply base filter if defined (e.g., graduates = status='Graduated')
         base_filter = schema.get('base_filter', {})
         if base_filter:
             queryset = queryset.filter(**base_filter)
-
-        # Apply institution filter if provided
-        if institution_id:
-            queryset = queryset.filter(institution_id=institution_id)
 
         # Add select_related for relation fields to optimize queries
         select_related = []
@@ -65,6 +69,10 @@ class DynamicReportService:
 
             for key, value in filters.items():
                 if value is None or value == '' or value == 'all':
+                    continue
+
+                # SECURITY: Prevent client from overriding institution_id via filters
+                if key == 'institution_id' and user and not user.is_superuser:
                     continue
 
                 field_def = get_field_by_key(report_type, key)

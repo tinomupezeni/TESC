@@ -19,9 +19,10 @@ from instauth.models import InstitutionAdmin
 from users.models import CustomUser, Role, Department as UserDepartment
 
 
-class FacilityViewSet(viewsets.ModelViewSet):
+class FacilityViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Facility.objects.all()
     serializer_class = FacilitySerializer
+    institution_lookup_path = 'institution'
     # simple enough not to need a service/repo layer, but we can use it
     # for consistency.
     
@@ -30,7 +31,7 @@ class FacilityViewSet(viewsets.ModelViewSet):
         self.service = FacilityService()
 
     def get_queryset(self):
-        return self.service.get_all_facilities()
+        return super().get_queryset()
 
 class InstitutionViewSet(viewsets.ModelViewSet):
     queryset = Institution.objects.all()
@@ -204,9 +205,12 @@ class InstitutionViewSet(viewsets.ModelViewSet):
             # 3. Perform standard deletion (will cascade to Students, Facilities, etc.)
             return super().destroy(request, *args, **kwargs)
 
-class ProgramViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class ProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Program.objects.all()
     serializer_class = ProgramSerializer
+    institution_lookup_path = 'department__faculty__institution'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -229,19 +233,17 @@ class ProgramViewSet(viewsets.ModelViewSet):
         e.g., /api/programs/?institution_id=1
         """
         queryset = super().get_queryset()
-        institution_id = self.request.query_params.get('institution_id')
-        if institution_id:
-            return self.service.get_programs_for_institution(institution_id)
         return queryset
 
-class StudentViewSet(viewsets.ModelViewSet):
+class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
+    institution_lookup_path = 'institution'
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.service = StudentService()
 
     def get_queryset(self):
-        return self.service.get_all_students()
+        return super().get_queryset()
 
     def get_serializer_class(self):
         """

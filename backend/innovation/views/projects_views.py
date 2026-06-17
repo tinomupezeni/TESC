@@ -8,19 +8,18 @@ from ..serializers.project_serializers import (
     PartnershipSerializer
 )
 
-class BaseInnovationViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class BaseInnovationViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
-    Base viewset that filters by 'institution_id' if provided in query params.
+    Base viewset that enforces institutional data isolation.
     """
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    institution_lookup_path = 'institution'
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        institution_id = self.request.query_params.get('institution_id')
-        if institution_id:
-            return queryset.filter(institution_id=institution_id)
-        return queryset
+        return super().get_queryset()
 
 class InnovationHubViewSet(BaseInnovationViewSet):
     queryset = InnovationHub.objects.all()

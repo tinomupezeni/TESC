@@ -25,12 +25,15 @@ COLOR_MAP = {
 }
 
 
-class StudentViewSet(viewsets.ModelViewSet):
+from core.mixins import InstitutionalIsolationMixin
+
+class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing Students.
     """
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
+    institution_lookup_path = 'institution'
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'student_id', 'national_id']
     parser_classes = (MultiPartParser, FormParser, JSONParser)
@@ -39,11 +42,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         """
         Optimize queries and calculate financial balances in one database call.
         """
-        queryset = Student.objects.select_related('institution', 'program')
-
-        institution_param = self.request.query_params.get('institution')
-        if institution_param:
-            queryset = queryset.filter(institution_id=institution_param)
+        queryset = super().get_queryset().select_related('institution', 'program')
 
         program_id = self.request.query_params.get('program_id') or self.request.query_params.get('program')
         if program_id:
