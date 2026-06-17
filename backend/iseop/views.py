@@ -22,6 +22,7 @@ class IseopProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
 
 
 class IseopStudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
+    queryset = IseopStudent.objects.all()
     serializer_class = IseopStudentSerializer
     permission_classes = [IsAuthenticated]
     institution_lookup_path = 'institution'

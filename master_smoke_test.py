@@ -16,7 +16,8 @@ smoke_tests = [
     "smoke_test_inst_crud.py",
     "smoke_test_report_isolation.py",
     "smoke_test_graduates.py",
-    "smoke_test_student_quick_graduate.py"
+    "smoke_test_student_quick_graduate.py",
+    "smoke_test_iseop.py"
 ]
 
 def run_test(script_path):
