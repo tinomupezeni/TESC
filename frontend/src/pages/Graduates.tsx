@@ -143,7 +143,7 @@ export default function Statistics() {
       male: acc.male + (curr.gender === 'Male' ? 1 : 0),
       female: acc.female + (curr.gender === 'Female' ? 1 : 0),
       distinctions: acc.distinctions + (curr.final_grade === 'Distinction' ? 1 : 0),
-      disabilities: acc.disabilities + (curr.disability_type && curr.disability_type !== 'None' ? 1 : 0)
+      disabilities: acc.disabilities + (curr.inclusivity_category && curr.inclusivity_category !== 'None' ? 1 : 0)
 
     }), { total: 0, male: 0, female: 0, distinctions: 0, disabilities: 0 });
 

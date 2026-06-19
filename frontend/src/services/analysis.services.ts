@@ -52,7 +52,7 @@ export interface RegionalStats {
 }
 
 export interface StudentGroupStats {
-  special_students: { disability_type: string; value: number }[];
+  special_students: { inclusivity_category: string; value: number }[];
   work_for_fees: { work_area: string; students: number; hours: number }[];
   counts: {
     iseop: number;

@@ -127,7 +127,7 @@ export default function ISEOPStudents() {
     const total = filteredStudents.length;
     let active = 0, completed = 0, deferred = 0;
     let male = 0, female = 0;
-    let disabilityTotal = 0, disabilityActive = 0, disabilityCompleted = 0;
+    let inclusivityTotal = 0, inclusivityActive = 0, inclusivityCompleted = 0;
     const programs = new Set<string>();
 
     filteredStudents.forEach((s: any) => {
@@ -138,10 +138,10 @@ export default function ISEOPStudents() {
       if (s.gender === "Female") female++;
       if (s.program_name) programs.add(s.program_name);
 
-      if (s.disability_type && s.disability_type !== "None") {
-        disabilityTotal++;
-        if (s.status === "Active/Enrolled") disabilityActive++;
-        if (s.status === "Completed") disabilityCompleted++;
+      if (s.inclusivity_category && s.inclusivity_category !== "None") {
+        inclusivityTotal++;
+        if (s.status === "Active/Enrolled") inclusivityActive++;
+        if (s.status === "Completed") inclusivityCompleted++;
       }
     });
 
@@ -155,9 +155,9 @@ export default function ISEOPStudents() {
       totalPrograms: programs.size,
       maleRate: total ? ((male / total) * 100).toFixed(1) : "0",
       femaleRate: total ? ((female / total) * 100).toFixed(1) : "0",
-      disabilityTotal,
-      disabilityActive,
-      disabilityCompleted,
+      inclusivityTotal,
+      inclusivityActive,
+      inclusivityCompleted,
     };
   }, [filteredStudents]);
 
@@ -215,7 +215,7 @@ export default function ISEOPStudents() {
   const handleCSVExport = () => {
     const headers = ["ID","Name","Institution","Program","Year","Gender","Disability","Status"];
     const rows = filteredStudents.map(s => [
-      s.student_id, s.full_name, s.institution_name, s.program_name, s.enrollment_year, s.gender, s.disability_type ?? "None", s.status
+      s.student_id, s.full_name, s.institution_name, s.program_name, s.enrollment_year, s.gender, s.inclusivity_category ?? "None", s.status
     ]);
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -241,7 +241,7 @@ export default function ISEOPStudents() {
           <StatsCard title="Male Students" value={stats.male} description={`${stats.maleRate}%`} icon={Users} variant="default" />
           <StatsCard title="Female Students" value={stats.female} description={`${stats.femaleRate}%`} icon={Users} variant="default" />
           <StatsCard title="Total Programs" value={stats.totalPrograms} description="Active programs" icon={Building} variant="default" />
-          <StatsCard title="Special Needs" value={stats.disabilityTotal} description="All disabilities" icon={Accessibility} variant="info" />
+          <StatsCard title="Special Needs" value={stats.inclusivityTotal} description="All disabilities" icon={Accessibility} variant="info" />
         </div>
 
         {/* CHART */}
@@ -345,7 +345,7 @@ export default function ISEOPStudents() {
                     <TableCell className="hidden md:table-cell text-xs">{s.program_name}</TableCell>
                     <TableCell className="hidden sm:table-cell text-xs">{s.enrollment_year ?? "N/A"}</TableCell>
                     <TableCell className="hidden xl:table-cell text-xs">{s.gender ?? "N/A"}</TableCell>
-                    <TableCell className="hidden xl:table-cell text-xs">{s.disability_type && s.disability_type !== "None" ? s.disability_type : "None"}</TableCell>
+                    <TableCell className="hidden xl:table-cell text-xs">{s.inclusivity_category && s.inclusivity_category !== "None" ? s.inclusivity_category : "None"}</TableCell>
                     <TableCell><Badge variant={getStatusVariant(s.status)} className="text-[10px] sm:text-xs whitespace-nowrap">{s.status}</Badge></TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setSelectedStudent(s)}>

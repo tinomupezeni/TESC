@@ -16,9 +16,9 @@ class AnalysisService:
         students = Student.objects.filter(**student_filters)
 
         # Disabled students (excluding None, 'None', 'none', or null)
-        disabled_students = students.exclude(disability_type__isnull=True).exclude(disability_type__iexact='none')
+        disabled_students = students.exclude(inclusivity_category__isnull=True).exclude(inclusivity_category__iexact='none')
 
-        disability_data = disabled_students.values('disability_type').annotate(
+        disability_data = disabled_students.values('inclusivity_category').annotate(
             value=Count('id')
         )
 
@@ -42,9 +42,9 @@ class AnalysisService:
         iseop_students = IseopStudent.objects.filter(**iseop_filters)
 
         # Disabled ISEOP students (excluding None, 'None', 'none', or null)
-        iseop_disabled = iseop_students.exclude(disability_type__isnull=True).exclude(disability_type__iexact='none')
+        iseop_disabled = iseop_students.exclude(inclusivity_category__isnull=True).exclude(inclusivity_category__iexact='none')
 
-        iseop_disability_data = iseop_disabled.values('disability_type').annotate(
+        iseop_disability_data = iseop_disabled.values('inclusivity_category').annotate(
             value=Count('id')
         )
 

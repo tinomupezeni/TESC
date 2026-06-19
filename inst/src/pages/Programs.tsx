@@ -29,7 +29,10 @@ import {
   FileText, 
   Loader2, 
   Info,
-  Trash2
+  Trash2,
+  Upload, // Added Upload for bulk upload
+  Pencil, // For edit action
+  MoreVertical, // For dropdown menu
 } from "lucide-react";
 import {
   Dialog,
@@ -39,11 +42,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Table, // Added Table components
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu, // Added DropdownMenu
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Added DropdownMenu components
 import { toast } from "sonner";
 
 // Custom Dialogs
 import { AddProgramDialog } from "@/components/AddProgramDialog";
 import { EditProgramDialog } from "@/components/EditProgramDialog";
+import { BulkUploadResolver } from "@/components/common/BulkUploadResolver"; // Added BulkUploadResolver
 
 // Services
 import { getPrograms, Program, deleteProgram } from "@/services/programs.services";
@@ -94,176 +114,182 @@ const Programs = () => {
     );
   });
 
+  // Calculate summary stats
+  const totalPrograms = programs.length;
+  const activePrograms = programs.filter(p => p.status === 'Active').length;
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 px-1">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
-            Programs & Courses
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 truncate">
-            Managing curriculum for <span className="font-semibold text-primary">{user?.institution?.name}</span>
-          </p>
-        </div>
-        
-        {user?.institution?.id && (
-          <div className="w-full sm:w-auto">
-            <AddProgramDialog 
-              institutionId={user.institution.id} 
-              onSuccess={fetchPrograms} 
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative w-full sm:max-w-md px-1">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name or code..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-11 h-10 sm:h-11"
-        />
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+          Programs & Courses
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
+          Manage curriculum for <span className="font-semibold text-primary">{user?.institution?.name}</span>
+        </p>
       </div>
 
       {/* Main Content Area */}
-      {loading ? (
-        <div className="flex flex-col justify-center items-center h-64 space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading programs...</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-          {filteredPrograms.length === 0 ? (
-            <div className="col-span-full text-center py-20 border-2 border-dashed rounded-xl text-muted-foreground bg-muted/5 mx-1">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <h3 className="text-lg font-medium text-foreground">No programs found</h3>
-              <p className="max-w-xs mx-auto text-sm mt-1">Try adjusting your search or add a new program.</p>
+      <Card className="overflow-hidden border-none sm:border">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg sm:text-xl">Programs Directory</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">View and manage all registered programs and courses</CardDescription>
             </div>
-          ) : (
-            filteredPrograms.map((program) => (
-              <Card key={program.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary flex flex-col h-full relative mx-1">
-                
-                {/* Delete Button - Absolute Positioned Top Right */}
-                <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon" className="h-8 w-8 shadow-sm">
-                        {deletingId === program.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-white" />}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="w-[95vw] sm:w-full">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-xs sm:text-sm">
-                          This will permanently delete the <strong>{program.name}</strong> program. 
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="text-xs sm:text-sm h-9 sm:h-10">Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => handleDelete(program.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm h-9 sm:h-10"
-                        >
-                          Delete Program
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:flex-none">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Bulk Upload</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader><DialogTitle>Bulk Upload Programs</DialogTitle></DialogHeader>
+                    {/* Placeholder for BulkUploadResolver. Backend endpoint needs to be created. */}
+                    <BulkUploadResolver moduleType="programs" onSuccess={fetchPrograms} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="flex-1 sm:flex-none">
+                {user?.institution?.id && (
+                  <AddProgramDialog 
+                    institutionId={user.institution.id} 
+                    onSuccess={fetchPrograms} 
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Programs</CardTitle>
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalPrograms}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Programs</CardTitle>
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{activePrograms}</div>
+              </CardContent>
+            </Card>
+            {/* Additional summary cards can be added here, e.g., programs by level */}
+          </div>
 
-                <CardHeader className="p-4 sm:p-6">
-                  <div className="flex items-start justify-between gap-2 mr-8">
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs">{program.code}</Badge>
-                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] sm:text-xs">{program.level}</Badge>
-                      </div>
-                      <CardTitle className="text-lg sm:text-xl leading-tight truncate" title={program.name}>{program.name}</CardTitle>
-                    </div>
-                  </div>
-                  <CardDescription className="line-clamp-2 min-h-[40px] text-xs sm:text-sm mt-2">
-                    {program.description || "No description provided."}
-                  </CardDescription>
-                </CardHeader>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-9 sm:h-10"
+              />
+            </div>
+            {/* Filter Dropdowns could go here if needed */}
+          </div>
 
-                <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0">
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-2 py-3 sm:py-4 border-y mb-6 bg-muted/20 rounded-lg px-2 sm:px-3 text-center">
-                    <div className="space-y-1">
-                      <span className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" /> <span className="hidden xs:inline">Duration</span>
-                      </span>
-                      <p className="text-xs sm:text-sm font-semibold">{program.duration} Yrs</p>
-                    </div>
-                    <div className="space-y-1 border-x px-1">
-                      <span className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
-                        <Users className="h-3 w-3" /> <span className="hidden xs:inline">Intake</span>
-                      </span>
-                      <p className="text-xs sm:text-sm font-semibold">{program.student_capacity}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
-                        <FileText className="h-3 w-3" /> <span className="hidden xs:inline">Dept.</span>
-                      </span>
-                      <p className="text-xs sm:text-sm font-semibold truncate px-1" title={program.department_name}>
-                        {program.department_name || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions Footer */}
-                  <div className="flex gap-2 sm:gap-3 mt-auto pt-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1 h-9 sm:h-10 text-xs sm:text-sm">
-                          <Info className="h-4 w-4 mr-2" /> Details
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-4 sm:p-6">
-                        <DialogHeader>
-                          <DialogTitle className="text-xl sm:text-2xl">{program.name}</DialogTitle>
-                          <DialogDescription className="font-mono text-primary text-xs sm:text-sm">
-                            {program.code} • {program.level}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 sm:space-y-6 py-4 text-xs sm:text-sm">
-                          <div className="p-3 sm:p-4 bg-muted/50 rounded-lg border italic">
-                            {program.description || "No description available."}
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-muted-foreground text-[10px] sm:text-xs">Coordinator</p>
-                              <p className="font-medium text-primary">{program.coordinator || "Not assigned"}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-[10px] sm:text-xs">Category</p>
-                              <p className="font-medium">{program.category || "N/A"}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    {user?.institution?.id && (
-                      <div className="flex-1">
-                        <EditProgramDialog 
-                          program={program}
-                          institutionId={user.institution.id}
-                          onSuccess={fetchPrograms}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px] text-xs">Code</TableHead>
+                  <TableHead className="text-xs">Name</TableHead>
+                  <TableHead className="hidden sm:table-cell text-xs">Level</TableHead>
+                  <TableHead className="hidden md:table-cell text-xs">Department</TableHead>
+                  <TableHead className="hidden lg:table-cell text-xs">Duration</TableHead>
+                  <TableHead className="text-right text-xs">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Loading programs...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredPrograms.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-xs">
+                      No programs found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredPrograms.map((program) => (
+                    <TableRow key={program.id}>
+                      <TableCell className="font-medium text-[10px] sm:text-xs">{program.code}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{program.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">{program.level}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">{program.department_name || 'N/A'}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs">{program.duration} Yrs</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                              <Info className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                              Edit Program
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem 
+                                  className="text-destructive focus:text-destructive"
+                                  onSelect={(e) => e.preventDefault()} // Prevent dropdown closing immediately
+                                >
+                                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                  Delete Program
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="w-[95vw] sm:w-full">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-xs sm:text-sm">
+                                    This will permanently delete the <strong>{program.name}</strong> program. 
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="text-xs sm:text-sm h-9 sm:h-10">Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDelete(program.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm h-9 sm:h-10"
+                                  >
+                                    Delete Program
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

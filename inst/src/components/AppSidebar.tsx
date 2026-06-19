@@ -16,7 +16,10 @@ import {
   MoreHorizontal,
   HeartHandshake,
   Wallet2,
-  Settings2
+  Settings2,
+  Globe,
+  Briefcase,
+  ArrowRightLeft
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,9 +62,16 @@ const menuGroups = [
       { title: "Staff", url: "/dashboard/staff", icon: UserCog },
       { title: "Faculties", url: "/dashboard/faculties", icon: School }, // Changed icon to distinguish
       { title: "Programs", url: "/dashboard/programs", icon: BookOpen },
+      { title: "STEM Students", url: "/dashboard/stem-students", icon: Users }, // Assuming Users icon for students
+      { title: "Inclusivity Report", url: "/dashboard/inclusivity", icon: Users }, // Assuming Users icon for inclusivity
       { title: "Graduates", url: "/dashboard/graduates", icon: GraduationCap },
-    ]
-  },
+      { title: "Possible Graduates", url: "/dashboard/possible-graduates", icon: GraduationCap },
+      { title: "Industry Placements", url: "/dashboard/placements", icon: Briefcase },
+      { title: "In-Country Transfers", url: "/dashboard/transfers", icon: ArrowRightLeft },
+      { title: "Scholarships", url: "/dashboard/scholarships", icon: GraduationCap },
+      { title: "Int. Mobility", url: "/dashboard/mobility", icon: Globe },
+      ]
+      },
   {
     label: "Operations & Analytics",
     items: [

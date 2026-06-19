@@ -209,7 +209,7 @@ export default function Students() {
   const maleStudents = filteredStudents.filter((s) => s.gender === "Male").length;
   const malePercentage = totalStudents > 0 ? ((maleStudents / totalStudents) * 100).toFixed(1) : "0";
   // Updated disability count to be more robust based on types
-  const disabledCount = filteredStudents.filter(s => s.disability_type && s.disability_type !== 'None' && s.disability_type !== 'none').length;
+  const disabledCount = filteredStudents.filter(s => s.inclusivity_category && s.inclusivity_category !== 'None' && s.inclusivity_category !== 'none').length;
   const specialPercentage = totalStudents > 0 ? ((disabledCount / totalStudents) * 100).toFixed(1) : "0";
 
   if (isLoading && specialLoading) {

@@ -64,6 +64,10 @@ const PROGRAM_LEVELS = [
   "Certificate", "Diploma", "Bachelors", "Masters", "PhD", "Other"
 ];
 
+const PROGRAM_TYPES = [
+  "Degree", "Diploma", "Certificate", "Short Course", "Other"
+];
+
 export function AddProgramDialog({ institutionId = 1, onSuccess }: { institutionId?: number, onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,6 +94,8 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     student_capacity: "",
     modules: "",
     entry_requirements: "",
+    program_type: "Degree",
+    is_critical_skill: false,
   };
 
   const [formData, setFormData] = useState(initialData);
@@ -247,6 +253,34 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                     min="1"
                     required 
                   />
+                </div>
+              </div>
+
+              {/* Program Type & Critical Skill */}
+              <div className="grid grid-cols-2 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="program_type">Program Type *</Label>
+                  <Select 
+                    value={formData.program_type} 
+                    onValueChange={(val) => handleSelectChange("program_type", val)}
+                  >
+                    <SelectTrigger id="program_type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROGRAM_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2 h-10 px-3 border rounded-md bg-muted/10">
+                  <Checkbox 
+                    id="is_critical_skill" 
+                    checked={formData.is_critical_skill}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_critical_skill: checked === true }))}
+                  />
+                  <Label htmlFor="is_critical_skill" className="cursor-pointer">Is Critical Skill</Label>
                 </div>
               </div>
 

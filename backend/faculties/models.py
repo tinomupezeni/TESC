@@ -84,6 +84,14 @@ class Department(models.Model):
         return f"{self.name} ({self.faculty.name})"
 
 
+PROGRAM_TYPES = [
+    ('Degree', 'Degree'),
+    ('Diploma', 'Diploma'),
+    ('Certificate', 'Certificate'),
+    ('Short Course', 'Short Course'),
+    ('Other', 'Other'),
+]
+
 class Program(models.Model):
     # Changed from Faculty to Department
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='programs')
@@ -100,6 +108,10 @@ class Program(models.Model):
     # but marked as deprecated/optional. We'll migrate data in a separate step.
     level = models.CharField(max_length=50, choices=PROGRAM_LEVELS, null=True, blank=True)
     category = models.CharField(max_length=100, choices=PROGRAM_CATEGORIES, null=True, blank=True)
+    
+    # --- NEW PHASE 1 FIELDS ---
+    is_critical_skill = models.BooleanField(default=False, help_text="Flags this program as a critical national skill")
+    program_type = models.CharField(max_length=50, choices=PROGRAM_TYPES, default='Degree')
     
     description = models.TextField(blank=True)
     coordinator = models.CharField(max_length=100, blank=True, help_text="Program Coordinator Name")

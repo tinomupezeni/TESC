@@ -74,7 +74,7 @@ class StudentWriteSerializer(serializers.ModelSerializer):
             'gender', 'date_of_birth', 'enrollment_year', 'status',
             'institution', 'program', 'selected_level', 'selected_category', 
             'dropout_reason', 'is_work_for_fees',
-            'work_area', 'hours_pledged', 'disability_type', 'graduation_year', 'final_grade'
+            'work_area', 'hours_pledged', 'inclusivity_category', 'graduation_year', 'final_grade'
         ]
         # You could add validation here, e.g., to ensure program
         # belongs to the selected institution.
@@ -96,7 +96,7 @@ class StudentReadSerializer(serializers.ModelSerializer):
             'gender', 'date_of_birth', 'enrollment_year', 'status',
             'institution', 'program', 'program_name', 'selected_level', 'selected_category', 
             'created_at', 'dropout_reason', 'is_work_for_fees', 'work_area', 'hours_pledged',
-            'disability_type', 'graduation_year', 'final_grade'
+            'inclusivity_category', 'graduation_year', 'final_grade'
         ]
 class PaymentSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.full_name', read_only=True)

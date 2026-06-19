@@ -222,7 +222,7 @@ class Student(models.Model):
     work_area = models.CharField(max_length=50, choices=WORK_AREAS, null=True, blank=True)
     hours_pledged = models.PositiveIntegerField(default=0)
 
-    DISABILITY_TYPES = [
+    INCLUSIVITY_CATEGORIES = [
     ('None', 'None'),
 
     # Physical / Mobility
@@ -259,7 +259,7 @@ class Student(models.Model):
     ('Other', 'Other (Specify)'),
 ]
 
-    disability_type = models.CharField(max_length=100, choices=DISABILITY_TYPES, default='None')
+    inclusivity_category = models.CharField(max_length=100, choices=INCLUSIVITY_CATEGORIES, default='None')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -302,3 +302,52 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.student.student_id} - {self.amount}"
+
+# --- PHASE 2 SATELLITE MODULES ---
+
+PLACEMENT_TYPES = [
+    ('Attachment', 'Attachment'),
+    ('Apprenticeship', 'Apprenticeship'),
+]
+
+class IndustryPlacement(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='placements')
+    placement_type = models.CharField(max_length=50, choices=PLACEMENT_TYPES, default='Attachment')
+    company_name = models.CharField(max_length=255)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.placement_type} at {self.company_name}"
+
+class StudentScholarship(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='scholarships')
+    provider_name = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    year_awarded = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-year_awarded', 'provider_name']
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.provider_name} ({self.year_awarded})"
+
+MOBILITY_DIRECTIONS = [
+    ('Inbound', 'Inbound'),
+    ('Outbound', 'Outbound'),
+]
+
+class InternationalMobility(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='mobility_records')
+    direction = models.CharField(max_length=50, choices=MOBILITY_DIRECTIONS)
+    country = models.CharField(max_length=255)
+    foreign_institution = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.direction} ({self.country})"

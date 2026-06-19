@@ -42,7 +42,10 @@ class DynamicReportService:
         # Apply institutional isolation
         if user and not user.is_superuser:
             if hasattr(user, 'institution') and user.institution:
-                queryset = queryset.filter(institution=user.institution)
+                if report_type in ['placements', 'scholarships']:
+                    queryset = queryset.filter(student__institution=user.institution)
+                else:
+                    queryset = queryset.filter(institution=user.institution)
             else:
                 # If user has no institution and isn't a superuser, return nothing
                 return queryset.none()
@@ -58,6 +61,8 @@ class DynamicReportService:
             select_related = ['institution', 'faculty', 'department']
         elif report_type in ['students', 'graduates']:
             select_related = ['institution', 'program', 'program__department', 'program__department__faculty']
+        elif report_type in ['placements', 'scholarships']:
+            select_related = ['student', 'student__institution', 'student__program']
 
         if select_related:
             queryset = queryset.select_related(*select_related)
@@ -154,6 +159,25 @@ class DynamicReportService:
                 'program_name': 'program_id',
                 'program_level': 'selected_level',
                 'program_category': 'selected_category',
+            },
+            'placements': {
+                'institution_name': 'student__institution_id',
+                'program_name': 'student__program_id',
+                'gender': 'student__gender',
+            },
+            'scholarships': {
+                'institution_name': 'student__institution_id',
+                'program_name': 'student__program_id',
+                'gender': 'student__gender',
+                'student_id_number': 'student__student_id',
+                'student_name': 'student__first_name',
+            },
+            'mobility': {
+                'institution_name': 'student__institution_id',
+                'program_name': 'student__program_id',
+                'gender': 'student__gender',
+                'student_id_number': 'student__student_id',
+                'student_name': 'student__first_name',
             }
         }
         return mapping.get(report_type, {}).get(key, key)
@@ -205,6 +229,21 @@ class DynamicReportService:
                 'program_category': 'selected_category',
                 'disability_type': 'disability_type',
                 'is_iseop': 'is_iseop',
+            },
+            'placements': {
+                'placement_type': 'placement_type',
+                'company_name': 'company_name',
+                'start_date': 'start_date',
+                'institution_name': 'student__institution__name',
+                'program_name': 'student__program__name',
+                'gender': 'student__gender',
+            },
+            'scholarships': {
+                'provider_name': 'provider_name',
+                'year_awarded': 'year_awarded',
+                'institution_name': 'student__institution__name',
+                'program_name': 'student__program__name',
+                'gender': 'student__gender',
             }
         }
 
@@ -241,15 +280,21 @@ class DynamicReportService:
         # Handle computed fields
         if key == 'full_name':
             return f"{obj.first_name} {obj.last_name}"
+        if key == 'student_name':
+            return f"{obj.student.first_name} {obj.student.last_name}" if hasattr(obj, 'student') and obj.student else ''
+        if key == 'student_id_number':
+            return obj.student.student_id if hasattr(obj, 'student') and obj.student else ''
+        if key == 'gender' and report_type in ['placements', 'scholarships']:
+            return obj.student.gender if hasattr(obj, 'student') and obj.student else ''
 
         # Handle relation display fields
         relation_map = {
-            'institution_name': lambda o: o.institution.name if o.institution else '',
+            'institution_name': lambda o: o.institution.name if hasattr(o, 'institution') and o.institution else (o.student.institution.name if hasattr(o, 'student') and o.student and o.student.institution else ''),
             'faculty_name': lambda o: o.faculty.name if hasattr(o, 'faculty') and o.faculty else '',
             'department_name': lambda o: o.department.name if hasattr(o, 'department') and o.department else '',
-            'program_name': lambda o: o.program.name if hasattr(o, 'program') and o.program else '',
-            'program_level': lambda o: getattr(o, 'selected_level', ''),
-            'program_category': lambda o: getattr(o, 'selected_category', ''),
+            'program_name': lambda o: o.program.name if hasattr(o, 'program') and o.program else (o.student.program.name if hasattr(o, 'student') and o.student and o.student.program else ''),
+            'program_level': lambda o: getattr(o, 'selected_level', getattr(o.student, 'selected_level', '') if hasattr(o, 'student') and o.student else ''),
+            'program_category': lambda o: getattr(o, 'selected_category', getattr(o.student, 'selected_category', '') if hasattr(o, 'student') and o.student else ''),
         }
 
         if key in relation_map:
@@ -316,10 +361,24 @@ class DynamicReportService:
             'female_pct': 0,
         }
 
-        if report_type in ['students', 'graduates']:
+        # Check if the model has a gender field or a student relation
+        Model = DynamicReportService.get_model(report_type)
+        field_names = [f.name for f in Model._meta.get_fields()]
+        
+        has_gender = False
+        gender_field = ''
+        
+        if 'gender' in field_names:
+            has_gender = True
+            gender_field = 'gender'
+        elif 'student' in field_names:
+            has_gender = True
+            gender_field = 'student__gender'
+
+        if has_gender:
             # Use filters from build_queryset to keep metrics accurate to the report scope
-            metrics['male_count'] = queryset.filter(gender='Male').count()
-            metrics['female_count'] = queryset.filter(gender='Female').count()
+            metrics['male_count'] = queryset.filter(**{gender_field: 'Male'}).count()
+            metrics['female_count'] = queryset.filter(**{gender_field: 'Female'}).count()
             metrics['other_count'] = total - (metrics['male_count'] + metrics['female_count'])
             
             if total > 0:
@@ -349,6 +408,12 @@ class DynamicReportService:
                  actual_field = {
                     'institution_name': 'institution__name',
                     'program_name': 'program__name',
+                }.get(group_by, group_by)
+            elif report_type in ['placements', 'scholarships']:
+                 actual_field = {
+                    'institution_name': 'student__institution__name',
+                    'program_name': 'student__program__name',
+                    'gender': 'student__gender',
                 }.get(group_by, group_by)
 
             data = []

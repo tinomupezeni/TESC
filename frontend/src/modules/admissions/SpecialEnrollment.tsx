@@ -65,7 +65,7 @@ export default function SpecialEnrollmentDashboard() {
   // --- Aggregate Top 5 for Bar Chart ---
   const combinedDisabilities = [...(data.students.special_students || []), ...(data.iseop.special_students || [])];
   const aggregated = combinedDisabilities.reduce<Record<string, number>>((acc, item) => {
-    acc[item.disability_type] = (acc[item.disability_type] || 0) + item.value;
+    acc[item.inclusivity_category] = (acc[item.inclusivity_category] || 0) + item.value;
     return acc;
   }, {});
     

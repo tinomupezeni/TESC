@@ -66,7 +66,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'is_work_for_fees',
             'work_area',
             'hours_pledged',
-            'disability_type',
+            'inclusivity_category',
             'semester_fee',
             'total_paid',
             'is_iseop',

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { bulkUploadStudents } from "@/services/students.services";
+import studentService from "@/services/students.services";
 
 // Columns we expect in the Excel file
 const REQUIRED_COLUMNS = [
@@ -90,7 +90,7 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
       formData.append("file", file);
       formData.append("institution_id", user.institution.id.toString());
 
-      const res = await bulkUploadStudents(formData);
+      const res = await studentService.bulkUploadStudents(formData);
       
       toast.success(res.message || "Students uploaded successfully!");
       setOpen(false);

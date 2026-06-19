@@ -13,7 +13,7 @@ from ..models import Student
 from ..serializers.student_serializers import StudentSerializer
 from ..services.student_services import StudentService
 from ..services.analysis_services import AnalysisService
-from faculties.models import Program # Import to access duration
+from faculties.models import Program, PROGRAM_CATEGORIES # Import Program and its choices
 
 COLOR_MAP = {
     'Financial': '#f87171',
@@ -24,6 +24,8 @@ COLOR_MAP = {
     'Other': '#cbd5e1',
 }
 
+# Define STEM categories from PROGRAM_CATEGORIES
+STEM_CATEGORIES = [choice[0] for choice in PROGRAM_CATEGORIES if choice[0] in ['STEM']] # Add more STEM categories as needed
 
 from core.mixins import InstitutionalIsolationMixin
 
@@ -120,6 +122,86 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['get'], url_path='stem-students')
+    def stem_students(self, request):
+        institution_id = request.query_params.get('institution_id')
+        search_query = request.query_params.get('search')
+
+        queryset = self.get_queryset().filter(program__categories__contains=['STEM']) # Filter by STEM category
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+        if search_query:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(student_id__icontains=search_query) |
+                Q(program__name__icontains=search_query)
+            )
+
+        total_students = queryset.count()
+        male_students = queryset.filter(gender='Male').count()
+        female_students = queryset.filter(gender='Female').count()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({
+                "total_students": total_students,
+                "male_students": male_students,
+                "female_students": female_students,
+                "results": serializer.data
+            })
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "total_students": total_students,
+            "male_students": male_students,
+            "female_students": female_students,
+            "results": serializer.data
+        })
+
+    @action(detail=False, methods=['get'], url_path='inclusivity-report')
+    def inclusivity_report(self, request):
+        institution_id = request.query_params.get('institution_id')
+        queryset = self.get_queryset().exclude(inclusivity_category__in=['None', '', None])
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+
+        total_students = queryset.count()
+        male_students = queryset.filter(gender='Male').count()
+        female_students = queryset.filter(gender='Female').count()
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "total_students": total_students,
+            "male_students": male_students,
+            "female_students": female_students,
+            "results": serializer.data
+        })
+
+    @action(detail=False, methods=['get'], url_path='possible-graduates')
+    def possible_graduates(self, request):
+        institution_id = request.query_params.get('institution_id')
+        # Logic for eligible but not graduated students
+        queryset = self.get_queryset().filter(status='Active').exclude(graduation_year__isnull=False)
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+
+        total_students = queryset.count()
+        male_students = queryset.filter(gender='Male').count()
+        female_students = queryset.filter(gender='Female').count()
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "total_students": total_students,
+            "male_students": male_students,
+            "female_students": female_students,
+            "results": serializer.data
+        })
+
     @action(detail=False, methods=['get'], url_path='completion-stats')
     def completion_stats(self, request):
         """
@@ -187,7 +269,7 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
             distinctions=Count('id', filter=Q(final_grade='Distinction')),
             credits=Count('id', filter=Q(final_grade='Credit')),
             passes=Count('id', filter=Q(final_grade='Pass')),
-            disabilities=Count('id', filter=~Q(disability_type__in=['None', '', None]))
+            inclusivity=Count('id', filter=~Q(inclusivity_category__in=['None', '', None]))
 
         ).order_by('-graduation_year', 'program__name')
 
@@ -239,39 +321,28 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         data = AnalysisService.get_financial_stats(institution_id)
         return Response(data)
 
-    @action(detail=False, methods=['get'], url_path='dropout-stats')
-    def dropout_stats(self, request):
-        """
-        Returns aggregated dropout statistics for stats cards and charts.
-        """
+    @action(detail=False, methods=['get'], url_path='in-country-transfers')
+    def in_country_transfers(self, request):
+        from academic.models import InCountryTransfer
+        from ..serializers.in_country_transfer_serializers import InCountryTransferSerializer
+
         institution_id = request.query_params.get('institution_id')
-        queryset = Student.objects.filter(status='Dropout')
+        search_query = request.query_params.get('search')
+
+        queryset = InCountryTransfer.objects.all()
 
         if institution_id:
-            queryset = queryset.filter(institution_id=institution_id)
+            # Assuming InCountryTransfer has a link to institution via student
+            queryset = queryset.filter(student__institution_id=institution_id)
+            
+        if search_query:
+            queryset = queryset.filter(
+                Q(student__first_name__icontains=search_query) |
+                Q(student__last_name__icontains=search_query) |
+                Q(student__student_id__icontains=search_query) |
+                Q(from_institution__icontains=search_query) |
+                Q(to_institution__icontains=search_query)
+            )
 
-        reason_counts = queryset.values('dropout_reason').annotate(value=Count('id'))
-
-        all_reasons = Student.DROPOUT_REASONS
-        chart_data = []
-        total_dropouts = 0
-
-        for code, label in all_reasons:
-            count_obj = next((x for x in reason_counts if x['dropout_reason'] == code), None)
-            count = count_obj['value'] if count_obj else 0
-
-            chart_data.append({
-                "name": label,
-                "value": count,
-                "color": COLOR_MAP.get(code, "#cbd5e1")
-            })
-
-            total_dropouts += count
-
-        primary_cause = max(chart_data, key=lambda x: x['value']) if chart_data else None
-
-        return Response({
-            "total_dropouts": total_dropouts,
-            "chart_data": chart_data,
-            "primary_cause": primary_cause['name'] if primary_cause else None
-        })
+        serializer = InCountryTransferSerializer(queryset, many=True)
+        return Response({"results": serializer.data})

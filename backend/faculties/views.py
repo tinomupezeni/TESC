@@ -24,8 +24,15 @@ class FacultyViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Queryset is automatically filtered by InstitutionalIsolationMixin.
+        Adds explicit filtering by institution_id if provided in query params.
         """
         queryset = super().get_queryset().select_related('institution')
+        
+        # Explicitly filter by institution_id if provided in query params
+        institution_id = self.request.query_params.get('institution_id')
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+            
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -132,6 +139,21 @@ class DepartmentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     institution_lookup_path = 'faculty__institution'
+
+    def create(self, request, *args, **kwargs):
+        print(f"DEBUG: DepartmentViewSet create received data: {request.data}")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True) # Now it will raise exceptions
+        
+        print(f"DEBUG: DepartmentSerializer is valid. validated_data: {serializer.validated_data}")
+        self.perform_create(serializer)
+        print(f"DEBUG: perform_create called. Serializer instance: {serializer.instance}")
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer): # Explicitly define perform_create as it would be for ModelViewSet
+        print(f"DEBUG: Calling serializer.save() with validated_data: {serializer.validated_data}")
+        serializer.save()
 
     def get_queryset(self):
         # Optimize query

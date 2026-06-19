@@ -55,11 +55,11 @@ export const useSpecialEnrollment = () => {
   const pieData = useMemo(() => {
     if (!data?.students?.special_students) return [];
     return data.students.special_students
-      .filter((item) => item.disability_type && item.disability_type !== "None")
+      .filter((item) => item.inclusivity_category && item.inclusivity_category !== "None")
       .map((item) => ({
-        name: item.disability_type,
+        name: item.inclusivity_category,
         value: item.value,
-        color: COLOR_MAP[item.disability_type] || "#6B7280", // fallback gray
+        color: COLOR_MAP[item.inclusivity_category] || "#6B7280", // fallback gray
       }));
   }, [data]);
 
@@ -67,11 +67,11 @@ export const useSpecialEnrollment = () => {
   const iseopPieData = useMemo(() => {
     if (!data?.iseop?.special_students) return [];
     return data.iseop.special_students
-      .filter((item) => item.disability_type && item.disability_type !== "None")
+      .filter((item) => item.inclusivity_category && item.inclusivity_category !== "None")
       .map((item) => ({
-        name: item.disability_type,
+        name: item.inclusivity_category,
         value: item.value,
-        color: COLOR_MAP[item.disability_type] || "#6B7280",
+        color: COLOR_MAP[item.inclusivity_category] || "#6B7280",
       }));
   }, [data]);
 

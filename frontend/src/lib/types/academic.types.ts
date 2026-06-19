@@ -107,7 +107,7 @@ export interface Student {
   status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred' | 'Dropout';
   institution: string;
   program: string;
-  disability_type?: string;   // NEW
+  inclusivity_category?: string;   // NEW
   created_at: string;
 }
 

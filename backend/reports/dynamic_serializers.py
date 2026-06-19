@@ -16,7 +16,7 @@ class ReportGenerateSerializer(serializers.Serializer):
     """Serializer for report generation request."""
 
     report_type = serializers.ChoiceField(
-        choices=['staff', 'students', 'graduates'],
+        choices=['staff', 'students', 'graduates', 'placements', 'scholarships', 'mobility'],
         required=True,
         help_text="Type of report to generate"
     )
@@ -118,7 +118,7 @@ class RelationOptionsRequestSerializer(serializers.Serializer):
     """Serializer for fetching relation field options."""
 
     report_type = serializers.ChoiceField(
-        choices=['staff', 'students', 'graduates'],
+        choices=['staff', 'students', 'graduates', 'placements', 'scholarships', 'mobility'],
         required=True
     )
 

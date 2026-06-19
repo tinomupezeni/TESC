@@ -27,7 +27,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Download, Filter, TrendingUp, Loader2, PieChart, Search, Trash2, RotateCcw, GraduationCap } from "lucide-react";
-import { getGraduationStats, GraduationStat, getStudents, Student } from "@/services/students.services";
+import { getGraduationStats, GraduationStat } from "@/services/graduates.services";
+import { getStudents, Student } from "@/services/students.services";
 import * as XLSX from "xlsx";
 import { AutoGraduationBanner } from "@/components/graduates/AutoGraduationBanner";
 import { UploadGraduatesDialog } from "@/components/helpers/UploadGraduatesDialog";

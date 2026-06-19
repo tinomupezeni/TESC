@@ -22,6 +22,8 @@ class ProgramSerializer(serializers.ModelSerializer):
             'duration', 
             'level',      # Deprecated
             'category',   # Deprecated
+            'is_critical_skill', # NEW Phase 1
+            'program_type',      # NEW Phase 1
             'description', 
             'coordinator', 
             'student_capacity', 

@@ -18,6 +18,8 @@ import {
   Wallet,
   UserX,
   Users,
+  Briefcase as BriefcaseIcon,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +53,9 @@ const dataCategories = [
   { title: "Incubation Hubs", url: "/hubs", icon: Building2 },
   { title: "Startups", url: "/startups", icon: Rocket },
   { title: "Regional Analysis", url: "/regional", icon: MapPin },
+  { title: "Industry Placements", url: "/placements", icon: BriefcaseIcon },
+  { title: "Scholarships", url: "/scholarships", icon: GraduationCap },
+  { title: "Int. Mobility", url: "/mobility", icon: Globe },
 ];
 
 const admissionsCategory = [

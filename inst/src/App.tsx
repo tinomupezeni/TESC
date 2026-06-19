@@ -24,6 +24,13 @@ import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Faculties from "./pages/Faculties";
 import EnrolmentSupport from "./pages/IseopEnrolment";
+import Placements from "./pages/Placements";
+import Scholarships from "./pages/Scholarships";
+import Mobility from "./pages/Mobility";
+import StemStudents from "./pages/StemStudents"; // New Import
+import Inclusivity from "./pages/Inclusivity"; // New Import
+import PossibleGraduates from "./pages/PossibleGraduates"; // New Import
+import InCountryTransfers from "./pages/InCountryTransfers"; // New Import
 import { PermissionGuard } from "./components/PermissionGuard";
 
 
@@ -107,6 +114,54 @@ const App = () => {
             }
           />
           <Route
+            path="/dashboard/stem-students" // New Route
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <StemStudents />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/inclusivity" // New Route
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Inclusivity />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/possible-graduates" // New Route
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <PossibleGraduates />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/transfers" // New Route
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <InCountryTransfers />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard/special-enrollment"
             element={
               <ProtectedRoute>
@@ -137,6 +192,42 @@ const App = () => {
                 <PermissionGuard>
                   <DashboardLayout>
                     <Faculties />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/placements"
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Placements />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/scholarships"
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Scholarships />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/mobility"
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <Mobility />
                   </DashboardLayout>
                 </PermissionGuard>
               </ProtectedRoute>

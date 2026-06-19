@@ -25,6 +25,9 @@ import Facilities from "./pages/Facilities";
 import Innovation from "./pages/Innovation";
 import Industrialisation from "./pages/Industrialisation";
 import Regional from "./pages/Regional";
+import Placements from "./pages/Placements";
+import Scholarships from "./pages/Scholarships";
+import Mobility from "./pages/Mobility";
 import Setting from "./pages/Settings";
 
 
@@ -222,6 +225,36 @@ const App = () => (
                   <ProtectedRoute>
                     <PermissionGuard>
                       <Regional />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/placements"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <Placements />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/scholarships"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <Scholarships />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mobility"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <Mobility />
                     </PermissionGuard>
                   </ProtectedRoute>
                 }

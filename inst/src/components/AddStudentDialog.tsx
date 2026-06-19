@@ -252,11 +252,11 @@ export function AddStudentDialog({
         is_work_for_fees: isWorkForFees,
       };
 
-      // 1. Handle Disability
+      // 1. Handle Inclusivity Category
       if (selectedDisability === "Other" && formData.disability_other) {
-        finalPayload.disability_type = formData.disability_other;
+        finalPayload.inclusivity_category = formData.disability_other;
       } else {
-        finalPayload.disability_type = selectedDisability;
+        finalPayload.inclusivity_category = selectedDisability;
       }
 
       // 2. Handle Work Area strictly
@@ -286,7 +286,7 @@ export function AddStudentDialog({
         enrollment_year: new Date().getFullYear(),
         status: "Active",
         is_work_for_fees: false,
-        disability_type: "None",
+        inclusivity_category: "None",
         selected_level: "",
         selected_category: "",
       });
