@@ -1,0 +1,548 @@
+import { useState, useEffect, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+// New imports for Combobox
+import { 
+  Plus, Loader2, AlertCircle, Check, ChevronsUpDown 
+} from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+// Services
+import { createProgram } from "@/services/programs.services";
+import { getFaculties, getDepartments, Faculty, Department } from "@/services/faculties.services";
+import { getStaff, Staff } from "@/services/staff.services"; // Import Staff Service
+
+// --- FIX: Updated categories to map short codes to full labels ---
+const PROGRAM_CATEGORIES = [
+  { value: "STEM", label: "STEM (Science, Tech, Engineering, Math)" },
+  { value: "HEALTH", label: "Health Sciences & Medicine" },
+  { value: "BUSINESS", label: "Business & Management" },
+  { value: "SOCIAL", label: "Social Sciences" },
+  { value: "HUMANITIES", label: "Humanities & Arts" },
+  { value: "EDUCATION", label: "Education & Teaching" },
+  { value: "LAW", label: "Law & Legal Studies" },
+  { value: "VOCATIONAL", label: "Vocational & Technical Training" },
+  { value: "INTERDISCIPLINARY", label: "Interdisciplinary Studies" },
+];
+
+const PROGRAM_LEVELS = [
+  "Class 4", "Class 3", "Class 2", "Class 1",
+  "National Certificate", "National Foundation Certificate",
+  "Certificate", "Diploma", "Bachelors", "Masters", "PhD", "Other"
+];
+
+const PROGRAM_TYPES = [
+  "Degree", "Diploma", "Certificate", "Short Course", "Other"
+];
+
+export function AddProgramDialog({ institutionId = 1, onSuccess }: { institutionId?: number, onSuccess?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+  
+  // Data State
+  const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [staffList, setStaffList] = useState<Staff[]>([]); // State for staff
+
+  // Combobox State for Coordinator
+  const [openCoordinatorBox, setOpenCoordinatorBox] = useState(false);
+
+  const initialData = {
+    name: "",
+    code: "",
+    faculty: "",
+    department: "",
+    categories: [] as string[], 
+    duration_years: "0",
+    duration_months: "0",
+    duration_weeks: "0",
+    duration_days: "0",
+    levels: [] as string[],
+    description: "",
+    coordinator: "", 
+    student_capacity: "",
+    modules: "",
+    entry_requirements: "",
+    program_type: "Degree",
+    is_critical_skill: false,
+  };
+
+  const [formData, setFormData] = useState(initialData);
+
+  // --- 1. Fetch Data on Open ---
+  useEffect(() => {
+    if (open && institutionId) {
+      const fetchData = async () => {
+        setLoadingData(true);
+        try {
+          // Fetch Faculties, Departments, AND Staff simultaneously
+          const [facData, deptData, staffData] = await Promise.all([
+            getFaculties(institutionId),
+            getDepartments({ institution: institutionId }),
+            getStaff({ institution_id: institutionId, status: 'active' }) // Only active staff
+          ]);
+
+          if (Array.isArray(facData)) setFaculties(facData);
+          if (Array.isArray(deptData)) setDepartments(deptData);
+          if (Array.isArray(staffData)) setStaffList(staffData);
+
+        } catch (error) {
+          console.error("Error fetching data", error);
+          toast.error("Could not load dropdown lists.");
+        } finally {
+          setLoadingData(false);
+        }
+      };
+      fetchData();
+    }
+  }, [open, institutionId]);
+
+  // --- 2. Filter Departments ---
+  const filteredDepartments = useMemo(() => {
+    if (!formData.faculty) return departments;
+    return departments.filter(d => d.faculty.toString() === formData.faculty);
+  }, [departments, formData.faculty]);
+
+  // --- Handlers ---
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (field: string, value: string) => {
+    setFormData((prev) => {
+        const newData = { ...prev, [field]: value };
+        if (field === 'faculty') {
+            newData.department = "";
+        }
+        return newData;
+    });
+  };
+
+  const toggleSelection = (field: 'categories' | 'levels', value: string) => {
+    setFormData((prev) => {
+      const current = prev[field];
+      const next = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return { ...prev, [field]: next };
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (formData.categories.length === 0 || formData.levels.length === 0) {
+        toast.error("Please select at least one Category/Level.");
+        setLoading(false);
+        return;
+      }
+
+      const yrs = parseInt(formData.duration_years) || 0;
+      const mths = parseInt(formData.duration_months) || 0;
+      const wks = parseInt(formData.duration_weeks) || 0;
+      const dys = parseInt(formData.duration_days) || 0;
+
+      if (yrs === 0 && mths === 0 && wks === 0 && dys === 0) {
+        toast.error("Please specify a program duration (at least one field must be > 0).");
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        department: formData.department ? parseInt(formData.department) : null,
+        name: formData.name,
+        code: formData.code,
+        categories: formData.categories, 
+        duration_years: yrs,
+        duration_months: mths,
+        duration_weeks: wks,
+        duration_days: dys,
+        levels: formData.levels,
+        description: formData.description,
+        coordinator: formData.coordinator,
+        student_capacity: parseInt(formData.student_capacity) || 0,
+        modules: formData.modules,
+        entry_requirements: formData.entry_requirements,
+      };
+
+      await createProgram(payload);
+
+      toast.success("Program added successfully!");
+      setFormData(initialData);
+      setOpen(false);
+      if (onSuccess) onSuccess();
+
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.detail || "Failed to create program.";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Program
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Program</DialogTitle>
+          <DialogDescription>Create a new academic program with multiple levels and categories.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 py-2">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+               {/* Program Name */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Program Name *</Label>
+                <Input 
+                  id="name" 
+                  value={formData.name} 
+                  onChange={handleChange} 
+                  placeholder="e.g., Bachelor of Science in Computer Science" 
+                  required 
+                />
+              </div>
+
+              {/* Code & Duration Breakdown */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code">Program Code *</Label>
+                  <Input 
+                    id="code" 
+                    value={formData.code} 
+                    onChange={handleChange} 
+                    placeholder="e.g. BSCS" 
+                    required 
+                  />
+                </div>
+                
+                <div className="space-y-2 p-3 border rounded-md bg-muted/20">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2">Program Duration</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_years" className="text-xs">Years</Label>
+                      <Input 
+                        id="duration_years" 
+                        type="number" 
+                        min="0"
+                        value={formData.duration_years} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_months" className="text-xs">Months</Label>
+                      <Input 
+                        id="duration_months" 
+                        type="number" 
+                        min="0"
+                        max="11"
+                        value={formData.duration_months} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_weeks" className="text-xs">Weeks</Label>
+                      <Input 
+                        id="duration_weeks" 
+                        type="number" 
+                        min="0"
+                        max="51"
+                        value={formData.duration_weeks} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_days" className="text-xs">Days</Label>
+                      <Input 
+                        id="duration_days" 
+                        type="number" 
+                        min="0"
+                        max="364"
+                        value={formData.duration_days} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Program Type & Critical Skill */}
+              <div className="grid grid-cols-2 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="program_type">Program Type *</Label>
+                  <Select 
+                    value={formData.program_type} 
+                    onValueChange={(val) => handleSelectChange("program_type", val)}
+                  >
+                    <SelectTrigger id="program_type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROGRAM_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2 h-10 px-3 border rounded-md bg-muted/10">
+                  <Checkbox 
+                    id="is_critical_skill" 
+                    checked={formData.is_critical_skill}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_critical_skill: checked === true }))}
+                  />
+                  <Label htmlFor="is_critical_skill" className="cursor-pointer">Is Critical Skill</Label>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/30 rounded-md border space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Academic Placement</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="faculty">Faculty</Label>
+                        <Select 
+                            value={formData.faculty} 
+                            onValueChange={(val) => {
+                              const actualVal = val === "none" ? "" : val;
+                              handleSelectChange("faculty", actualVal);
+                            }}
+                            disabled={loadingData}
+                        >
+                            <SelectTrigger id="faculty">
+                            <SelectValue placeholder={loadingData ? "Loading..." : "Select faculty"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="none">None (No Faculty)</SelectItem>
+                            {faculties.map((fac) => (
+                                <SelectItem key={fac.id} value={String(fac.id)}>{fac.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="department">Department</Label>
+                        <Select 
+                            value={formData.department} 
+                            onValueChange={(val) => {
+                              const actualVal = val === "none" ? "" : val;
+                              handleSelectChange("department", actualVal);
+                            }}
+                            disabled={filteredDepartments.length === 0}
+                        >
+                            <SelectTrigger id="department">
+                            <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="none">None (No Department)</SelectItem>
+                            {filteredDepartments.map((dept) => (
+                                <SelectItem key={dept.id} value={String(dept.id)}>{dept.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                 {/* Coordinator */}
+                <div className="space-y-2 flex flex-col">
+                  <Label>Coordinator (Optional)</Label>
+                  <Popover open={openCoordinatorBox} onOpenChange={setOpenCoordinatorBox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openCoordinatorBox}
+                        className="w-full justify-between pl-3 text-left font-normal"
+                      >
+                        {formData.coordinator ? (
+                            <span className="flex items-center text-foreground truncate">
+                                {formData.coordinator}
+                            </span>
+                        ) : (
+                            <span className="text-muted-foreground">Select staff member...</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search staff..." />
+                        <CommandList>
+                            <CommandEmpty>No staff found.</CommandEmpty>
+                            <CommandGroup className="max-h-[200px] overflow-auto">
+                                <CommandItem
+                                    onSelect={() => {
+                                        setFormData(prev => ({ ...prev, coordinator: "" }));
+                                        setOpenCoordinatorBox(false);
+                                    }}
+                                    className="text-muted-foreground italic"
+                                >
+                                    None (Clear)
+                                </CommandItem>
+                                
+                                {staffList.map((staff) => (
+                                <CommandItem
+                                    key={staff.id}
+                                    value={staff.full_name}
+                                    onSelect={() => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            coordinator: staff.full_name 
+                                        }));
+                                        setOpenCoordinatorBox(false);
+                                    }}
+                                >
+                                    <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        formData.coordinator === staff.full_name ? "opacity-100" : "opacity-0"
+                                    )}
+                                    />
+                                    <div className="flex flex-col">
+                                        <span>{staff.full_name}</span>
+                                        <span className="text-xs text-muted-foreground">{staff.position}</span>
+                                    </div>
+                                </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Program Levels - Multi Select */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Available Levels *</Label>
+                <div className="grid grid-cols-2 gap-3 p-4 bg-muted/20 rounded-lg border max-h-[200px] overflow-y-auto">
+                  {PROGRAM_LEVELS.map((level) => (
+                    <div key={level} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`level-${level}`} 
+                        checked={formData.levels.includes(level)}
+                        onCheckedChange={() => toggleSelection('levels', level)}
+                      />
+                      <label 
+                        htmlFor={`level-${level}`}
+                        className="text-xs font-medium leading-none cursor-pointer"
+                      >
+                        {level}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Program Categories - Multi Select */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Program Categories *</Label>
+                <div className="space-y-2 p-4 bg-muted/20 rounded-lg border max-h-[200px] overflow-y-auto">
+                  {PROGRAM_CATEGORIES.map((cat) => (
+                    <div key={cat.value} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`cat-${cat.value}`} 
+                        checked={formData.categories.includes(cat.value)}
+                        onCheckedChange={() => toggleSelection('categories', cat.value)}
+                      />
+                      <label 
+                        htmlFor={`cat-${cat.value}`}
+                        className="text-xs font-medium leading-none cursor-pointer"
+                      >
+                        {cat.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+              <div className="space-y-2">
+                  <Label htmlFor="student_capacity">Student Capacity</Label>
+                  <Input 
+                    id="student_capacity" 
+                    type="number" 
+                    value={formData.student_capacity} 
+                    onChange={handleChange} 
+                    placeholder="100" 
+                  />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Program Description</Label>
+                <Textarea 
+                  id="description" 
+                  value={formData.description} 
+                  onChange={handleChange} 
+                  placeholder="Brief description of the program..." 
+                  rows={2} 
+                />
+              </div>
+          </div>
+
+          <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Adding..." : "Add Program"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

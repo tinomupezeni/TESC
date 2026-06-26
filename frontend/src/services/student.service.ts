@@ -1,0 +1,84 @@
+// services/student.service.ts
+
+import apiClient from "./api"; // Use your new api.ts
+import { 
+  Student, 
+  StudentWriteData, 
+  StudentGraduate, 
+  ProgramCompletionStats // --- ADDED IMPORT ---
+} from "@/lib/types/academic.types";
+
+const BASE_PATH = "/academic/students/";
+
+/**
+ * Fetch all students
+ */
+export const getAllStudents = async (): Promise<Student[]> => {
+  console.log("Fetching all students...");
+  const response = await apiClient.get<Student[]>(BASE_PATH);
+  console.log(response);
+  
+  return response.data;
+};
+
+/**
+ * Fetch a single student by their ID
+ */
+export const getStudentById = async (id: number): Promise<Student> => {
+  const response = await apiClient.get<Student>(`${BASE_PATH}${id}/`);
+  return response.data;
+};
+
+/**
+ * Create a new student
+ */
+export const createStudent = async (
+  data: StudentWriteData
+): Promise<Student> => {
+  const response = await apiClient.post<Student>(BASE_PATH, data);
+  return response.data;
+};
+
+/**
+ * Update an existing student
+ */
+export const updateStudent = async (
+  id: number,
+  data: Partial<StudentWriteData>
+): Promise<Student> => {
+  const response = await apiClient.patch<Student>(`${BASE_PATH}${id}/`, data);
+  return response.data;
+};
+
+/**
+ * Delete a student
+ */
+export const deleteStudent = async (id: number): Promise<void> => {
+  await apiClient.delete(`${BASE_PATH}${id}/`);
+};
+
+/**
+ * Fetch individual graduate records
+ */
+export const getGraduates = async (institutionId?: string | number): Promise<StudentGraduate[]> => {
+  const params: any = { status: 'Graduated' };
+  if (institutionId) params.institution = institutionId;
+  
+  const response = await apiClient.get<StudentGraduate[]>(BASE_PATH, { params });
+  return response.data;
+};
+
+/**
+ * --- NEW: Fetch Program Completion Rates ---
+ */
+export const getCompletionStats = async (institutionId?: string | number): Promise<ProgramCompletionStats> => {
+  const params: any = {};
+  if (institutionId) params.institution_id = institutionId;
+
+  // Calls /api/academic/students/completion-stats/
+  const response = await apiClient.get<ProgramCompletionStats>(
+    `${BASE_PATH}completion-stats/`, 
+    { params }
+  );
+  return response.data;
+};

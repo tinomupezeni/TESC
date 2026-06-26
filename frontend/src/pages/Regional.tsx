@@ -1,0 +1,240 @@
+import { useState, useEffect, useMemo } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MapPin, Building, Users, Beaker, Loader2 } from "lucide-react";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+import { getRegionalStats, RegionalStats } from "@/services/analysis.services";
+import { useNavigate } from "react-router-dom";
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-card p-2 shadow-sm text-card-foreground">
+        <p className="font-bold text-sm">{label}</p>
+        <p style={{ color: payload[0].fill }} className="text-xs">
+          {`${payload[0].name}: ${payload[0].value.toLocaleString()}`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+export default function Regional() {
+  const [data, setData] = useState<RegionalStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await getRegionalStats();
+        setData(response);
+      } catch (error) {
+        console.error("Failed to fetch regional stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  /**
+   * AGGREGATION LOGIC
+   * Groups the raw institution-level data into location-level data
+   */
+  const distinctChartData = useMemo(() => {
+    if (!data?.chart_data) return [];
+
+    const grouped = data.chart_data.reduce((acc: any, curr) => {
+      const loc = curr.location || "Unknown";
+      
+      if (!acc[loc]) {
+        acc[loc] = {
+          location: loc,
+          students: 0,
+          hubs: 0,
+          institutionNames: [], 
+        };
+      }
+
+      acc[loc].students += curr.students;
+      // We sum the hubs count provided by the backend annotate query
+      acc[loc].hubs += curr.hubs || 0;
+
+      // Add unique institution names to the list for the table UI
+      if (!acc[loc].institutionNames.includes(curr.institution_name)) {
+        acc[loc].institutionNames.push(curr.institution_name);
+      }
+      
+      return acc;
+    }, {});
+
+    return Object.values(grouped)
+      .map((item: any) => ({
+        ...item,
+        // Join institution names for the subtitle display
+        institutions: item.institutionNames.join(", "),
+      }))
+      .sort((a: any, b: any) => b.students - a.students);
+  }, [data]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-[80vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!data) return null;
+  const { stats } = data;
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <MapPin className="h-6 w-6 sm:h-7 sm:h-7 text-primary" />
+            Regional Analysis
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Aggregated institutional footprint by location
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatsCard
+            title="Provinces"
+            value={stats.provinces_covered}
+            description="Active regions"
+            icon={MapPin}
+            onClick={() => navigate("/institutions?group=province")}
+          />
+          <StatsCard
+            title="Top Location"
+            value={stats.top_enrollment}
+            description="Highest enrollment"
+            icon={Users}
+            variant="accent"
+            onClick={() => navigate("/students?sort=location")}
+          />
+          <StatsCard
+            title="Institutions"
+            value={stats.total_institutions}
+            description="Registered"
+            icon={Building}
+            variant="info"
+            onClick={() => navigate("/institutions")}
+          />
+          <StatsCard
+            title="Innovation Hubs"
+            value={stats.total_hubs || 0}
+            description="Active centers"
+            icon={Beaker}
+            variant="success"
+            onClick={() => navigate("/innovation")}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Bar Chart Section */}
+          <Card className="lg:col-span-3">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Total Enrollment by Location</CardTitle>
+            </CardHeader>
+            <CardContent className="h-64 sm:h-96 p-2 sm:p-6 pt-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={distinctChartData}
+                  layout="vertical"
+                  margin={{ left: 0, right: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" fontSize={10} />
+                  <YAxis
+                    dataKey="location"
+                    type="category"
+                    fontSize={10}
+                    width={80}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ fill: "rgba(0,0,0,0.05)" }}
+                  />
+                  <Bar
+                    dataKey="students"
+                    name="Total Students"
+                    fill="hsl(var(--primary))"
+                    radius={[0, 4, 4, 0]}
+                    barSize={15}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Table Section */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Distinct Location Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="h-64 sm:h-96 overflow-y-auto p-0 sm:p-6 sm:pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Location</TableHead>
+                    <TableHead className="text-right text-xs">Students</TableHead>
+                    <TableHead className="text-center text-xs">Hubs</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {distinctChartData.map((item: any, index: number) => (
+                    <TableRow key={index}>
+                      <TableCell className="py-2 sm:py-3">
+                        <div className="font-medium text-[10px] sm:text-xs">
+                          {item.location}
+                        </div>
+                        <div className="hidden sm:block text-[10px] text-muted-foreground truncate max-w-[150px]">
+                          {item.institutions}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-[10px] sm:text-xs font-semibold">
+                        {item.students.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-center text-[10px] sm:text-xs">
+                        <span className={`px-1.5 py-0.5 rounded-full ${item.hubs > 0 ? 'bg-green-100 text-green-700 font-bold' : 'bg-slate-100 text-slate-400'}`}>
+                           {item.hubs}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

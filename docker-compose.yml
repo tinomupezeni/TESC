@@ -1,0 +1,60 @@
+services:
+  # --- Database ---
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - main_net
+
+  # --- Backend (Django) ---
+  backend:
+    image: tinotenda762/tesc-backend:latest
+    build: ./backend
+    # Directly expose backend on 8000
+    ports:
+      - "8000:8000"
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 60
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DJANGO_SETTINGS_MODULE=core.settings
+    depends_on:
+      - db
+    networks:
+      - main_net
+
+  # --- Frontend 1 (Student/Public) ---
+  frontend-client-v2:
+    image: tinotenda762/tesc-main:latest
+    build: ./frontend
+    # Expose on 8081 directly
+    ports:
+      - "8081:80"
+    networks:
+      - main_net
+
+  # --- Frontend 2 (Institution/Admin) ---
+  frontend-admin-v2:
+    image: tinotenda762/tesc-inst:latest
+    build: ./inst
+    # Expose on 8082 directly
+    ports:
+      - "8082:80"
+    networks:
+      - main_net
+
+volumes:
+  postgres_data:
+
+networks:
+  main_net:
+    driver: bridge

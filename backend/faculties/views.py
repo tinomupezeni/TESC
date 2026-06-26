@@ -1,0 +1,181 @@
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+from .serializers.department_serializer import DepartmentSerializer
+
+from .serializers.program_serializers import ProgramSerializer
+from .services.program_services import ProgramService
+from .models import Department, Faculty, Program
+from .serializers.faculty_serializer import FacultySerializer
+from .services.faculty_services import FacultyService
+
+from core.mixins import InstitutionalIsolationMixin
+
+class FacultyViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for viewing and editing faculties with institutional isolation.
+    """
+    queryset = Faculty.objects.all()
+    serializer_class = FacultySerializer
+    institution_lookup_path = 'institution'
+
+    def get_queryset(self):
+        """
+        Queryset is automatically filtered by InstitutionalIsolationMixin.
+        Adds explicit filtering by institution_id if provided in query params.
+        """
+        queryset = super().get_queryset().select_related('institution')
+        
+        # Explicitly filter by institution_id if provided in query params
+        institution_id = self.request.query_params.get('institution_id')
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+            
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except DjangoValidationError as e:
+             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer):
+        serializer.instance = FacultyService.create_faculty(serializer.validated_data)
+
+    def destroy(self, _request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            FacultyService.delete_faculty(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def stats(self, _request):
+        total = self.get_queryset().count()
+        active = self.get_queryset().filter(status='Active').count()
+        return Response({
+            "total_faculties": total,
+            "active_faculties": active
+        })
+        
+# faculties/views.py
+
+class ProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for viewing and editing programs.
+    """
+    queryset = Program.objects.all()
+    serializer_class = ProgramSerializer
+    institution_lookup_path = 'institution'
+
+    def get_queryset(self):
+        """
+        Filter programs by Department, Faculty, or Institution.
+        """
+        queryset = super().get_queryset().select_related(
+            'department', 
+            'department__faculty', 
+            'department__faculty__institution',
+            'institution'
+        )
+        
+        # 1. Filter by Department (Direct link)
+        department_id = self.request.query_params.get('department_id')
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
+
+        # 2. Filter by Faculty (Through Department)
+        faculty_id = self.request.query_params.get('faculty_id')
+        if faculty_id:
+            queryset = queryset.filter(department__faculty_id=faculty_id)
+            
+        # 3. Filter by Institution
+        institution_id = self.request.query_params.get('institution_id')
+        if institution_id:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(institution_id=institution_id) | 
+                Q(department__faculty__institution_id=institution_id)
+            )
+            
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except DjangoValidationError as e:
+             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.is_authenticated and not user.is_superuser:
+            user_inst = getattr(user, 'institution', None)
+            if not user_inst and hasattr(user, "inst_admin"):
+                user_inst = user.inst_admin.institution
+            if user_inst:
+                serializer.validated_data['institution'] = user_inst
+        serializer.instance = ProgramService.create_program(serializer.validated_data)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if user.is_authenticated and not user.is_superuser:
+            user_inst = getattr(user, 'institution', None)
+            if not user_inst and hasattr(user, "inst_admin"):
+                user_inst = user.inst_admin.institution
+            if user_inst:
+                serializer.validated_data['institution'] = user_inst
+        ProgramService.update_program(serializer.instance, serializer.validated_data)
+
+    def destroy(self, _request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            ProgramService.delete_program(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# faculties/views.py
+
+class DepartmentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
+    institution_lookup_path = 'faculty__institution'
+
+    def create(self, request, *args, **kwargs):
+        print(f"DEBUG: DepartmentViewSet create received data: {request.data}")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True) # Now it will raise exceptions
+        
+        print(f"DEBUG: DepartmentSerializer is valid. validated_data: {serializer.validated_data}")
+        self.perform_create(serializer)
+        print(f"DEBUG: perform_create called. Serializer instance: {serializer.instance}")
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer): # Explicitly define perform_create as it would be for ModelViewSet
+        print(f"DEBUG: Calling serializer.save() with validated_data: {serializer.validated_data}")
+        serializer.save()
+
+    def get_queryset(self):
+        # Optimize query
+        queryset = super().get_queryset().select_related('faculty', 'faculty__institution')
+        
+        # 1. Filter by Faculty (existing)
+        faculty_id = self.request.query_params.get('faculty')
+        if faculty_id:
+            queryset = queryset.filter(faculty_id=faculty_id)
+            
+        return queryset
