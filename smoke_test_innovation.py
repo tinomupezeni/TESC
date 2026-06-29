@@ -4,7 +4,7 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 
 def get_admin_token():
     print("Logging in as System Admin...")

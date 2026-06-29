@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { AddScholarshipDialog } from "@/components/scholarships/AddScholarshipDialog";
+import { EditScholarshipDialog } from "@/components/scholarships/EditScholarshipDialog";
+import { TableSkeleton } from "@/components/common/TableSkeleton";
 import {
   Table,
   TableBody,
@@ -15,7 +17,7 @@ import {
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
-import { GraduationCap, DollarSign, Calendar, Upload } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, Upload, Pencil, Users } from "lucide-react";
 import { getScholarships, StudentScholarship } from "@/services/scholarships.services";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,7 @@ import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
 export default function Scholarships() {
   const [scholarships, setScholarships] = useState<StudentScholarship[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingScholarship, setEditingScholarship] = useState<StudentScholarship | null>(null);
 
   const fetchScholarships = async () => {
     setLoading(true);
@@ -49,6 +52,9 @@ export default function Scholarships() {
   }, []);
 
   const totalAmount = scholarships.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+  const maleCount = scholarships.filter(s => s.student_gender === "Male").length;
+  const femaleCount = scholarships.filter(s => s.student_gender === "Female").length;
 
   return (
     <div className="space-y-6">
@@ -89,7 +95,7 @@ export default function Scholarships() {
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Scholarships</CardTitle>
@@ -117,6 +123,17 @@ export default function Scholarships() {
                 <div className="text-2xl font-bold">{new Date().getFullYear()}</div>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Gender Dist.</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm font-medium mt-2">
+                  <span className="text-blue-500">{maleCount} M</span> / <span className="text-pink-500">{femaleCount} F</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="rounded-md border overflow-x-auto">
@@ -128,27 +145,45 @@ export default function Scholarships() {
                   <TableHead className="hidden lg:table-cell text-xs">Program</TableHead>
                   <TableHead className="text-xs">Provider</TableHead>
                   <TableHead className="hidden sm:table-cell text-xs">Amount</TableHead>
+                  <TableHead className="text-xs">Duration</TableHead>
                   <TableHead className="text-right text-xs">Year</TableHead>
+                  <TableHead className="text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">Loading...</TableCell>
-                  </TableRow>
+                  <TableSkeleton columns={6} rows={5} />
                 ) : scholarships.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-xs">No scholarships found.</TableCell>
                   </TableRow>
                 ) : (
                   scholarships.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow 
+                      key={s.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setEditingScholarship(s)}
+                    >
                       <TableCell className="font-medium text-[10px] sm:text-xs">{s.student_id_number}</TableCell>
                       <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{s.student_name}</TableCell>
                       <TableCell className="hidden lg:table-cell text-xs">{s.program_name}</TableCell>
                       <TableCell className="text-[10px] sm:text-xs">{s.provider_name}</TableCell>
                       <TableCell className="hidden sm:table-cell text-[10px] sm:text-xs">${Number(s.amount).toLocaleString()}</TableCell>
+                      <TableCell className="text-[10px] sm:text-xs">{s.duration || 'N/A'}</TableCell>
                       <TableCell className="text-right text-[10px] sm:text-xs">{s.year_awarded}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingScholarship(s);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -157,6 +192,17 @@ export default function Scholarships() {
           </div>
         </CardContent>
       </Card>
+
+      {editingScholarship && (
+        <EditScholarshipDialog
+          scholarship={editingScholarship}
+          open={!!editingScholarship}
+          onOpenChange={(open) => {
+            if (!open) setEditingScholarship(null);
+          }}
+          onSuccess={fetchScholarships}
+        />
+      )}
     </div>
   );
 }

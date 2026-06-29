@@ -5,7 +5,7 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = os.getenv("BASE_URL", "https://localhost/api")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000/api")
 INSTITUTION_ID = 90
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@scalareye.com")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Admin@123")

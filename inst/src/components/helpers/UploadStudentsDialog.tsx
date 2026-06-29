@@ -40,6 +40,7 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
 
   // File Preview States
   const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+  const [allData, setAllData] = useState<any[][]>([]);
   const [previewRows, setPreviewRows] = useState<any[]>([]);
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
       setValidationError(null);
       setServerErrors([]);
       setPreviewHeaders([]);
+      setAllData([]);
       setPreviewRows([]);
     }
   }, [open]);
@@ -91,10 +93,12 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
           setValidationError(`Missing required columns: ${missing.join(", ")}`);
           setFile(null);
           setPreviewHeaders([]);
+          setAllData([]);
           setPreviewRows([]);
         } else {
           setPreviewHeaders(rawHeaders);
-          setPreviewRows(data.slice(1, 6));
+          setAllData(data as any[][]);
+          setPreviewRows(data.slice(1, 11));
         }
       }
     };
@@ -109,7 +113,18 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
     
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      
+      // If data was edited, we regenerate the Excel file
+      let uploadFile = file;
+      if (allData.length > 0) {
+          const ws = XLSX.utils.aoa_to_sheet(allData);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Students");
+          const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          uploadFile = new File([wbout], file.name || "students.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+
+      formData.append("file", uploadFile);
       formData.append("institution_id", user.institution.id.toString());
       if (confirm) {
         formData.append("confirm_creation", "true");
@@ -139,15 +154,24 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
         toast.error("Upload failed. Please check the error list.");
       } else if (error.response?.data?.detail) {
         try {
-            const parsed = JSON.parse(error.response.data.detail.replace(/'/g, '"')); 
+            let detail = error.response.data.detail;
+            if (typeof detail === 'string' && (detail.toLowerCase().includes('column') || detail.toLowerCase().includes('relation') || detail.toLowerCase().includes('sql'))) {
+                detail = "A database schema mismatch occurred. Please try again or contact support.";
+            }
+            const parsed = JSON.parse(detail.replace(/'/g, '"')); 
             if (parsed.errors) setServerErrors(parsed.errors);
-            else setValidationError(error.response.data.detail);
+            else setValidationError(detail);
         } catch {
-            setValidationError(error.response.data.detail);
+            let detail = error.response.data.detail;
+            if (typeof detail === 'string' && (detail.toLowerCase().includes('column') || detail.toLowerCase().includes('relation') || detail.toLowerCase().includes('sql'))) {
+                detail = "A database schema mismatch occurred. Please try again or contact support.";
+            }
+            setValidationError(detail);
         }
       } else {
         toast.error("An unexpected error occurred.");
       }
+      setRequiresApproval(false);
     } finally {
       setIsUploading(false);
     }
@@ -179,13 +203,13 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
           Bulk Upload
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Bulk Upload Students</DialogTitle>
           <DialogDescription>Enroll multiple students via Excel sheet.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 overflow-y-auto flex-grow pr-1">
           
           {requiresApproval ? (
             <div className="space-y-4">
@@ -299,7 +323,7 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
                               <p className="text-xs text-muted-foreground">Ready to upload</p>
                           </div>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => { setFile(null); setValidationError(null); setServerErrors([]); setPreviewHeaders([]); setPreviewRows([]); }}>
+                      <Button variant="ghost" size="icon" onClick={() => { setFile(null); setValidationError(null); setServerErrors([]); setPreviewHeaders([]); setAllData([]); setPreviewRows([]); }}>
                           <X className="h-4 w-4" />
                       </Button>
                   </div>
@@ -308,9 +332,9 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
                     <div className="space-y-2 animate-in fade-in duration-200">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                         <FileSpreadsheet className="h-4 w-4" />
-                        <span>File Preview (First 5 Rows)</span>
+                        <span>File Preview (First 10 Rows)</span>
                       </div>
-                      <div className="overflow-x-auto border rounded-md max-h-[160px] bg-muted/5 scrollbar-thin">
+                      <div className="overflow-x-auto border rounded-md max-h-[300px] bg-muted/5 scrollbar-thin">
                         <table className="w-full text-[10px] sm:text-xs text-left border-collapse">
                           <thead>
                             <tr className="bg-muted/80 border-b">
@@ -325,8 +349,26 @@ export function UploadStudentsDialog({ onSuccess }: { onSuccess?: () => void }) 
                             {previewRows.map((row, rowIdx) => (
                               <tr key={rowIdx} className="border-b last:border-0 hover:bg-muted/10">
                                 {previewHeaders.map((_, colIdx) => (
-                                  <td key={colIdx} className="p-2 border-r truncate max-w-[120px]">
-                                    {row[colIdx] !== undefined ? String(row[colIdx]) : ""}
+                                  <td key={colIdx} className="p-0 border-r max-w-[120px]">
+                                    <input 
+                                      type="text" 
+                                      className="w-full bg-transparent border-none focus:ring-1 focus:ring-primary focus:bg-white dark:focus:bg-slate-800 outline-none px-2 py-1.5 text-[10px] sm:text-xs truncate focus:truncate-none transition-colors"
+                                      value={row[colIdx] !== undefined ? String(row[colIdx]) : ""}
+                                      onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        // Update preview rows
+                                        const newPreview = [...previewRows];
+                                        newPreview[rowIdx] = [...newPreview[rowIdx]];
+                                        newPreview[rowIdx][colIdx] = newVal;
+                                        setPreviewRows(newPreview);
+                                        // Update allData
+                                        const newAllData = [...allData];
+                                        const actualRowIdx = rowIdx + 1; // +1 because headers are row 0
+                                        newAllData[actualRowIdx] = [...(newAllData[actualRowIdx] || [])];
+                                        newAllData[actualRowIdx][colIdx] = newVal;
+                                        setAllData(newAllData);
+                                      }}
+                                    />
                                   </td>
                                 ))}
                               </tr>

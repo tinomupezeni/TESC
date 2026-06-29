@@ -1,7 +1,7 @@
 import requests
 import uuid
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 
 def get_auth_token(username, password):
     print(f"Logging in as {username}...")

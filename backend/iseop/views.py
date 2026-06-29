@@ -176,6 +176,7 @@ class IseopStudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="bulk_upload")
     @parser_classes([MultiPartParser])
     def bulk_upload(self, request):
+        import pandas as pd
         file = request.FILES.get("file")
         if not file:
             return Response({"detail": "No file uploaded"}, status=400)
@@ -187,64 +188,149 @@ class IseopStudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
             user_inst = user.inst_admin.institution
             
         if not user_inst:
-            return Response({"detail": "User has no institution context."}, status=403)
+            from academic.models import Institution
+            inst_id = request.data.get("institution_id")
+            if inst_id:
+                try:
+                    user_inst = Institution.objects.get(id=inst_id)
+                except Institution.DoesNotExist:
+                    return Response({"detail": "Institution not found."}, status=404)
+            else:
+                return Response({"detail": "User has no institution context."}, status=403)
 
-        decoded = file.read().decode("utf-8").splitlines()
-        reader = csv.DictReader(decoded)
+        try:
+            if file.name.endswith('.csv'):
+                df = pd.read_csv(file, dtype=str)
+            else:
+                df = pd.read_excel(file, dtype=str)
+                
+            # Normalize columns
+            df.columns = [c.strip().lower().replace(' ', '_').replace('/', '_') for c in df.columns]
+        except Exception as e:
+            return Response({"detail": f"Error parsing file: {str(e)}"}, status=400)
+
         created_count = 0
         errors = []
+        seen_in_file = set()
 
-        for row in reader:
+        existing_ids = set(
+            IseopStudent.objects.filter(institution=user_inst)
+            .values_list('student_id', flat=True)
+        )
+
+        for index, row in df.iterrows():
+            row_num = index + 2
+            error_prefix = f"Row {row_num}"
             try:
-                # 2. Handle Program: Get or Create by Name
-                program_name = row.get("program", "").strip()
-                if not program_name:
-                    raise ValueError("Program name is missing in CSV row")
+                # ---------------- ID & Basics ----------------
+                student_id_raw = row.get('student_id')
+                student_id = str(student_id_raw).strip().upper() if pd.notna(student_id_raw) else ""
+                error_prefix = f"Student ID {student_id}" if student_id else f"Row {row_num} (No Student ID)"
+                
+                if not student_id:
+                    errors.append(f"{error_prefix}: Student ID is required.")
+                    continue
 
-                # This will find the program or create it if it doesn't exist for this institution
+                if student_id in seen_in_file:
+                    errors.append(f"{error_prefix}: Duplicate Student ID '{student_id}' in the uploaded file.")
+                    continue
+                seen_in_file.add(student_id)
+
+                if student_id in existing_ids:
+                    errors.append(f"{error_prefix}: Student ID '{student_id}' already exists in database.")
+                    continue
+
+                first_name_raw = row.get('first_name')
+                last_name_raw = row.get('last_name')
+                first_name = str(first_name_raw).strip().upper() if pd.notna(first_name_raw) else ""
+                last_name = str(last_name_raw).strip().upper() if pd.notna(last_name_raw) else ""
+
+                if not first_name:
+                    errors.append(f"{error_prefix}: First Name is required.")
+                if not last_name:
+                    errors.append(f"{error_prefix}: Last Name is required.")
+
+                national_id_raw = row.get('national_id')
+                national_id = str(national_id_raw).strip().upper() if pd.notna(national_id_raw) else ""
+                if not national_id:
+                    errors.append(f"{error_prefix}: National ID is required.")
+
+                # ---------------- Contact Info ----------------
+                contact_raw = row.get('email_or_phone', row.get('email_phone', row.get('email', row.get('phone'))))
+                contact = str(contact_raw).strip() if pd.notna(contact_raw) else ""
+                email = contact if "@" in contact else ""
+                phone = contact if "@" not in contact else ""
+
+                gender_raw = str(row.get('gender', 'Male')).strip() if pd.notna(row.get('gender')) else "Male"
+                
+                # ---------------- Program ----------------
+                program_raw = row.get('program')
+                program_name = str(program_raw).strip().upper() if pd.notna(program_raw) else ""
+                if not program_name:
+                    errors.append(f"{error_prefix}: Program name is required.")
+                    continue
+
                 program, _ = IseopProgram.objects.get_or_create(
                     name=program_name,
                     institution=user_inst,
                     defaults={'status': 'Active', 'capacity': 0}
                 )
 
-                enrollment_date = row.get("enrollment_date")
+                # ---------------- Dates ----------------
+                enrollment_date = row.get('enrollment_date')
+                enrollment_year_raw = row.get('enrollment_year')
                 enrollment_year = None
-                if enrollment_date and "-" in enrollment_date:
-                    enrollment_year = int(enrollment_date.split("-")[0])
-                elif row.get("enrollment_year"):
-                    enrollment_year = int(row.get("enrollment_year"))
+                
+                if pd.notna(enrollment_date):
+                    enrollment_date_str = str(enrollment_date).strip()
+                    if "-" in enrollment_date_str:
+                        enrollment_year = int(enrollment_date_str.split("-")[0])
+                elif pd.notna(enrollment_year_raw):
+                    try:
+                        enrollment_year = int(float(str(enrollment_year_raw).strip()))
+                    except ValueError:
+                        errors.append(f"{error_prefix}: Enrollment Year must be a number.")
 
-                # 3. Create or Update Student
-                student, created_bool = IseopStudent.objects.update_or_create(
-                    student_id=row["student_id"],
+                # ---------------- Status & Disability ----------------
+                status_raw = str(row.get('status', 'Active/Enrolled')).strip() if pd.notna(row.get('status')) else 'Active/Enrolled'
+                disability_raw = str(row.get('disability_type', 'None')).strip() if pd.notna(row.get('disability_type')) else 'None'
+
+                # If we encountered basic validation errors, skip creating this row
+                if errors and any(e.startswith(error_prefix) for e in errors):
+                    continue
+
+                student = IseopStudent.objects.create(
+                    student_id=student_id,
                     institution=user_inst,
-                    defaults={
-                        "first_name": row.get("first_name", ""),
-                        "last_name": row.get("last_name", ""),
-                        "national_id": row.get("national_id", ""),
-                        "email": row.get("email"),
-                        "gender": row.get("gender", "Male"),
-                        "status": row.get("status", "Active/Enrolled"),
-                        "disability_type": row.get("disability_type", "None"),
-                        "program": program,
-                        "enrollment_year": enrollment_year,
-                    },
+                    first_name=first_name,
+                    last_name=last_name,
+                    national_id=national_id,
+                    email=email,
+                    phone=phone,
+                    gender=gender_raw,
+                    status=status_raw,
+                    disability_type=disability_raw,
+                    program=program,
+                    enrollment_year=enrollment_year,
                 )
                 
-                # 4. Update Program Occupancy
-                # Recalculate occupied count for this program
                 program.occupied = IseopStudent.objects.filter(program=program).count()
                 program.save()
 
                 created_count += 1
 
             except Exception as e:
-                errors.append({"student_id": row.get("student_id", "Unknown"), "error": str(e)})
+                errors.append(f"{error_prefix}: {str(e)}")
+
+        if errors:
+            return Response({
+                "detail": "Bulk upload validation failed.",
+                "errors": errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             "success": True,
             "created_count": created_count,
-            "error_count": len(errors),
-            "errors": errors
+            "error_count": 0,
+            "errors": []
         }, status=status.HTTP_200_OK)

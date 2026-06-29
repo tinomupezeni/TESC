@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UploadCloud, FileDown } from "lucide-react"; 
 import { IseopStudentFormDialog } from "@/components/innovation_dept/IseopFormDialog"; 
+import { UploadIseopStudentsDialog } from "@/components/innovation_dept/UploadIseopStudentsDialog";
 
 interface IseopStudentManagerProps {
   onRefresh?: () => void;
@@ -13,7 +14,6 @@ interface IseopStudentManagerProps {
 const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
   const [students, setStudents] = useState<IseopStudent[]>([]);
   const [loading, setLoading] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -48,49 +48,7 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
 
-    try {
-      setLoading(true);
-      const response = await iseopService.bulkUploadStudents(file);
-      
-      // Handle response from the new backend logic
-      if (response.error_count > 0) {
-        toast.warning(`Uploaded ${response.created_count} students. ${response.error_count} rows failed.`);
-        console.error("Bulk upload errors:", response.errors);
-      } else {
-        toast.success(`Successfully uploaded ${response.created_count} students!`);
-      }
-
-      // Refresh local table
-      await fetchStudents();
-      
-      // Trigger parent refresh (updates Program Manager tab/page)
-      if (onRefresh) onRefresh();
-
-    } catch (err) {
-      console.error(err);
-      toast.error("Upload failed. Ensure CSV headers are correct: student_id, first_name, last_name, national_id, program, status");
-    } finally {
-      setLoading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const downloadTemplate = () => {
-    const headers = "student_id,first_name,last_name,national_id,email,gender,program,status,enrollment_date\n";
-    const blob = new Blob([headers], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.setAttribute("hidden", "");
-    a.setAttribute("href", url);
-    a.setAttribute("download", "iseop_student_template.csv");
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
 
   return (
     <div className="space-y-4">
@@ -100,28 +58,9 @@ const IseopStudentManager = ({ onRefresh }: IseopStudentManagerProps) => {
           <p className="text-xs sm:text-sm text-muted-foreground">Manage and bulk import students via CSV.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" size="sm" onClick={downloadTemplate} className="h-8 text-[10px] sm:text-xs">
-                <FileDown className="mr-2 h-3.5 w-3.5" />
-                Template
-            </Button>
-            
-            <input 
-                type="file" 
-                accept=".csv" 
-                ref={fileInputRef} 
-                onChange={handleFileUpload} 
-                className="hidden" 
+            <UploadIseopStudentsDialog 
+                onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }} 
             />
-            <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-                className="h-8 text-[10px] sm:text-xs"
-            >
-                <UploadCloud className="mr-2 h-3.5 w-3.5" />
-                Bulk Upload
-            </Button>
             
             <IseopStudentFormDialog 
                 onSuccess={() => { fetchStudents(); if(onRefresh) onRefresh(); }} 

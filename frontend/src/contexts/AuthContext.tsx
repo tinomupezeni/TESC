@@ -5,9 +5,20 @@ import {
   useContext,
   useEffect,
   ReactNode,
+  useCallback,
+  useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "@/services/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // --- 1. Define User Interfaces ---
 interface RoleInfo {
@@ -42,7 +53,8 @@ interface AuthContextType {
   accessToken: string | null;
   user: UserInfo | null;
   loading: boolean; // 🚨 Added loading state
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
+  verifyOTP: (user_id: number, otp_code: string) => Promise<any>;
   logout: () => void;
   updateUser: (userData: Partial<UserInfo>) => void;
 }
@@ -60,12 +72,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true); // 🚨 Start in loading state
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const showTimeoutWarningRef = useRef(false);
 
   // Function to handle user login
   const login = async (email: string, password: string) => {
     const response = await apiClient.post("/users/token/", {
       email: email,
       password,
+    });
+
+    if (response.data.requires_otp) {
+      return response.data;
+    }
+
+    const { access, refresh, user: fetchedUser } = response.data;
+
+    // 🚨 Block Institution Users from Main Dashboard
+    if (fetchedUser.institution) {
+      throw new Error("Institution accounts are not authorized to access the main dashboard. Please use the Institution Portal.");
+    }
+
+    // Store tokens
+    localStorage.setItem("accessToken", access);
+    localStorage.setItem("refreshToken", refresh);
+
+    // Set context state
+    setAccessToken(access);
+    setUser(fetchedUser);
+
+    return fetchedUser;
+  };
+
+  const verifyOTP = async (user_id: number, otp_code: string) => {
+    const response = await apiClient.post("/users/verify-otp/", {
+      user_id,
+      otp_code,
     });
 
     const { access, refresh, user: fetchedUser } = response.data;
@@ -87,14 +129,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Function to handle user logout
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     setAccessToken(null);
     setUser(null);
     setLoading(false);
     navigate("/");
-  };
+  }, [navigate]);
 
   // Function to update user in state
   const updateUser = (userData: Partial<UserInfo>) => {
@@ -123,13 +165,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     fetchUserOnLoad();
-  }, [accessToken]);
+  }, [accessToken, logout]);
+
+  // --- Inactivity Timeout (5 minutes) ---
+  useEffect(() => {
+    let warningTimeoutId: ReturnType<typeof setTimeout>;
+    let logoutTimeoutId: ReturnType<typeof setTimeout>;
+
+    const resetTimeout = () => {
+      if (warningTimeoutId) clearTimeout(warningTimeoutId);
+      if (logoutTimeoutId) clearTimeout(logoutTimeoutId);
+      setShowTimeoutWarning(false);
+      showTimeoutWarningRef.current = false;
+
+      if (accessToken) {
+        warningTimeoutId = setTimeout(() => {
+          setShowTimeoutWarning(true);
+          showTimeoutWarningRef.current = true;
+        }, 4.5 * 60 * 1000);
+
+        logoutTimeoutId = setTimeout(() => {
+          console.log("Logged out due to inactivity");
+          setShowTimeoutWarning(false);
+          showTimeoutWarningRef.current = false;
+          logout();
+        }, 5 * 60 * 1000);
+      }
+    };
+
+    resetTimeout();
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    const handleActivity = () => {
+      if (!showTimeoutWarningRef.current) {
+        resetTimeout();
+      }
+    };
+
+    events.forEach(event => window.addEventListener(event, handleActivity));
+
+    return () => {
+      if (warningTimeoutId) clearTimeout(warningTimeoutId);
+      if (logoutTimeoutId) clearTimeout(logoutTimeoutId);
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+    };
+  }, [accessToken, logout]);
 
   const authContextValue: AuthContextType = {
     accessToken,
     user,
     loading, // 🚨 Added loading to context value
     login,
+    verifyOTP,
     logout,
     updateUser,
   };
@@ -137,6 +224,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={authContextValue}>
       {children}
+
+      <AlertDialog open={showTimeoutWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inactivity Warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have been inactive for a while. For your security, you will be automatically logged out in 30 seconds.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowTimeoutWarning(false);
+              showTimeoutWarningRef.current = false;
+              // Simulate activity to reset the timer
+              window.dispatchEvent(new Event('mousemove'));
+            }}>
+              Keep Me Logged In
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AuthContext.Provider>
   );
 };

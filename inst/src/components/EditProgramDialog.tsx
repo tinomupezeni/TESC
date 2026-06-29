@@ -65,11 +65,12 @@ const PROGRAM_LEVELS = [
 interface EditProgramDialogProps {
   program: Program;
   institutionId: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function EditProgramDialog({ program, institutionId, onSuccess }: EditProgramDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditProgramDialog({ program, institutionId, open, onOpenChange, onSuccess }: EditProgramDialogProps) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   
@@ -189,7 +190,7 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
 
       await updateProgram(program.id, payload);
       toast.success("Program updated successfully!");
-      setOpen(false);
+      onOpenChange(false);
       if (onSuccess) onSuccess();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Update failed.");
@@ -199,12 +200,7 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex-1">
-          <Pencil className="h-4 w-4 mr-2" /> Edit Program
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit {program.name}</DialogTitle>
@@ -399,7 +395,7 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
           </div>
 
           <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes

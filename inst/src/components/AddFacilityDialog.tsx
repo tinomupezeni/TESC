@@ -26,6 +26,9 @@ import { useAuth } from "@/context/AuthContext";
 export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () => void }) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [equipmentList, setEquipmentList] = useState<string[]>([]);
+  const [newEquipment, setNewEquipment] = useState("");
   const { user } = useAuth(); 
 
   // FIX: Safely extract institution ID from nested object OR flat field
@@ -51,7 +54,7 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { id, value } = e.target;
+    const { id, value, type } = e.target;
 
     // Validate Phone Number: Remove any non-numeric or special characters that aren't allowed
     if (id === "contact_number") {
@@ -61,7 +64,13 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
     }
 
     const numericFields = ['capacity', 'current_usage'];
-    const val = numericFields.includes(id) ? parseInt(value) || 0 : value;
+    let val: string | number = value;
+
+    if (numericFields.includes(id)) {
+      val = parseInt(value) || 0;
+    } else if (type === "text" || e.target.tagName.toLowerCase() === "textarea") {
+      val = value.toUpperCase();
+    }
 
     setFormData(prev => ({ ...prev, [id]: val }));
   };
@@ -105,6 +114,9 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
         status: 'Active', 
         facility_type: '' 
       });
+      setIsCustomCategory(false);
+      setEquipmentList([]);
+      setNewEquipment("");
       
       if (onFacilityAdded) onFacilityAdded();
 
@@ -133,29 +145,51 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Facility Name *</Label>
-            <Input id="name" placeholder="e.g., Computer Lab A" required onChange={handleInputChange} />
+            <Input id="name" placeholder="e.g., Computer Lab A" required onChange={handleInputChange} value={formData.name || ""} />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="facility_type">Facility Type *</Label>
-              <Select onValueChange={(val) => handleSelectChange('facility_type', val)} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Accommodation">Accommodation</SelectItem>
-                  <SelectItem value="Laboratory">Laboratory</SelectItem>
-                  <SelectItem value="Library">Library</SelectItem>
-                  <SelectItem value="Sports">Sports Facility</SelectItem>
-                  <SelectItem value="Innovation">Innovation Center</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="facility_type">Category *</Label>
+              <div className="flex gap-2">
+                {isCustomCategory ? (
+                  <Input 
+                    id="facility_type" 
+                    placeholder="e.g., Drone Lab" 
+                    required 
+                    onChange={handleInputChange} 
+                    value={formData.facility_type || ''} 
+                    className="flex-1"
+                  />
+                ) : (
+                  <Select value={formData.facility_type} onValueChange={(val) => handleSelectChange('facility_type', val)} required>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Accommodation">Accommodation</SelectItem>
+                      <SelectItem value="Laboratory">Laboratory</SelectItem>
+                      <SelectItem value="Library">Library</SelectItem>
+                      <SelectItem value="Sports">Sports Facility</SelectItem>
+                      <SelectItem value="Innovation">Innovation Hub</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button 
+                  type="button" 
+                  size="icon"
+                  className={!isCustomCategory ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}
+                  onClick={() => setIsCustomCategory(!isCustomCategory)} 
+                  title={isCustomCategory ? "Use standard categories" : "Add custom category"}
+                >
+                  <Plus className={`h-4 w-4 ${isCustomCategory ? 'rotate-45 transition-transform' : 'transition-transform'}`} />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="building">Building *</Label>
-              <Input id="building" placeholder="Building name/number" required onChange={handleInputChange} />
+              <Input id="building" placeholder="Building name/number" required onChange={handleInputChange} value={formData.building || ""} />
             </div>
           </div>
 
@@ -169,6 +203,7 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
                 placeholder="50" 
                 required 
                 onChange={handleInputChange} 
+                value={formData.capacity === 0 ? '' : formData.capacity}
               />
             </div>
 
@@ -180,6 +215,7 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
                 min={0}
                 placeholder="e.g. 35"
                 onChange={handleInputChange}
+                value={formData.current_usage === 0 ? '' : formData.current_usage}
               />
             </div>
 
@@ -200,23 +236,70 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" placeholder="Brief description of the facility" rows={3} onChange={handleInputChange} />
+            <Textarea id="description" placeholder="Brief description of the facility" rows={3} onChange={handleInputChange} value={formData.description || ""} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="equipment">Available Equipment (comma-separated)</Label>
-            <Textarea 
-              id="equipment" 
-              placeholder="e.g., Computers, Projectors, Whiteboard" 
-              rows={2} 
-              onChange={handleInputChange}
-            />
+            <Label>Available Equipment</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. PROJECTORS"
+                value={newEquipment}
+                onChange={(e) => setNewEquipment(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newEquipment.trim() !== '') {
+                      const updatedList = [...equipmentList, newEquipment.trim().toUpperCase()];
+                      setEquipmentList(updatedList);
+                      setFormData(prev => ({ ...prev, equipment: updatedList.join(", ") }));
+                      setNewEquipment("");
+                    }
+                  }
+                }}
+              />
+              <Button 
+                type="button" 
+                onClick={() => {
+                  if (newEquipment.trim() !== '') {
+                    const updatedList = [...equipmentList, newEquipment.trim().toUpperCase()];
+                    setEquipmentList(updatedList);
+                    setFormData(prev => ({ ...prev, equipment: updatedList.join(", ") }));
+                    setNewEquipment("");
+                  }
+                }} 
+                className="shrink-0" 
+                size="icon"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {equipmentList.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {equipmentList.map((eq, idx) => (
+                  <div key={idx} className="flex items-center bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm">
+                    <span>{eq}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const updatedList = equipmentList.filter((_, i) => i !== idx);
+                        setEquipmentList(updatedList);
+                        setFormData(prev => ({ ...prev, equipment: updatedList.join(", ") }));
+                      }}
+                      className="ml-2 text-muted-foreground hover:text-foreground"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="manager">Facility Manager</Label>
-              <Input id="manager" placeholder="Manager name" onChange={handleInputChange} />
+              <Input id="manager" placeholder="Manager name" onChange={handleInputChange} value={formData.manager || ""} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="contact_number">Contact Number</Label>

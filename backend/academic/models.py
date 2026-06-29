@@ -91,7 +91,7 @@ class Institution(models.Model):
 class Facility(models.Model):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='facilities')
     name = models.CharField(max_length=100)
-    facility_type = models.CharField(max_length=50, choices=FACILITY_TYPES, default='Other')
+    facility_type = models.CharField(max_length=100, default='Other')
     building = models.CharField(max_length=100, default="Main Building")
     capacity = models.PositiveIntegerField(default=0)
     current_usage = models.PositiveIntegerField(default=0)
@@ -148,9 +148,7 @@ class Student(models.Model):
     enrollment_semester = models.CharField(max_length=20, choices=STUDENT_SEMESTERS, default='Semester 1')
     status = models.CharField(max_length=20, choices=STUDENT_STATUSES, default='Active')
 
-    dropout_reason = models.CharField(
-        max_length=50,
-        choices=DROPOUT_REASONS,
+    dropout_reason = EncryptedTextField(
         null=True,
         blank=True
     )
@@ -359,6 +357,7 @@ class StudentScholarship(models.Model):
     provider_name = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     year_awarded = models.PositiveIntegerField()
+    duration = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

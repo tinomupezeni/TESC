@@ -3,8 +3,12 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN rm -rf node_modules && npm install
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retry-maxtimeout 60000
+
+COPY package*.json package-lock.json* ./
+RUN npm ci
 
 COPY . .
 RUN npm run build

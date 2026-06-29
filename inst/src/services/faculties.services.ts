@@ -14,6 +14,8 @@ export interface Faculty {
   email: string;
   description: string;
   status: 'Active' | 'Setup' | 'Review' | 'Archived';
+  departments_count?: number;
+  departments_list?: string[];
   created_at: string;
   updated_at: string;
 }

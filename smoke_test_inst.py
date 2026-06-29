@@ -2,7 +2,7 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 
 def run_test():
     print("🚀 Starting Institutional Smoke Test...")

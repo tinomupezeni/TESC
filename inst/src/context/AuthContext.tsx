@@ -1,7 +1,16 @@
 // context/AuthContext.tsx
-import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from "react";
 import apiClient, { setTokenForApi, onTokenRefresh } from "@/services/api";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // 1. Update User interface to match what Sidebar expects (nested institution object)
 interface Institution {
@@ -45,6 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const showTimeoutWarningRef = useRef(false);
   const navigate = useNavigate();
 
   const setAccessToken = useCallback((token: string | null) => {
@@ -106,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await fetchProfile(accessToken);
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await apiClient.post("/instauth/logout/");
     } catch (err) {
@@ -115,7 +126,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccessToken(null);
     setUser(null);
     navigate("/login");
-  };
+  }, [navigate, setAccessToken]);
+
+  // --- Inactivity Timeout (5 minutes) ---
+  useEffect(() => {
+    let warningTimeoutId: ReturnType<typeof setTimeout>;
+    let logoutTimeoutId: ReturnType<typeof setTimeout>;
+
+    const resetTimeout = () => {
+      if (warningTimeoutId) clearTimeout(warningTimeoutId);
+      if (logoutTimeoutId) clearTimeout(logoutTimeoutId);
+      setShowTimeoutWarning(false);
+      showTimeoutWarningRef.current = false;
+
+      if (accessToken) {
+        warningTimeoutId = setTimeout(() => {
+          setShowTimeoutWarning(true);
+          showTimeoutWarningRef.current = true;
+        }, 4.5 * 60 * 1000);
+
+        logoutTimeoutId = setTimeout(() => {
+          console.log("Logged out due to inactivity");
+          setShowTimeoutWarning(false);
+          showTimeoutWarningRef.current = false;
+          logout();
+        }, 5 * 60 * 1000);
+      }
+    };
+
+    resetTimeout();
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    const handleActivity = () => {
+      if (!showTimeoutWarningRef.current) {
+        resetTimeout();
+      }
+    };
+
+    events.forEach(event => window.addEventListener(event, handleActivity));
+
+    return () => {
+      if (warningTimeoutId) clearTimeout(warningTimeoutId);
+      if (logoutTimeoutId) clearTimeout(logoutTimeoutId);
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+    };
+  }, [accessToken, logout]);
 
   const updatePassword = async (oldPassword, newPassword) => {
     try {
@@ -137,6 +192,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ user, accessToken, login, logout, loading, updatePassword, refreshProfile, setAccessToken }}>
       {children}
+
+      <AlertDialog open={showTimeoutWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inactivity Warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have been inactive for a while. For your security, you will be automatically logged out in 30 seconds.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowTimeoutWarning(false);
+              showTimeoutWarningRef.current = false;
+              // Simulate activity to reset the timer
+              window.dispatchEvent(new Event('mousemove'));
+            }}>
+              Keep Me Logged In
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AuthContext.Provider>
   );
 };

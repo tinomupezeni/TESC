@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from ..models import Staff, Vacancy
 
-class StaffSerializer(serializers.ModelSerializer):
+from core.serializers import SanitizedModelSerializer
+
+class StaffSerializer(SanitizedModelSerializer):
     institution_name = serializers.CharField(source='institution.name', read_only=True)
     institution_type = serializers.CharField(source='institution.type', read_only=True)  # <-- NEW
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
@@ -23,6 +25,7 @@ class StaffSerializer(serializers.ModelSerializer):
             'full_name',
             'email',
             'phone',
+            'gender',
             'employee_id',
             'position',
             'department',

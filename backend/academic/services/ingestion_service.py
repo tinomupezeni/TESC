@@ -16,6 +16,18 @@ TEMPLATE_SCHEMAS = {
         'description': ('Description', False),
         'status': ('Status (Active/Setup/Review/Archived)', True),
     },
+    'facilities': {
+        'name': ('Facility Name', True),
+        'facility_type': ('Category', True),
+        'building': ('Building', False),
+        'capacity': ('Capacity', False),
+        'current_usage': ('Current Usage', False),
+        'status': ('Status (Active/Maintenance/Closed)', True),
+        'description': ('Description', False),
+        'equipment': ('Equipment', False),
+        'manager': ('Manager', False),
+        'contact_number': ('Contact Number', False),
+    },
     'programs': {
         'faculty_name': ('Faculty Name', True),
         'department_name': ('Department Name', True),
@@ -143,6 +155,10 @@ class IngestionService:
             dv = DataValidation(type="list", formula1=f'"{status_choices}"', allow_blank=False)
             ws.add_data_validation(dv)
             dv.add(f'F2:F1000') # Assuming status is the 6th column (index 5)
+        elif module_type == 'facilities':
+            dv = DataValidation(type="list", formula1='"Active,Maintenance,Closed"', allow_blank=False)
+            ws.add_data_validation(dv)
+            dv.add(f'F2:F1000') # Assuming status is the 6th column
         elif module_type == 'programs':
             # Data validation for program_type
             program_type_choices = ','.join([choice[0] for choice in PROGRAM_TYPES])
@@ -235,6 +251,24 @@ class IngestionService:
                     if row_data['status'] not in valid_statuses:
                         errors.append(f"Invalid status: {row_data['status']}. Must be one of {', '.join(valid_statuses)}.")
                         status = "Error"
+            elif module_type == 'facilities':
+                if 'status' in row_data and row_data['status']:
+                    valid_statuses = ["Active", "Maintenance", "Closed"]
+                    if row_data['status'] not in valid_statuses:
+                        errors.append(f"Invalid status: {row_data['status']}. Must be one of {', '.join(valid_statuses)}.")
+                        status = "Error"
+                if 'capacity' in row_data and row_data['capacity']:
+                    try:
+                        row_data['capacity'] = int(row_data['capacity'])
+                    except ValueError:
+                        errors.append(f"Invalid capacity. Must be an integer.")
+                        status = "Error"
+                if 'current_usage' in row_data and row_data['current_usage']:
+                    try:
+                        row_data['current_usage'] = int(row_data['current_usage'])
+                    except ValueError:
+                        errors.append(f"Invalid current usage. Must be an integer.")
+                        status = "Error"
             elif module_type in ['stem_students', 'specialized_students', 'critical_students']:
                 program_code = row_data.get('program_code')
                 if program_code:
@@ -263,7 +297,7 @@ class IngestionService:
     @staticmethod
     def commit_upload(module_type: str, validated_data: list, institution_id: int = None):
         """Commits validated/corrected data to the database."""
-        from academic.models import Student, Institution, IndustryPlacement, StudentScholarship, InternationalMobility, InCountryTransfer
+        from academic.models import Student, Institution, IndustryPlacement, StudentScholarship, InternationalMobility, InCountryTransfer, Facility
         from faculties.models import Program, Faculty, Department
 
         success_count = 0
@@ -301,6 +335,21 @@ class IngestionService:
                     amount=data.get('amount'),
                     year_awarded=data['year_awarded']
                 )
+            elif module_type == 'facilities':
+                if institution_id:
+                    Facility.objects.create(
+                        institution_id=institution_id,
+                        name=data['name'],
+                        facility_type=data['facility_type'],
+                        building=data.get('building', 'Main Building'),
+                        capacity=data.get('capacity', 0) or 0,
+                        current_usage=data.get('current_usage', 0) or 0,
+                        status=data.get('status', 'Active'),
+                        description=data.get('description', ''),
+                        equipment=data.get('equipment', ''),
+                        manager=data.get('manager', 'Pending'),
+                        contact_number=data.get('contact_number', 'N/A')
+                    )
             elif module_type == 'mobility':
                 InternationalMobility.objects.create(
                     student=student,

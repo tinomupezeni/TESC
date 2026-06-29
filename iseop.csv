@@ -1,0 +1,8 @@
+student_id,first_name,last_name,national_id,email,gender,program,status,enrollment_date
+STU001,Tinotenda,Mupezeni,63-2000123A01,tino@smepulse.com,Male,BSc Software Engineering,Active,2023-03-15
+,John,Doe,63-9999999B02,john.doe@example.com,Male,BSc Computer Science,Active,2024-02-10
+STU003,,Smith,63-8888888C03,jane.smith@example.com,Female,BA English,Active,2024-08-01
+STU004,Sarah,Chipo,63-5555555F06,sarah_at_example_dot_com,Female,BAcc Honours,Active,2022-09-10
+STU005,Michael,Brown,63-4444444G07,mbrown@example.com,UNKNOWN_GENDER,BSc Mathematics,Active,2024-01-15
+STU006,Amara,Okonkwo,63-3333333H08,amara@example.com,Female,BSc Electrical Engineering,Dropout,NOT_A_DATE
+STU007,David,Zvomuya,,dzvomuya@example.com,Male,BSc Civil Engineering,Active,2023-05-20

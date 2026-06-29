@@ -2,7 +2,7 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 ADMIN_EMAIL = "admin@scalareye.com"
 ADMIN_PASSWORD = "scalareye@123"
 

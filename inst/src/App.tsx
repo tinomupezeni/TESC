@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
@@ -33,6 +34,7 @@ import PossibleGraduates from "./pages/PossibleGraduates"; // New Import
 import InCountryTransfers from "./pages/InCountryTransfers"; // New Import
 import SpecializedStudents from "./pages/SpecializedStudents";
 import CriticalStudents from "./pages/CriticalStudents";
+import AuditTrail from "./pages/AuditTrail";
 import { PermissionGuard } from "./components/PermissionGuard";
 
 
@@ -48,6 +50,7 @@ const App = () => {
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/force-password-change"
             element={<ForcePasswordChange />}
@@ -312,6 +315,17 @@ const App = () => {
               <ProtectedRoute>
                 <DashboardLayout>
                   <Help />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/audit-trail"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <AuditTrail />
                 </DashboardLayout>
               </ProtectedRoute>
             }

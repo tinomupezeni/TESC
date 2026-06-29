@@ -2,7 +2,7 @@ import requests
 import sys
 import uuid
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 ADMIN_EMAIL = "admin@scalareye.com"
 ADMIN_PASSWORD = "scalareye@123"
 
@@ -105,12 +105,13 @@ def run_test():
 
     # 4. Students CRUD (Admin Scope)
     print("--- Testing Students CRUD (Admin Scope) ---")
-    # Need a program first, but let's see if we can find one
-    prog_res = requests.get(f"{BASE_URL}/faculties/programs/", headers=headers, verify=False)
-    programs = prog_res.json()
-    if programs and len(programs) > 0:
-        target_prog = programs[0]
-        target_inst_id = target_prog["institution"]
+    # Need a program first, let's create one in our new institution
+    fac_res = requests.post(f"{BASE_URL}/faculties/faculties/", json={"name": "Admin Fac", "institution": inst_id}, headers=headers, verify=False).json()
+    dept_res = requests.post(f"{BASE_URL}/faculties/departments/", json={"name": "Admin Dept", "code": "AD", "faculty": fac_res['id'], "institution": inst_id}, headers=headers, verify=False).json()
+    target_prog = requests.post(f"{BASE_URL}/faculties/programs/", json={"name": "Admin Prog", "code": "AP", "department": dept_res['id'], "duration": 1, "levels": ["Diploma"], "categories": ["STEM"]}, headers=headers, verify=False).json()
+    
+    if "id" in target_prog:
+        target_inst_id = inst_id
         target_prog_id = target_prog["id"]
         
         student_id = f"ADM{uuid.uuid4().hex[:6].upper()}"
@@ -124,7 +125,9 @@ def run_test():
             "enrollment_year": 2024,
             "status": "Active",
             "institution": target_inst_id,
-            "program": target_prog_id
+            "program": target_prog_id,
+            "selected_level": "Diploma",
+            "selected_category": "STEM"
         }
 
         print(f"Creating student: {student_id}...")

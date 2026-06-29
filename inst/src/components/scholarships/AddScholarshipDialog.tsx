@@ -32,6 +32,7 @@ export function AddScholarshipDialog({ onSuccess }: { onSuccess?: () => void }) 
     provider_name: "",
     amount: "",
     year_awarded: new Date().getFullYear().toString(),
+    duration: "",
   });
 
   useEffect(() => {
@@ -70,11 +71,12 @@ export function AddScholarshipDialog({ onSuccess }: { onSuccess?: () => void }) 
         provider_name: formData.provider_name,
         amount: formData.amount ? parseFloat(formData.amount) : null,
         year_awarded: parseInt(formData.year_awarded),
+        duration: formData.duration || null,
       });
 
       toast.success("Scholarship added successfully!");
       setOpen(false);
-      setFormData({ student: "", provider_name: "", amount: "", year_awarded: new Date().getFullYear().toString() });
+      setFormData({ student: "", provider_name: "", amount: "", year_awarded: new Date().getFullYear().toString(), duration: "" });
       if (onSuccess) onSuccess();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Failed to add scholarship");
@@ -121,6 +123,10 @@ export function AddScholarshipDialog({ onSuccess }: { onSuccess?: () => void }) 
               <Label>Year Awarded *</Label>
               <Input id="year_awarded" type="number" required value={formData.year_awarded} onChange={handleChange} />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Duration (e.g. 4 Years, 2 Semesters)</Label>
+            <Input id="duration" value={formData.duration} onChange={handleChange} placeholder="Optional" />
           </div>
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={loading}>

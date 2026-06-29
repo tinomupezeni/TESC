@@ -6,6 +6,7 @@ import ProjectManager from "../components/innovation_dept/ProjectManager";
 import HubManager from "../components/innovation_dept/HubManager";
 import PartnershipManager from "../components/innovation_dept/PartnershipManager";
 import GrantManager from "../components/innovation_dept/GrantManager";
+import { PageLoadingSkeleton } from "@/components/common/PageLoadingSkeleton";
 import { useInnovationData } from "@/hooks/useInnovation";
 import { useAuth } from "@/context/AuthContext";
 
@@ -17,7 +18,7 @@ const InnovationDashboard = () => {
   // ONE HOOK TO RULE THEM ALL
   const { projects, hubs, partnerships, grants, loading, refresh } = useInnovationData(institutionId);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageLoadingSkeleton />;
   return (
     <div className="space-y-6">
       <div className="px-1">

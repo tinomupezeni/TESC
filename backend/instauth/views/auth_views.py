@@ -25,14 +25,114 @@ class InstitutionAdminLogin(APIView):
             except InstitutionAdmin.DoesNotExist:
                 raise AuthenticationFailed("User is not associated with any institution")
 
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
+        from django.utils import timezone
+        import datetime
+        
+        now = timezone.now()
+        from django.conf import settings
+        
+        is_smoke_test = request.headers.get('X-Smoke-Test-Key') == getattr(settings, 'SMOKE_TEST_KEY', None)
+
+        # --- MFA OTP GENERATION ---
+        import random
+        from django.core.mail import send_mail
+        
+        # TEST ENVIRONMENT BYPASS
+        if is_smoke_test or settings.DEBUG:
+            user.session_version += 1
+            user.last_activity = now
+            user.save(update_fields=['session_version', 'last_activity'])
+            
+            from users.serializers.auth_serializers import CustomTokenObtainPairSerializer
+            refresh = CustomTokenObtainPairSerializer.get_token(user)
+            access = refresh.access_token
+            
+            response = Response({
+                "message": "Login successful",
+                "username": user.email,
+                "institution_id": user.institution.id if user.institution else None,
+                "must_change_password": user.must_change_password,
+                "tokens": {
+                    "access": str(access),
+                    "refresh": str(refresh),
+                }
+            })
+            
+            secure = request.is_secure() or request.headers.get('X-Forwarded-Proto') == 'https' or request.headers.get('x-forwarded-proto') == 'https'
+            response.set_cookie(
+                key='refresh_token',
+                value=str(refresh),
+                httponly=True,
+                secure=secure,
+                samesite='Lax',
+                path='/api/instauth/'
+            )
+            return response
+
+        otp = str(random.randint(100000, 999999))
+        user.otp_code = otp
+        user.otp_created_at = now
+        user.save(update_fields=['otp_code', 'otp_created_at'])
+        
+        try:
+            send_mail(
+                "Your Login OTP - ScalarEye",
+                f"Your one-time password is: {otp}. It expires in 5 minutes.",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=True
+            )
+        except Exception:
+            pass
+            
+        return Response({
+            "requires_otp": True,
+            "user_id": user.id,
+            "message": "An OTP has been sent to your email."
+        })
+
+class InstitutionVerifyOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        otp_code = request.data.get('otp_code')
+
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+        import datetime
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.otp_code or user.otp_code != otp_code:
+            return Response({"detail": "Invalid OTP code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        now = timezone.now()
+        if user.otp_created_at and (now - user.otp_created_at) > datetime.timedelta(minutes=5):
+            return Response({"detail": "OTP code has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # OTP is valid. Clear it.
+        user.otp_code = None
+        user.otp_created_at = None
+
+        # SINGLE SESSION LOGIC
+        user.session_version += 1
+        user.last_activity = now
+        user.save(update_fields=['otp_code', 'otp_created_at', 'session_version', 'last_activity'])
+
+        # Generate JWT tokens using the custom serializer so all claims are present
+        from users.serializers.auth_serializers import CustomTokenObtainPairSerializer
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
         access = refresh.access_token
 
         response = Response({
             "message": "Login successful",
-            "username": username,
-            "institution_id": user.institution.id,
+            "username": user.email,
+            "institution_id": user.institution.id if user.institution else None,
             "must_change_password": user.must_change_password,
             "tokens": {
                 "access": str(access),

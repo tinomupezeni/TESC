@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AddPlacementDialog } from "@/components/placements/AddPlacementDialog";
+import { TableSkeleton } from "@/components/common/TableSkeleton";
 import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
 import {
   Table,
@@ -131,9 +132,7 @@ export default function Placements() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell>
-                  </TableRow>
+                  <TableSkeleton columns={7} rows={5} />
                 ) : placements.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">No placements found.</TableCell>

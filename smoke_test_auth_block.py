@@ -2,7 +2,7 @@ import requests
 import sys
 import os
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 
 def test_login(email, password, expected_status, description):
     print(f"Testing: {description} ({email})")

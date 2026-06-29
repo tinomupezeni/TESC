@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AddMobilityDialog } from "@/components/mobility/AddMobilityDialog";
+import { TableSkeleton } from "@/components/common/TableSkeleton";
 import {
   Table,
   TableBody,
@@ -135,9 +136,7 @@ export default function Mobility() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">Loading...</TableCell>
-                  </TableRow>
+                  <TableSkeleton columns={6} rows={5} />
                 ) : mobility.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-xs">No records found.</TableCell>

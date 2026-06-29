@@ -53,6 +53,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EnhancedStudentActionsMenu } from "@/components/EnhancedStudentActionsMenu";
+import { TableSkeleton } from "@/components/common/TableSkeleton";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 // Changed import to use the default export object for consistency
 import studentService, { Student } from "@/services/students.services";
@@ -321,13 +323,7 @@ const Students = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
-                   <TableRow>
-                     <TableCell colSpan={8} className="h-24 text-center">
-                       <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Loading...
-                     </TableCell>
-                   </TableRow>
-                ) : filteredStudents.length === 0 ? (
+                {loading ? <TableSkeleton columns={8} rows={5} /> : filteredStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-xs">
                       {students.length === 0 ? "No students found." : "No matching results."}

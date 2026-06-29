@@ -24,6 +24,11 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
     "Faculty Name",
     "Status (Active/Setup/Review/Archived)"
   ],
+  facilities: [
+    "Faculty Name",
+    "Category",
+    "Status (Active/Maintenance/Closed)"
+  ],
   programs: [
     "Faculty Name",
     "Department Name",

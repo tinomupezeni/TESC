@@ -14,6 +14,8 @@ import ISEOPStudents from "./pages/ISEOP";
 import Institutions from "./pages/Institutions";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/auth/Signup";
 import ForcePasswordChange from "./pages/auth/ForcePasswordChange";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
@@ -64,6 +66,8 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/change-password" element={<ForcePasswordChange />} />
 

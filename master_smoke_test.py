@@ -30,11 +30,20 @@ def run_test(script_path):
     
     # We use runpy to execute the script in the same process but isolated, 
     # and we monkeypatch requests to disable SSL warnings globally for this run.
-    cmd = [
-        sys.executable, "-c", 
-        f"import urllib3; urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning); "
-        f"import runpy; runpy.run_path('{script_path}')"
-    ]
+    script_content = f"""
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import requests
+old_req = requests.Session.request
+def new_req(self, method, url, **kwargs):
+    kwargs.setdefault('headers', {{}})
+    kwargs['headers']['X-Smoke-Test-Key'] = 'default-insecure-smoke-key'
+    return old_req(self, method, url, **kwargs)
+requests.Session.request = new_req
+import runpy
+runpy.run_path('{script_path}', run_name='__main__')
+"""
+    cmd = [sys.executable, "-c", script_content]
     
     try:
         result = subprocess.run(cmd, capture_output=False, text=True)

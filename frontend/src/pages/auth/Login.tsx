@@ -12,9 +12,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // OTP States
+  const [requiresOtp, setRequiresOtp] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [userId, setUserId] = useState<number | null>(null);
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, verifyOTP } = useAuth();
   const location = useLocation();
 
   const togglePasswordVisibility = () => {
@@ -43,13 +48,40 @@ const Login = () => {
     setError(null);
 
     try {
-      const authenticatedUser = await login(form.email, form.password);
+      const response = await login(form.email, form.password);
+      
+      if (response && response.requires_otp && response.user_id) {
+        setRequiresOtp(true);
+        setUserId(response.user_id);
+        return;
+      }
+      
+      const authenticatedUser = response;
       const departmentName = authenticatedUser?.department?.name;
       const redirectPath = getDashboardRoute(departmentName);
       navigate(redirectPath, { replace: true });
     } catch (err: any) {
-      const status = err.response?.status;
-      setError(status === 401 || status === 400 ? "Invalid credentials." : "Login failed.");
+      const errorMessage = err.response?.data?.detail || err.message || "Invalid credentials.";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const authenticatedUser = await verifyOTP(userId, otp);
+      const departmentName = authenticatedUser?.department?.name;
+      const redirectPath = getDashboardRoute(departmentName);
+      navigate(redirectPath, { replace: true });
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || "Invalid OTP code.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -60,10 +92,8 @@ const Login = () => {
       className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
       style={{ backgroundImage: `url(${bg_image})` }}
     >
-      {/* Dark overlay to make the glass effect pop */}
       <div className="absolute inset-0 bg-black bg-opacity-60" />
       
-      {/* Glassmorphism Card */}
       <Card className="w-full max-w-md bg-black/40 backdrop-blur-lg border-white/10 shadow-2xl rounded-2xl relative z-10 text-white">
         <CardContent className="p-8 space-y-6">
           <div className="flex justify-center">
@@ -77,58 +107,113 @@ const Login = () => {
             </p>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {error && (
-              <div className="flex items-center p-3 text-sm text-red-200 bg-red-900/30 border border-red-500/50 rounded-lg">
-                <AlertCircle className="mr-2" size={18} />
-                {error}
+          {requiresOtp ? (
+            <form className="space-y-4" onSubmit={handleOtpSubmit}>
+              {error && (
+                <div className="flex items-center p-3 text-sm text-red-200 bg-red-900/30 border border-red-500/50 rounded-lg">
+                  <AlertCircle className="mr-2" size={18} />
+                  {error}
+                </div>
+              )}
+              
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-300">
+                  An email has been sent to your address with a 6-digit OTP code.
+                </p>
               </div>
-            )}
-            
-            <div className="relative">
-              <User className="absolute left-3 top-3 text-gray-400" size={18} />
-              <Input
-                type="email"
-                name="email"
-                placeholder="Email address"
-                value={form.email}
-                onChange={handleChange}
-                required
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
-                disabled={isLoading}
-              />
-            </div>
 
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
-              <Input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
-                disabled={isLoading}
-              />
-              <div
-                className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-white"
-                onClick={togglePasswordVisibility}
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Input
+                  type="text"
+                  name="otp"
+                  placeholder="Enter 6-digit code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  required
+                  maxLength={6}
+                  className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all" 
+                disabled={isLoading || otp.length < 6}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {isLoading ? "Verifying..." : "Verify & Sign In"}
+              </Button>
+
+              <div className="text-center mt-4">
+                <Button variant="link" onClick={() => setRequiresOtp(false)} className="text-xs text-gray-400 hover:text-white">
+                  Back to Login
+                </Button>
               </div>
-            </div>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {error && (
+                <div className="flex items-center p-3 text-sm text-red-200 bg-red-900/30 border border-red-500/50 rounded-lg">
+                  <AlertCircle className="mr-2" size={18} />
+                  {error}
+                </div>
+              )}
+              
+              <div className="relative">
+                <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Input
+                  type="email"
+                  name="email"
+                  placeholder="Email address"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
+                  disabled={isLoading}
+                />
+              </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing In..." : "Sign In"}
-            </Button>
-          </form>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
+                  disabled={isLoading}
+                />
+                <div
+                  className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-white"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </div>
+              </div>
 
-          <div className="text-center text-sm text-gray-400">
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing In..." : "Sign In"}
+              </Button>
+
+              <div className="flex justify-end -mt-3">
+                <span 
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-sm text-blue-400 hover:text-blue-300 hover:underline cursor-pointer"
+                >
+                  Forgot password?
+                </span>
+              </div>
+            </form>
+          )}
+
+          <div className="text-center text-sm text-gray-400 mt-4">
             Don’t have an account? <br /> 
             <span className="font-semibold text-gray-200 hover:underline cursor-pointer">
                 Contact the system administrator

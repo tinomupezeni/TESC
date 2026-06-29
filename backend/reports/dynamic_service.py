@@ -69,6 +69,7 @@ class DynamicReportService:
 
         # Apply user-provided filters
         if filters:
+            print(f"DEBUG BUILD_QUERYSET: filters={filters}")
             filter_kwargs = {}
             exclude_kwargs = {}
 
@@ -78,6 +79,14 @@ class DynamicReportService:
 
                 # SECURITY: Prevent client from overriding institution_id via filters
                 if key == 'institution_id' and user and not user.is_superuser:
+                    continue
+                    
+                # Handle explicit institution_id filter (usually added for superusers)
+                if key == 'institution_id':
+                    if report_type in ['placements', 'scholarships', 'mobility']:
+                        filter_kwargs['student__institution_id'] = value
+                    else:
+                        filter_kwargs['institution_id'] = value
                     continue
 
                 field_def = get_field_by_key(report_type, key)
@@ -133,6 +142,7 @@ class DynamicReportService:
                     filter_kwargs[f'{key}__icontains'] = value
 
             if filter_kwargs:
+                print(f"DEBUG BUILD_QUERYSET: filter_kwargs={filter_kwargs}")
                 queryset = queryset.filter(**filter_kwargs)
             if exclude_kwargs:
                 queryset = queryset.exclude(**exclude_kwargs)
@@ -338,6 +348,11 @@ class DynamicReportService:
         columns = config.get('columns', [])
         group_by = config.get('group_by')
         user = config.get('user')
+        institution_id = config.get('institution_id')
+
+        # Add explicit institution filter if provided and user is superuser
+        if institution_id and user and user.is_superuser:
+            filters['institution_id'] = institution_id
 
         # Get schema and default columns if none specified
         schema = get_schema(report_type)

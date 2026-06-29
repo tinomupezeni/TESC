@@ -6,6 +6,7 @@ class FacultySerializer(serializers.ModelSerializer):
     # Read-only fields for frontend display
     institution_name = serializers.CharField(source='institution.name', read_only=True)
     departments_count = serializers.IntegerField(source='departments.count', read_only=True)
+    departments_list = serializers.SerializerMethodField()
     
     class Meta:
         model = Faculty
@@ -20,10 +21,14 @@ class FacultySerializer(serializers.ModelSerializer):
             'description', 
             'status',
             'departments_count', # Helpful for the dashboard card stats
+            'departments_list',
             'created_at', 
             'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_departments_list(self, obj):
+        return [d.name for d in obj.departments.all()]
 
     def validate_name(self, value):
         """

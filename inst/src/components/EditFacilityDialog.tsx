@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { updateFacility, Facility } from "@/services/facilities.services";
 
@@ -29,7 +29,10 @@ interface EditFacilityDialogProps {
 
 export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilityDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [formData, setFormData] = useState<Partial<Facility>>({});
+  const [equipmentList, setEquipmentList] = useState<string[]>([]);
+  const [newEquipment, setNewEquipment] = useState("");
 
   useEffect(() => {
     if (facility) {
@@ -45,13 +48,27 @@ export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilit
         manager: facility.manager,
         contact_number: facility.contact_number,
       });
+
+      const standardTypes = ["Accommodation", "Laboratory", "Library", "Sports", "Innovation Hub", "Other"];
+      if (facility.facility_type && !standardTypes.includes(facility.facility_type)) {
+        setIsCustomCategory(true);
+      } else {
+        setIsCustomCategory(false);
+      }
+
+      if (facility.equipment) {
+        setEquipmentList(facility.equipment.split(',').map(e => e.trim()).filter(e => e));
+      } else {
+        setEquipmentList([]);
+      }
+      setNewEquipment("");
     }
   }, [facility]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { id, value } = e.target;
+    const { id, value, type } = e.target;
 
     if (id === "contact_number") {
       const cleanedValue = value.replace(/[^0-9+\s()-]/g, "");
@@ -60,7 +77,13 @@ export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilit
     }
 
     const numericFields = ['capacity', 'current_usage'];
-    const val = numericFields.includes(id) ? parseInt(value) || 0 : value;
+    let val: string | number = value;
+
+    if (numericFields.includes(id)) {
+      val = parseInt(value) || 0;
+    } else if (type === "text" || e.target.tagName.toLowerCase() === "textarea") {
+      val = value.toUpperCase();
+    }
 
     setFormData(prev => ({ ...prev, [id]: val }));
   };
@@ -103,20 +126,42 @@ export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilit
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="facility_type">Facility Type *</Label>
-              <Select value={formData.facility_type} onValueChange={(val) => handleSelectChange('facility_type', val)} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Accommodation">Accommodation</SelectItem>
-                  <SelectItem value="Laboratory">Laboratory</SelectItem>
-                  <SelectItem value="Library">Library</SelectItem>
-                  <SelectItem value="Sports">Sports Facility</SelectItem>
-                  <SelectItem value="Innovation">Innovation Center</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="facility_type">Category *</Label>
+              <div className="flex gap-2">
+                {isCustomCategory ? (
+                  <Input 
+                    id="facility_type" 
+                    placeholder="e.g., Drone Lab" 
+                    required 
+                    onChange={handleInputChange} 
+                    value={formData.facility_type || ''} 
+                    className="flex-1"
+                  />
+                ) : (
+                  <Select value={formData.facility_type} onValueChange={(val) => handleSelectChange('facility_type', val)} required>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Accommodation">Accommodation</SelectItem>
+                      <SelectItem value="Laboratory">Laboratory</SelectItem>
+                      <SelectItem value="Library">Library</SelectItem>
+                      <SelectItem value="Sports">Sports Facility</SelectItem>
+                      <SelectItem value="Innovation">Innovation Hub</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button 
+                  type="button" 
+                  size="icon"
+                  className={!isCustomCategory ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}
+                  onClick={() => setIsCustomCategory(!isCustomCategory)} 
+                  title={isCustomCategory ? "Use standard categories" : "Add custom category"}
+                >
+                  <Plus className={`h-4 w-4 ${isCustomCategory ? 'rotate-45 transition-transform' : 'transition-transform'}`} />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="building">Building *</Label>
@@ -131,7 +176,7 @@ export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilit
                 id="capacity" 
                 type="number" 
                 min={0}
-                value={formData.capacity || 0}
+                value={formData.capacity === 0 ? '' : formData.capacity}
                 required 
                 onChange={handleInputChange} 
               />
@@ -143,7 +188,7 @@ export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilit
                 id="current_usage"
                 type="number"
                 min={0}
-                value={formData.current_usage || 0}
+                value={formData.current_usage === 0 ? '' : formData.current_usage}
                 onChange={handleInputChange}
               />
             </div>
@@ -169,13 +214,60 @@ export function EditFacilityDialog({ facility, onClose, onSuccess }: EditFacilit
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="equipment">Available Equipment (comma-separated)</Label>
-            <Textarea 
-              id="equipment" 
-              value={formData.equipment || ""}
-              rows={2} 
-              onChange={handleInputChange}
-            />
+            <Label>Available Equipment</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. PROJECTORS"
+                value={newEquipment}
+                onChange={(e) => setNewEquipment(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newEquipment.trim() !== '') {
+                      const updatedList = [...equipmentList, newEquipment.trim().toUpperCase()];
+                      setEquipmentList(updatedList);
+                      setFormData(prev => ({ ...prev, equipment: updatedList.join(", ") }));
+                      setNewEquipment("");
+                    }
+                  }
+                }}
+              />
+              <Button 
+                type="button" 
+                onClick={() => {
+                  if (newEquipment.trim() !== '') {
+                    const updatedList = [...equipmentList, newEquipment.trim().toUpperCase()];
+                    setEquipmentList(updatedList);
+                    setFormData(prev => ({ ...prev, equipment: updatedList.join(", ") }));
+                    setNewEquipment("");
+                  }
+                }} 
+                className="shrink-0" 
+                size="icon"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {equipmentList.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {equipmentList.map((eq, idx) => (
+                  <div key={idx} className="flex items-center bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm">
+                    <span>{eq}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const updatedList = equipmentList.filter((_, i) => i !== idx);
+                        setEquipmentList(updatedList);
+                        setFormData(prev => ({ ...prev, equipment: updatedList.join(", ") }));
+                      }}
+                      className="ml-2 text-muted-foreground hover:text-foreground"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -77,6 +77,7 @@ export function ReportBuilder({
   const [groupBy, setGroupBy] = useState<string | null>(null);
   const [format, setFormat] = useState<ReportFormat>('pdf');
   const [orientation, setOrientation] = useState<ReportOrientation>('auto');
+  const [activeTab, setActiveTab] = useState("filters");
 
   // Preview state
   const [previewData, setPreviewData] = useState<ReportDataResponse | null>(null);
@@ -141,8 +142,10 @@ export function ReportBuilder({
         institution_id: institutionId,
       });
       setPreviewData(data);
-    } catch (err) {
-      setError('Failed to generate preview');
+      setActiveTab("preview");
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || err.message || 'Failed to generate preview';
+      setError(`Failed to generate preview: ${errorMsg}`);
       console.error('Preview error:', err);
     } finally {
       setPreviewLoading(false);
@@ -221,9 +224,15 @@ export function ReportBuilder({
               />
             </div>
 
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             {/* Main Tabs */}
-            <Tabs defaultValue="filters" className="flex-1 overflow-hidden">
-              <TabsList className="w-full justify-start">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="filters">
                   Filters
                   {Object.keys(filters).length > 0 && (
@@ -369,6 +378,7 @@ export function ReportBuilder({
             {/* Footer */}
             <DialogFooter className="gap-2">
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isGenerating}
@@ -376,6 +386,7 @@ export function ReportBuilder({
                 Cancel
               </Button>
               <Button
+                type="button"
                 variant="outline"
                 onClick={handlePreview}
                 disabled={previewLoading || isGenerating}
@@ -388,6 +399,7 @@ export function ReportBuilder({
                 Preview
               </Button>
               <Button
+                type="button"
                 onClick={handleGenerate}
                 disabled={isGenerating || selectedColumns.length === 0}
                 className="bg-green-600 hover:bg-green-700"

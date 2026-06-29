@@ -6,12 +6,15 @@ interface LoginData {
 }
 
 interface LoginResponse {
-  tokens: {
+  tokens?: {
     access: string;
     refresh?: string;
   };
-  must_change_password: boolean;
-  institution_id: number;
+  must_change_password?: boolean;
+  institution_id?: number;
+  requires_otp?: boolean;
+  user_id?: number;
+  message?: string;
 }
 
 /**
@@ -26,6 +29,17 @@ export const loginInstitutionAdmin = async (
   );
   console.log(response);
   
+  return response.data;
+};
+
+export const verifyInstitutionOTP = async (
+  user_id: number,
+  otp_code: string
+): Promise<LoginResponse> => {
+  const response = await apiClient.post<LoginResponse>(
+    "/instauth/verify-otp/",
+    { user_id, otp_code }
+  );
   return response.data;
 };
 

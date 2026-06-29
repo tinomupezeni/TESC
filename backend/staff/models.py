@@ -68,6 +68,7 @@ class Staff(models.Model):
     last_name = EncryptedTextField()
     email = EncryptedTextField()
     phone = EncryptedTextField()
+    gender = EncryptedTextField(blank=True, null=True)
 
     # Employment Details
     employee_id = models.CharField(max_length=50, unique=True)

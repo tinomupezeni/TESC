@@ -13,7 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- SECURITY CONFIGURATION ---
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key')
+SMOKE_TEST_KEY = os.environ.get('SMOKE_TEST_KEY', 'default-insecure-smoke-key')
 
 # 🔐 AES-256 Field Encryption (Fernet) - Supports key rotation
 # Format: CRYPTOGRAPHY_KEYS=new_key,old_key1,old_key2 (newest first)
@@ -24,7 +25,7 @@ FERNET_KEYS = [k.strip() for k in _crypto_keys.split(",") if k.strip()]
 print(FERNET_KEYS)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG=False
+DEBUG=True
 
 ALLOWED_HOSTS = [
     'tesc.zchpc.ac.zw',
@@ -74,6 +75,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.RLSMiddleware",
 ]
 
 
@@ -100,8 +102,12 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'tesc_db'),
+        'USER': os.getenv('DB_USER', 'tesc_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'tesc@1234'),
+        'HOST': os.getenv('DB_HOST', 'db'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -121,8 +127,16 @@ AUTHENTICATION_BACKENDS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+        'core.authentication.SingleSessionJWTAuthentication',
+    ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '5000/day'
+    }
 }
 
 # --- SIMPLE_JWT SETTINGS ---
@@ -174,13 +188,15 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 # --- CORS & CSRF CONFIGURATION ---
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8000",
     "http://127.0.0.1",
     "http://localhost:8081",
+    "http://localhost:8082",
     "http://localhost",
     "http://10.50.200.35",
     "http://10.50.200.35:8081",
@@ -203,3 +219,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://tesc.zchpc.ac.zw",
     "http://tesc-inst.zchpc.ac.zw",
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@tesc.ac.zw'
+import os
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:8081')

@@ -34,6 +34,7 @@ export interface CreateStaffData {
   last_name: string;
   email: string;
   phone: string;
+  gender?: string;
   employee_id: string;
   position: string;
   department: string;

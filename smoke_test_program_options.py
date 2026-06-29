@@ -2,7 +2,7 @@ import requests
 import sys
 import os
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 
 def get_auth_token(email, password):
     print(f"Logging in as {email}...")

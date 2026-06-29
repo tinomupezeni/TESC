@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TableSkeleton } from "@/components/common/TableSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,20 +42,12 @@ import { ShieldCheck, Users as UsersIcon, Building, Circle, CheckCircle2, Loader
 import { toast } from "sonner";
 import UsersTable from "@/modules/settings/Users";
 import UserModal from "@/modules/settings/UserModal";
+import { menuGroups } from "@/components/AppSidebar";
 
-const INSTITUTION_PAGES = [
-  { name: "Dashboard", url: "/dashboard" },
-  { name: "Students", url: "/dashboard/students" },
-  { name: "ISEOP Stats", url: "/dashboard/special-enrollment" },
-  { name: "Staff", url: "/dashboard/staff" },
-  { name: "Faculties", url: "/dashboard/faculties" },
-  { name: "Programs", url: "/dashboard/programs" },
-  { name: "Graduates", url: "/dashboard/graduates" },
-  { name: "Facilities", url: "/dashboard/facilities" },
-  { name: "Innovation", url: "/dashboard/innovation" },
-  { name: "Reports", url: "/dashboard/reports" },
-  { name: "Settings", url: "/dashboard/settings" },
-];
+const INSTITUTION_PAGES = menuGroups.flatMap(group => 
+  group.items.map(item => ({ name: item.title, url: item.url }))
+);
+
 
 const DepartmentModal = ({ open, onClose, dept, setDept, onSave }: any) => {
   const togglePage = (url: string) => {
@@ -291,7 +284,7 @@ const UsersPage = () => {
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader2 className="h-4 w-4 animate-spin inline mr-2"/>Loading...</TableCell></TableRow>
+                      <TableSkeleton columns={3} rows={5} />
                     ) : departments.length === 0 ? (
                       <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-xs">No departments created.</TableCell></TableRow>
                     ) : (

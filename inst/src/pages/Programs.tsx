@@ -50,14 +50,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu, // Added DropdownMenu
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Added DropdownMenu components
 import { toast } from "sonner";
 
 // Custom Dialogs
@@ -73,7 +65,7 @@ const Programs = () => {
   
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchPrograms = useCallback(async () => {
@@ -94,18 +86,6 @@ const Programs = () => {
     fetchPrograms();
   }, [fetchPrograms]);
 
-  const handleDelete = async (id: number) => {
-    try {
-      setDeletingId(id);
-      await deleteProgram(id);
-      toast.success("Program deleted successfully");
-      setPrograms((prev) => prev.filter((p) => p.id !== id));
-    } catch (error) {
-      toast.error("Failed to delete program. It may have linked records.");
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const filteredPrograms = programs.filter((program) => {
     return (
@@ -225,62 +205,28 @@ const Programs = () => {
                   </TableRow>
                 ) : (
                   filteredPrograms.map((program) => (
-                    <TableRow key={program.id}>
+                    <TableRow 
+                      key={program.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setEditingProgram(program)}
+                    >
                       <TableCell className="font-medium text-[10px] sm:text-xs">{program.code}</TableCell>
                       <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{program.name}</TableCell>
                       <TableCell className="hidden sm:table-cell text-xs">{program.level}</TableCell>
                       <TableCell className="hidden md:table-cell text-xs">{program.department_name || 'N/A'}</TableCell>
                       <TableCell className="hidden lg:table-cell text-xs">{program.duration} Yrs</TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              <Info className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                              Edit Program
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem 
-                                  className="text-destructive focus:text-destructive"
-                                  onSelect={(e) => e.preventDefault()} // Prevent dropdown closing immediately
-                                >
-                                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                  Delete Program
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="w-[95vw] sm:w-full">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription className="text-xs sm:text-sm">
-                                    This will permanently delete the <strong>{program.name}</strong> program. 
-                                    This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="text-xs sm:text-sm h-9 sm:h-10">Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDelete(program.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm h-9 sm:h-10"
-                                  >
-                                    Delete Program
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProgram(program);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -290,6 +236,18 @@ const Programs = () => {
           </div>
         </CardContent>
       </Card>
+
+      {editingProgram && user?.institution?.id && (
+        <EditProgramDialog
+          program={editingProgram}
+          institutionId={user.institution.id}
+          open={!!editingProgram}
+          onOpenChange={(open) => {
+            if (!open) setEditingProgram(null);
+          }}
+          onSuccess={fetchPrograms}
+        />
+      )}
     </div>
   );
 };

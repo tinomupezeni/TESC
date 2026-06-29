@@ -8,7 +8,7 @@ import urllib3
 # Suppress insecure connection warnings for localhost testing
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 ADMIN_EMAIL = "admin@scalareye.com"
 ADMIN_PASSWORD = "scalareye@123"
 

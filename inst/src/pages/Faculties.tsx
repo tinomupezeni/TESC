@@ -60,18 +60,23 @@ import {
 } from "@/components/ui/dropdown-menu"; // Added DropdownMenu components
 import { toast } from "sonner";
 
-// Components & Services
 import { AddFacultyDialog } from "@/components/AddFacultyDialog";
+import { EditFacultyDialog } from "@/components/EditFacultyDialog";
 import { ManageDepartmentsDialog } from "@/components/ManageDepartmentsDialog";
-import { BulkUploadResolver } from "@/components/common/BulkUploadResolver"; // Added BulkUploadResolver
+import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
+import { TableSkeleton } from "@/components/common/TableSkeleton";
 import { getFaculties, Faculty, deleteFaculty } from "@/services/faculties.services";
 import { useAuth } from "@/context/AuthContext";
+
+import { ViewFacultyDialog } from "@/components/ViewFacultyDialog";
 
 const Faculties = () => {
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
+  const [viewingFaculty, setViewingFaculty] = useState<Faculty | null>(null);
   const { user } = useAuth();
 
   const fetchFaculties = async () => {
@@ -119,6 +124,15 @@ const Faculties = () => {
       (faculty.dean && faculty.dean.toLowerCase().includes(query))
     );
   });
+
+  if (loading && faculties.length === 0) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center flex-col gap-4">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="text-muted-foreground font-medium animate-pulse">Loading faculties...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -178,7 +192,6 @@ const Faculties = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px] text-xs">ID</TableHead>
                   <TableHead className="text-xs">Name</TableHead>
                   <TableHead className="hidden lg:table-cell text-xs">Dean</TableHead>
                   <TableHead className="hidden sm:table-cell text-xs">Location</TableHead>
@@ -189,11 +202,7 @@ const Faculties = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Loading...
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeleton columns={6} rows={5} />
                 ) : filteredFaculties.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
@@ -202,12 +211,32 @@ const Faculties = () => {
                   </TableRow>
                 ) : (
                   filteredFaculties.map((faculty) => (
-                    <TableRow key={faculty.id}>
-                      <TableCell className="font-medium text-[10px] sm:text-xs">{faculty.id}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{faculty.name}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs">{faculty.dean || 'N/A'}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs">{faculty.location || 'N/A'}</TableCell>
-                      <TableCell className="hidden md:table-cell text-xs">{faculty.departments_count || 0}</TableCell>
+                    <TableRow 
+                      key={faculty.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setViewingFaculty(faculty)}
+                    >
+                      <TableCell className="text-[10px] sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{faculty.name}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{faculty.dean || 'Not Assigned'}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{faculty.location || 'Not Assigned'}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">
+                        {faculty.departments_list && faculty.departments_list.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {faculty.departments_list.slice(0, 3).map((dept, idx) => (
+                              <Badge key={idx} variant="outline" className="text-[10px] bg-background">
+                                {dept}
+                              </Badge>
+                            ))}
+                            {faculty.departments_list.length > 3 && (
+                              <Badge variant="outline" className="text-[10px] bg-muted">
+                                +{faculty.departments_list.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic text-xs">None</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant={faculty.status === "Active" ? "default" : "secondary"}
@@ -220,7 +249,7 @@ const Faculties = () => {
                           {faculty.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
@@ -230,7 +259,7 @@ const Faculties = () => {
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditingFaculty(faculty)}>
                               <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
                               Edit Faculty
                             </DropdownMenuItem>
@@ -290,6 +319,24 @@ const Faculties = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {editingFaculty && user?.institution?.id && (
+        <EditFacultyDialog 
+          faculty={editingFaculty}
+          institutionId={user.institution.id}
+          open={!!editingFaculty}
+          onOpenChange={(open) => !open && setEditingFaculty(null)}
+          onSuccess={fetchFaculties}
+        />
+      )}
+
+      {viewingFaculty && (
+        <ViewFacultyDialog
+          faculty={viewingFaculty}
+          open={!!viewingFaculty}
+          onOpenChange={(open) => !open && setViewingFaculty(null)}
+        />
+      )}
     </div>
   );
 };

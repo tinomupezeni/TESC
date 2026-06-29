@@ -42,8 +42,12 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
     qualification: '',
     department: undefined, // Stores the department ID (number)
     faculty: undefined,    // Stores the faculty ID (number)
+    gender: '',
     is_active: true
   });
+
+  const [isCustomPosition, setIsCustomPosition] = useState(false);
+  const [isCustomQualification, setIsCustomQualification] = useState(false);
 
   // --- 1. Fetch Data on Open ---
   useEffect(() => {
@@ -85,7 +89,10 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
         return;
     }
 
-    setFormData(prev => ({ ...prev, [id]: value }));
+    const uppercaseFields = ["first_name", "last_name", "specialization"];
+    const finalValue = uppercaseFields.includes(id) ? value.toUpperCase() : value;
+
+    setFormData(prev => ({ ...prev, [id]: finalValue }));
   };
 
   const handleSelectChange = (field: keyof CreateStaffData, value: string) => {
@@ -110,7 +117,7 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
 
     try {
       // Validation
-      if (!formData.first_name || !formData.last_name || !formData.employee_id || !formData.email || !formData.position || !formData.faculty || !formData.department) {
+      if (!formData.first_name || !formData.last_name || !formData.employee_id || !formData.email || !formData.position || !formData.gender) {
         toast.error("Please fill in all required fields.");
         setIsLoading(false);
         return;
@@ -129,6 +136,7 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
         qualification: '',
         faculty: undefined,
         department: undefined,
+        gender: '',
         is_active: true
       });
       
@@ -162,18 +170,18 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
-              <Input id="first_name" placeholder="Sarah" required onChange={handleInputChange} />
+              <Input id="first_name" placeholder="Sarah" required value={formData.first_name || ""} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="last_name">Last Name *</Label>
-              <Input id="last_name" placeholder="Ndlovu" required onChange={handleInputChange} />
+              <Input id="last_name" placeholder="Ndlovu" required value={formData.last_name || ""} onChange={handleInputChange} />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
-              <Input id="email" type="email" placeholder="sarah.n@institution.ac.zw" required onChange={handleInputChange} />
+              <Input id="email" type="email" placeholder="sarah.n@institution.ac.zw" required value={formData.email || ""} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number *</Label>
@@ -188,13 +196,28 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender *</Label>
+              <Select onValueChange={(val) => handleSelectChange('gender', val)} required>
+                <SelectTrigger id="gender">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MALE">Male</SelectItem>
+                  <SelectItem value="FEMALE">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Employment Info */}
           <div className="p-4 bg-muted/30 rounded-md border space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Placement</h4>
             <div className="grid grid-cols-2 gap-4">
                 {/* 1. Faculty Select */}
                 <div className="space-y-2">
-                <Label htmlFor="faculty">Faculty *</Label>
+                <Label htmlFor="faculty">Faculty</Label>
                 <Select onValueChange={(val) => handleSelectChange('faculty', val)}>
                     <SelectTrigger id="faculty">
                     <SelectValue placeholder="Select faculty" />
@@ -211,7 +234,7 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
 
                 {/* 2. Department Select (Cascading) */}
                 <div className="space-y-2">
-                <Label htmlFor="department">Department *</Label>
+                <Label htmlFor="department">Department</Label>
                 <Select 
                     onValueChange={(val) => handleSelectChange('department', val)}
                     disabled={!formData.faculty || filteredDepartments.length === 0}
@@ -239,41 +262,88 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="position">Position *</Label>
-              <Select onValueChange={(val) => handleSelectChange('position', val)} required>
-                <SelectTrigger id="position">
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Professor">Professor</SelectItem>
-                  <SelectItem value="Lecturer">Lecturer</SelectItem>
-                  <SelectItem value="Assistant">Assistant Lecturer</SelectItem>
-                  <SelectItem value="Admin">Administrative Staff</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="position">Position *</Label>
+                <Button 
+                  type="button" 
+                  size="icon" 
+                  className={`h-6 w-6 rounded-md transition-colors ${isCustomPosition ? 'bg-destructive hover:bg-destructive/90 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                  onClick={() => {
+                    setIsCustomPosition(!isCustomPosition);
+                    handleSelectChange('position', '');
+                  }}
+                  title={isCustomPosition ? "Select from list" : "Add custom position"}
+                >
+                  <Plus className={`h-4 w-4 transition-transform ${isCustomPosition ? "rotate-45" : ""}`} />
+                </Button>
+              </div>
+              {isCustomPosition ? (
+                <Input 
+                  id="position" 
+                  placeholder="e.g. VISITING LECTURER" 
+                  required 
+                  value={formData.position || ""} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value.toUpperCase() }))} 
+                />
+              ) : (
+                <Select onValueChange={(val) => handleSelectChange('position', val)} value={formData.position || ""} required>
+                  <SelectTrigger id="position">
+                    <SelectValue placeholder="Select position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PROFESSOR">Professor</SelectItem>
+                    <SelectItem value="LECTURER">Lecturer</SelectItem>
+                    <SelectItem value="ASSISTANT">Assistant Lecturer</SelectItem>
+                    <SelectItem value="ADMIN">Administrative Staff</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qualification">Highest Qualification *</Label>
-              <Select onValueChange={(val) => handleSelectChange('qualification', val)} required>
-                <SelectTrigger id="qualification">
-                  <SelectValue placeholder="Select qualification" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PhD">PhD</SelectItem>
-                  <SelectItem value="Masters">Masters</SelectItem>
-                  <SelectItem value="Bachelors">Bachelors</SelectItem>
-                  <SelectItem value="Diploma">Diploma</SelectItem>
-                  <SelectItem value="Certificate">Certificate</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="qualification">Highest Qualification *</Label>
+                <Button 
+                  type="button" 
+                  size="icon" 
+                  className={`h-6 w-6 rounded-md transition-colors ${isCustomQualification ? 'bg-destructive hover:bg-destructive/90 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                  onClick={() => {
+                    setIsCustomQualification(!isCustomQualification);
+                    handleSelectChange('qualification', '');
+                  }}
+                  title={isCustomQualification ? "Select from list" : "Add custom qualification"}
+                >
+                  <Plus className={`h-4 w-4 transition-transform ${isCustomQualification ? "rotate-45" : ""}`} />
+                </Button>
+              </div>
+              {isCustomQualification ? (
+                <Input 
+                  id="qualification" 
+                  placeholder="e.g. POSTDOC" 
+                  required 
+                  value={formData.qualification || ""} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, qualification: e.target.value.toUpperCase() }))} 
+                />
+              ) : (
+                <Select onValueChange={(val) => handleSelectChange('qualification', val)} value={formData.qualification || ""} required>
+                  <SelectTrigger id="qualification">
+                    <SelectValue placeholder="Select qualification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PHD">PhD</SelectItem>
+                    <SelectItem value="MASTERS">Masters</SelectItem>
+                    <SelectItem value="BACHELORS">Bachelors</SelectItem>
+                    <SelectItem value="DIPLOMA">Diploma</SelectItem>
+                    <SelectItem value="CERTIFICATE">Certificate</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="employee_id">Employee ID *</Label>
-              <Input id="employee_id" placeholder="STF001" required onChange={handleInputChange} />
+              <Input id="employee_id" placeholder="STF001" required value={formData.employee_id || ""} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="date_joined">Join Date *</Label>
@@ -292,8 +362,9 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
             <Label htmlFor="specialization">Area of Specialization</Label>
             <Textarea 
               id="specialization" 
-              placeholder="e.g., Artificial Intelligence, Software Engineering" 
+              placeholder="e.g., ARTIFICIAL INTELLIGENCE, SOFTWARE ENGINEERING" 
               rows={2} 
+              value={formData.specialization || ""}
               onChange={handleInputChange}
             />
           </div>

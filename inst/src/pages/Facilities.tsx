@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,8 @@ import {
   Loader2,
   Pencil,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Upload
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,6 +43,7 @@ import { EditFacilityDialog } from "@/components/EditFacilityDialog";
 import { getFacilities, deleteFacility, Facility } from "@/services/facilities.services";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
 
 // Extended interface for UI display
 interface UIFacility extends Facility {
@@ -128,7 +131,7 @@ const Facilities = () => {
     return matchesSearch && matchesType;
   });
 
-  const facilityTypes = ["Accommodation", "Laboratory", "Library", "Sports", "Innovation", "Other"];
+  const facilityTypes = Array.from(new Set(facilities.map(f => f.facility_type))).sort();
   const totalFacilities = facilities.length;
   const operationalFacilities = facilities.filter(f => f.status === "Active").length;
   const totalCapacity = facilities.reduce((sum, f) => sum + f.capacity, 0);
@@ -189,8 +192,25 @@ const Facilities = () => {
               <CardTitle className="text-lg sm:text-xl">Facilities Directory</CardTitle>
               <CardDescription className="text-xs sm:text-sm">View and manage all institutional facilities</CardDescription>
             </div>
-            <div className="w-full sm:w-auto">
-              <AddFacilityDialog onFacilityAdded={fetchFacilities} />
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:flex-none">
+                <AddFacilityDialog onFacilityAdded={fetchFacilities} />
+              </div>
+              <div className="flex-1 sm:flex-none">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Upload className="mr-2 h-4 w-4" /> Bulk Upload
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Bulk Upload Facilities</DialogTitle>
+                    </DialogHeader>
+                    <BulkUploadResolver moduleType="facilities" onSuccess={fetchFacilities} />
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
         </CardHeader>

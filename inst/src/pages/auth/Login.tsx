@@ -47,6 +47,11 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [open, setOpen] = useState(false);
   
+  // OTP States
+  const [requiresOtp, setRequiresOtp] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [userId, setUserId] = useState<number | null>(null);
+  
   // UI States
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -64,15 +69,21 @@ const Login = () => {
 
     try {
       // 1. Authenticate with the backend
-      const { tokens } = await loginInstitutionAdmin({ 
+      const res = await loginInstitutionAdmin({ 
         username: email, 
         password 
       });
       
-      await login(tokens.access, tokens.refresh);
-
-      // 3. Navigate only after the user data is ready
-      navigate("/dashboard");
+      if (res.requires_otp && res.user_id) {
+        setRequiresOtp(true);
+        setUserId(res.user_id);
+        return;
+      }
+      
+      if (res.tokens) {
+        await login(res.tokens.access, res.tokens.refresh);
+        navigate("/dashboard");
+      }
 
     } catch (err: any) {
       console.error("Login failed:", err);
@@ -80,6 +91,32 @@ const Login = () => {
         setError(err.response.data.detail);
       } else {
         setError("Login failed. Please check your credentials.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!userId) return;
+    
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { verifyInstitutionOTP } = await import("@/services/auth.services");
+      const res = await verifyInstitutionOTP(userId, otp);
+      
+      if (res.tokens) {
+        await login(res.tokens.access, res.tokens.refresh);
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError("Verification failed. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -109,145 +146,138 @@ const Login = () => {
         </CardHeader>
 
         <CardContent className="px-6 sm:px-8 pb-8 sm:pb-10">
-          <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
-            {error && (
-              <Alert variant="destructive" className="py-2.5 px-3">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* 1. Searchable Institution Selection */}
-            <div className="space-y-1.5">
-              <Label htmlFor="institution" className="text-xs sm:text-sm font-medium">Institution Name</Label>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="w-full justify-between h-10 sm:h-11 bg-slate-50/50 text-xs sm:text-sm font-normal"
-                    disabled={isLoading || isLoadingInsts}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      {selectedInstId
-                        ? institutions?.find((inst: any) => inst.id.toString() === selectedInstId)?.name
-                        : "Select institution"}
-                    </div>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent 
-                  className="w-[var(--radix-popover-trigger-width)] p-0" 
-                  side="bottom" 
-                  align="start" 
-                  sideOffset={4}
-                >
-                  <Command>
-                    <CommandInput placeholder="Search institution..." className="h-9" />
-                    <CommandList>
-                      <CommandEmpty>No institution found.</CommandEmpty>
-                      <CommandGroup>
-                        {institutions?.map((inst: any) => (
-                          <CommandItem
-                            key={inst.id}
-                            value={inst.name}
-                            onSelect={() => {
-                              setSelectedInstId(inst.id.toString());
-                              setOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedInstId === inst.id.toString() ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {inst.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* 2. Email Input */}
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs sm:text-sm font-medium">Institutional Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@institution.ac.zw"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  className="pl-10 h-10 sm:h-11 text-xs sm:text-sm transition-all"
-                  required
-                />
+          {requiresOtp ? (
+            <form onSubmit={handleOtpSubmit} className="space-y-4 sm:space-y-5">
+              {error && (
+                <Alert variant="destructive" className="py-2.5 px-3">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">{error}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-1.5 text-center mb-6">
+                <p className="text-sm text-muted-foreground">
+                  An email has been sent to your address with a 6-digit OTP code.
+                </p>
               </div>
-            </div>
-
-            {/* 3. Password Input */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" title="password" className="text-xs sm:text-sm font-medium">Password</Label>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="px-0 h-auto text-[10px] sm:text-xs text-muted-foreground hover:text-primary"
-                  onClick={() => navigate("/forgot-password")}
-                  disabled={isLoading}
-                >
-                  Forgot password?
-                </Button>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  className="pl-10 pr-10 h-10 sm:h-11 text-xs sm:text-sm transition-all"
-                  required
-                />
-                <div 
-                  className="absolute right-3 top-3 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <div className="space-y-1.5">
+                <Label htmlFor="otp" className="text-xs sm:text-sm font-medium">OTP Code</Label>
+                <div className="relative">
+                  <Input
+                    id="otp"
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    required
+                    className="h-10 sm:h-11 px-9 bg-slate-50/50 text-xs sm:text-sm transition-all focus:bg-white"
+                    maxLength={6}
+                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 </div>
               </div>
-            </div>
-
-            {/* Submit Button */}
-            <Button 
-              type="submit" 
-              className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold mt-2 shadow-lg shadow-primary/20" 
-              disabled={isLoading || !selectedInstId || !email || !password}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                  Verifying...
-                </>
-              ) : (
-                "Sign In"
+              <Button
+                type="submit"
+                className="w-full h-10 sm:h-11 font-medium bg-[#1e293b] hover:bg-[#0f172a] text-white transition-all duration-200 shadow-md hover:shadow-lg"
+                disabled={isLoading || otp.length < 6}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify & Login"
+                )}
+              </Button>
+              <div className="text-center mt-4">
+                <Button variant="link" onClick={() => setRequiresOtp(false)} className="text-xs">
+                  Back to Login
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
+              {error && (
+                <Alert variant="destructive" className="py-2.5 px-3">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">{error}</AlertDescription>
+                </Alert>
               )}
-            </Button>
 
-            <div className="text-center pt-4 sm:pt-6 border-t mt-2">
-              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-                <span className="h-1 w-1 rounded-full bg-slate-400" />
-                Protected by ZCHPC System Security
-                <span className="h-1 w-1 rounded-full bg-slate-400" />
+              {/* 1. Searchable Institution Selection */}
+              <div className="space-y-1.5">
+                <Label htmlFor="institution" className="text-xs sm:text-sm font-medium">Institution Name</Label>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between h-10 sm:h-11 bg-slate-50/50 text-xs sm:text-sm font-normal"
+                      disabled={isLoading || isLoadingInsts}
+                    >
+                      {selectedInstId
+                        ? institutions?.find((i: any) => i.id.toString() === selectedInstId)?.name
+                        : "Select institution..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search institution..." />
+                      <CommandList>
+                        <CommandEmpty>No institution found.</CommandEmpty>
+                        <CommandGroup>
+                          {institutions?.map((inst: any) => (
+                            <CommandItem
+                              key={inst.id}
+                              value={inst.name}
+                              onSelect={() => {
+                                setSelectedInstId(inst.id.toString());
+                                setOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedInstId === inst.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {inst.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* 2. Email Address */}
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs sm:text-sm font-medium">Email Address</Label>
+                <div className="relative group">
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@institution.edu"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="h-10 sm:h-11 pl-9 bg-slate-50/50 text-xs sm:text-sm transition-all focus:bg-white group-hover:border-slate-400"
+                  />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-hover:text-slate-600" />
+                </div>
+              </div>
+
+              {/* 3. Password */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-xs sm:text-sm font-medium">Password</Label>
+                  <Button variant="link" className="p-0 h-auto text-xs font-normal" onClick={() => navigate("/forgot-password")}>
+                    Forgot password?
+                  </Button>
               </p>
             </div>
           </form>

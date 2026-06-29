@@ -28,3 +28,4 @@ python-dotenv
 cryptography
 requests
 gunicorn
+bleach==6.2.0

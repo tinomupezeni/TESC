@@ -44,6 +44,12 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
+    session_version = models.IntegerField(default=1)
+    last_activity = models.DateTimeField(null=True, blank=True)
+
+    # --- MFA (Email OTP) ---
+    otp_code = models.CharField(max_length=6, null=True, blank=True)
+    otp_created_at = models.DateTimeField(null=True, blank=True)
 
     LEVEL_CHOICES = [
         ('1', 'Level 1 - Full Access'),
@@ -69,3 +75,30 @@ class CustomUser(AbstractUser):
     def __str__(self):
         # A good representation uses the full name if available
         return f"{self.first_name} {self.last_name} ({self.username})" if self.first_name and self.last_name else self.username
+
+class AuditTrail(models.Model):
+    institution = models.ForeignKey(
+        Institution, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='audit_trails'
+    )
+    user = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='audit_trails'
+    )
+    action = models.CharField(max_length=255)
+    module = models.CharField(max_length=100)
+    details = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user} - {self.action} on {self.created_at}"

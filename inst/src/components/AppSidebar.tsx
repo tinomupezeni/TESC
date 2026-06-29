@@ -19,7 +19,8 @@ import {
   Settings2,
   Globe,
   Briefcase,
-  ArrowRightLeft
+  ArrowRightLeft,
+  ClipboardList
 } from "lucide-react";
 import {
   Sidebar,
@@ -46,7 +47,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ScalarEyeLogo } from "./layout/ScalarEyeLogo";
 
 // Grouped Menu Items for better organization
-const menuGroups = [
+export const menuGroups = [
   {
     label: "Overview",
     items: [
@@ -87,8 +88,8 @@ const menuGroups = [
     items: [
       { title: "User Management", url: "/dashboard/users", icon: Users },
       { title: "Settings", url: "/dashboard/settings", icon: Settings2 },
+      { title: "Audit Trail", url: "/dashboard/audit-trail", icon: ClipboardList },
       { title: "Help", url: "/dashboard/help", icon: Lightbulb },
-      
     ]
   }
 ];

@@ -4,7 +4,7 @@ import uuid
 import time
 
 # Use localhost since we are running inside or beside the docker containers
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 SUPER_ADMIN_EMAIL = "admin@scalareye.com"
 SUPER_ADMIN_PASSWORD = "scalareye@123"
 
@@ -109,7 +109,7 @@ def smoke_test_report_isolation():
     report_payload = {
         "report_type": "students",
         "format": "json",
-        "columns": ["student_id", "first_name", "last_name", "institution_name"]
+        "columns": ["student_id", "full_name"]
     }
     report_res = requests.post(f"{BASE_URL}/v1/reports/dynamic/generate/", json=report_payload, headers=headers_a, verify=False)
     
@@ -124,13 +124,12 @@ def smoke_test_report_isolation():
 
     # 6. Verify isolation
     print("--- Verifying Isolation ---")
-    inst_names = [r.get('institution_name') for r in records]
-    first_names = [r.get('first_name') for r in records]
+    full_names = [r.get('full_name', '') for r in records]
 
-    if "Alice" in first_names and "Bob" not in first_names:
+    if any("ALICE" in fn.upper() for fn in full_names) and not any("BOB" in fn.upper() for fn in full_names):
         print("✅ Isolation Success: Alice (Inst A) is present, Bob (Inst B) is NOT.")
     else:
-        print(f"❌ Isolation Failure: Alice present: {'Alice' in first_names}, Bob present: {'Bob' in first_names}")
+        print(f"❌ Isolation Failure: Alice present: {any('ALICE' in fn.upper() for fn in full_names)}, Bob present: {any('BOB' in fn.upper() for fn in full_names)}")
         # sys.exit(1) # We'll check the next part too
 
     # 7. Attempt to leak data by providing inst_b_id
@@ -140,16 +139,44 @@ def smoke_test_report_isolation():
     leak_res = requests.post(f"{BASE_URL}/v1/reports/dynamic/generate/", json=leak_payload, headers=headers_a, verify=False)
     
     leak_data = leak_res.json()
-    leak_records = leak_data['data']
-    leak_first_names = [r.get('first_name') for r in leak_records]
+    leak_records = leak_data.get('data', [])
+    leak_full_names = [r.get('full_name', '') for r in leak_records]
 
-    if "Bob" not in leak_first_names:
+    if not any("BOB" in fn.upper() for fn in leak_full_names):
         print("✅ Leak Protection Success: Bob (Inst B) was NOT leaked even when requested by ID.")
     else:
         print("❌ Leak Protection Failure: Bob (Inst B) was leaked when requested by ID!")
         sys.exit(1)
 
-    # 8. Cleanup
+    # 8. Super Admin tests for edge cases
+    print("--- Verifying Super Admin Global Visibility ---")
+    global_payload = report_payload.copy()
+    global_res = requests.post(f"{BASE_URL}/v1/reports/dynamic/generate/", json=global_payload, headers=super_headers, verify=False)
+    global_data = global_res.json()
+    global_full_names = [r.get('full_name', '') for r in global_data.get('data', [])]
+    
+    if any("ALICE" in fn.upper() for fn in global_full_names) and any("BOB" in fn.upper() for fn in global_full_names):
+        print("✅ Global Visibility Success: Super Admin sees both Alice and Bob.")
+    else:
+        print("❌ Global Visibility Failure: Super Admin did not see both!")
+        sys.exit(1)
+
+    print(f"--- Verifying Super Admin explicit filtering for Inst B ({inst_b_id}) ---")
+    super_leak_payload = report_payload.copy()
+    super_leak_payload["institution_id"] = inst_b_id # Explicit filtering by super admin at ROOT
+    super_leak_res = requests.post(f"{BASE_URL}/v1/reports/dynamic/generate/", json=super_leak_payload, headers=super_headers, verify=False)
+    
+    super_leak_data = super_leak_res.json()
+    super_leak_full_names = [r.get('full_name', '') for r in super_leak_data.get('data', [])]
+    print(f"Super leak payload: {super_leak_payload}")
+    print(f"Super leak returned records: {len(super_leak_data.get('data', []))}")
+
+    if any("BOB" in fn.upper() for fn in super_leak_full_names) and not any("ALICE" in fn.upper() for fn in super_leak_full_names):
+        print("✅ Super Admin Filter Success: Super Admin correctly filtered to see ONLY Bob when passing Inst B ID.")
+    else:
+        print(f"❌ Super Admin Filter Failure: Alice present: {any('ALICE' in fn.upper() for fn in super_leak_full_names)}, Bob present: {any('BOB' in fn.upper() for fn in super_leak_full_names)}")
+        print(f"All names returned: {super_leak_full_names}")
+        sys.exit(1)
     print("--- Cleanup ---")
     requests.delete(f"{BASE_URL}/academic/institutions/{inst_a_id}/", headers=super_headers, verify=False)
     requests.delete(f"{BASE_URL}/academic/institutions/{inst_b_id}/", headers=super_headers, verify=False)

@@ -80,7 +80,8 @@ class IseopStudent(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(blank=True, null=True)
+    email = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
     status = models.CharField(max_length=100, choices=ISEOP_STATUS_CHOICES, default='Active/Enrolled')
 
     # ✅ National ID

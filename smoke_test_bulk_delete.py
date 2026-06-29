@@ -3,7 +3,7 @@ import sys
 import uuid
 import time
 
-BASE_URL = "https://localhost/api"
+BASE_URL = "http://localhost:8000/api"
 ADMIN_EMAIL = "admin@scalareye.com"
 ADMIN_PASSWORD = "Admin123!"
 

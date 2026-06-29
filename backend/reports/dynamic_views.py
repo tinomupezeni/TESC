@@ -12,6 +12,7 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
 from .schema_config import (
     get_schema,
@@ -41,6 +42,7 @@ class ReportSchemaView(APIView):
     - Groupable fields
     - Default columns
     """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, report_type):
         try:
@@ -110,6 +112,7 @@ class DynamicReportGenerateView(APIView):
     - JSON data (format=json)
     - Preview data - first 10 rows (format=preview)
     """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = ReportGenerateSerializer(data=request.data)
@@ -126,6 +129,7 @@ class DynamicReportGenerateView(APIView):
             'filters': data.get('filters', {}),
             'columns': data.get('columns', []),
             'group_by': data.get('group_by'),
+            'institution_id': data.get('institution_id'),
             'user': request.user, # PASS THE USER
         }
 
@@ -206,6 +210,7 @@ class DynamicReportPreviewView(APIView):
     Preview report data (first 10 rows) without generating PDF.
     Useful for validating filters before generating full report.
     """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         # Force preview format
@@ -224,6 +229,7 @@ class DynamicReportPreviewView(APIView):
             'columns': validated_data.get('columns', []),
             'group_by': validated_data.get('group_by'),
             'institution_id': validated_data.get('institution_id'),
+            'user': request.user,
         }
 
         try:
@@ -251,6 +257,7 @@ class RelationOptionsView(APIView):
     Get available options for a relation field.
     Used to populate dropdowns for relation filters.
     """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, report_type, field_key):
         institution_id = request.query_params.get('institution_id')

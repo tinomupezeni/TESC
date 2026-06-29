@@ -25,6 +25,7 @@ class IseopStudentSerializer(serializers.ModelSerializer):
             "full_name",
             'disability_type',
             "email",
+            "phone",
             "status",
             "institution",
             "institution_name",
