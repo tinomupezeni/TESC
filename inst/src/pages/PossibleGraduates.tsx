@@ -34,6 +34,7 @@ import { toast } from "sonner";
 
 // Components & Services
 import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
+import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { PossibleGraduate, PossibleGraduatesAPIResponse, getPossibleGraduates } from "../services/reports.services";
 
 
@@ -102,7 +103,8 @@ const PossibleGraduates = () => {
               <CardTitle className="text-lg sm:text-xl">Possible Graduates Directory</CardTitle>
               <CardDescription className="text-xs sm:text-sm">List of students eligible for graduation</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <AddStudentDialog onStudentAdded={fetchPossibleGraduates} />
               <div className="flex-1 sm:flex-none">
                 <Dialog>
                   <DialogTrigger asChild>

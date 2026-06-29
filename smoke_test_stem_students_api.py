@@ -1,16 +1,19 @@
 import requests
 import os
 import json
+import urllib3
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+BASE_URL = os.getenv("BASE_URL", "https://localhost/api")
 INSTITUTION_ID = 90
-ADMIN_EMAIL = "testadmin@example.com"
-ADMIN_PASSWORD = "user@123" 
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@scalareye.com")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Admin@123")
 
 def get_jwt_token(email, password):
-    login_url = f"{BASE_URL}/api/token/"
+    login_url = f"{BASE_URL}/token/"
     payload = {"email": email, "password": password}
-    response = requests.post(login_url, json=payload)
+    response = requests.post(login_url, json=payload, verify=False)
     response.raise_for_status()
     return response.json()['access']
 
@@ -27,7 +30,7 @@ def run_stem_students_smoke_test():
 
     # 1. Ensure an institution exists
     try:
-        response = requests.get(f"{BASE_URL}/api/academic/institutions/{INSTITUTION_ID}/", headers=headers)
+        response = requests.get(f"{BASE_URL}/academic/institutions/{INSTITUTION_ID}/", headers=headers, verify=False)
         response.raise_for_status()
         print(f"Institution ID {INSTITUTION_ID} exists.")
     except requests.exceptions.RequestException as e:
@@ -36,9 +39,9 @@ def run_stem_students_smoke_test():
 
     # 2. Call the stem-students API endpoint
     try:
-        stem_students_url = f"{BASE_URL}/api/academic/students/stem-students/?institution_id={INSTITUTION_ID}"
+        stem_students_url = f"{BASE_URL}/academic/students/stem-students/?institution_id={INSTITUTION_ID}"
         print(f"Calling API: {stem_students_url}")
-        response = requests.get(stem_students_url, headers=headers)
+        response = requests.get(stem_students_url, headers=headers, verify=False)
         response.raise_for_status()
         data = response.json()
         

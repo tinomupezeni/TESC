@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const BASE_URL = 'http://localhost:8000/api'; // Define BASE_URL here
+import apiClient from "./api";
 
 // Define interfaces for STEM Students
 export interface StemStudent {
@@ -22,13 +20,11 @@ export interface StemStudentsAPIResponse {
 
 // Service for fetching STEM students
 export async function getStemStudents(institution_id: number, search_query?: string): Promise<StemStudentsAPIResponse> {
-  const token = localStorage.getItem('accessToken');
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-  let url = `${BASE_URL}/academic/students/stem-students/?institution_id=${institution_id}`;
+  let url = `/academic/students/stem-students/?institution_id=${institution_id}`;
   if (search_query) {
     url += `&search=${search_query}`;
   }
-  const response = await axios.get(url, { headers });
+  const response = await apiClient.get<StemStudentsAPIResponse>(url);
   return response.data;
 }
 
@@ -52,13 +48,11 @@ export interface InclusivityStudentsAPIResponse {
 
 // Service for fetching Inclusivity students
 export async function getInclusivityStudents(institution_id: number, search_query?: string): Promise<InclusivityStudentsAPIResponse> {
-  const token = localStorage.getItem('accessToken');
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-  let url = `${BASE_URL}/academic/students/inclusivity-report/?institution_id=${institution_id}`;
+  let url = `/academic/students/inclusivity-report/?institution_id=${institution_id}`;
   if (search_query) {
     url += `&search=${search_query}`;
   }
-  const response = await axios.get(url, { headers });
+  const response = await apiClient.get<InclusivityStudentsAPIResponse>(url);
   return response.data;
 }
 
@@ -78,13 +72,11 @@ export interface InCountryTransfersAPIResponse {
 
 // Service for fetching In-Country transfers
 export async function getInCountryTransfers(institution_id: number, search_query?: string): Promise<InCountryTransfersAPIResponse> {
-  const token = localStorage.getItem('accessToken');
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-  let url = `${BASE_URL}/academic/students/in-country-transfers/?institution_id=${institution_id}`;
+  let url = `/academic/students/in-country-transfers/?institution_id=${institution_id}`;
   if (search_query) {
     url += `&search=${search_query}`;
   }
-  const response = await axios.get(url, { headers });
+  const response = await apiClient.get<InCountryTransfersAPIResponse>(url);
   return response.data;
 }
 
@@ -109,12 +101,64 @@ export interface PossibleGraduatesAPIResponse {
 
 // Service for fetching Possible Graduates
 export async function getPossibleGraduates(institution_id: number, search_query?: string): Promise<PossibleGraduatesAPIResponse> {
-  const token = localStorage.getItem('accessToken');
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-  let url = `${BASE_URL}/academic/students/possible-graduates/?institution_id=${institution_id}`;
+  let url = `/academic/students/possible-graduates/?institution_id=${institution_id}`;
   if (search_query) {
     url += `&search=${search_query}`;
   }
-  const response = await axios.get(url, { headers });
+  const response = await apiClient.get<PossibleGraduatesAPIResponse>(url);
+  return response.data;
+}
+
+// Define interfaces for Specialized Students
+export interface SpecializedStudent {
+  id: number;
+  student_id_number: string;
+  full_name: string;
+  program_name: string;
+  gender: string;
+  institution_name: string;
+}
+
+export interface SpecializedStudentsAPIResponse {
+  total_students: number;
+  male_students: number;
+  female_students: number;
+  results: SpecializedStudent[];
+}
+
+// Service for fetching Specialized Students
+export async function getSpecializedStudents(institution_id: number, search_query?: string): Promise<SpecializedStudentsAPIResponse> {
+  let url = `/academic/students/specialized-students/?institution_id=${institution_id}`;
+  if (search_query) {
+    url += `&search=${search_query}`;
+  }
+  const response = await apiClient.get<SpecializedStudentsAPIResponse>(url);
+  return response.data;
+}
+
+// Define interfaces for Critical Students
+export interface CriticalStudent {
+  id: number;
+  student_id_number: string;
+  full_name: string;
+  program_name: string;
+  gender: string;
+  institution_name: string;
+}
+
+export interface CriticalStudentsAPIResponse {
+  total_students: number;
+  male_students: number;
+  female_students: number;
+  results: CriticalStudent[];
+}
+
+// Service for fetching Critical Students
+export async function getCriticalStudents(institution_id: number, search_query?: string): Promise<CriticalStudentsAPIResponse> {
+  let url = `/academic/students/critical-students/?institution_id=${institution_id}`;
+  if (search_query) {
+    url += `&search=${search_query}`;
+  }
+  const response = await apiClient.get<CriticalStudentsAPIResponse>(url);
   return response.data;
 }

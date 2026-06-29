@@ -6,6 +6,7 @@ from ..models import InstitutionAdmin
 from rest_framework import generics, permissions, status
 from ..serializers.auth_serializers import UserProfileSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 class InstitutionAdminLogin(APIView):
     def post(self, request):
@@ -28,16 +29,26 @@ class InstitutionAdminLogin(APIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
-        return Response({
+        response = Response({
             "message": "Login successful",
             "username": username,
             "institution_id": user.institution.id,
             "must_change_password": user.must_change_password,
             "tokens": {
                 "access": str(access),
-                "refresh": str(refresh)
             }
         })
+
+        secure = request.is_secure() or request.headers.get('X-Forwarded-Proto') == 'https' or request.headers.get('x-forwarded-proto') == 'https'
+        response.set_cookie(
+            key='refresh_token',
+            value=str(refresh),
+            httponly=True,
+            secure=secure,
+            samesite='Lax',
+            path='/api/instauth/'
+        )
+        return response
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -68,3 +79,60 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
         # Handle regular profile updates (name, etc.)
         return super().update(request, *args, **kwargs)
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        # Extract from cookie first, then request.data for compatibility
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            refresh_token = request.data.get('refresh')
+            
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token is missing from cookies or request body."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+            
+        serializer = self.get_serializer(data={'refresh': refresh_token})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except (TokenError, InvalidToken):
+            response = Response(
+                {"detail": "Token is invalid or expired"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+            response.delete_cookie(
+                key='refresh_token',
+                path='/api/instauth/'
+            )
+            return response
+            
+        res_data = serializer.validated_data
+        response = Response(res_data, status=status.HTTP_200_OK)
+        
+        # If rotation is enabled, set the new refresh token in the cookie
+        if 'refresh' in res_data:
+            new_refresh = res_data.pop('refresh')
+            secure = request.is_secure() or request.headers.get('X-Forwarded-Proto') == 'https' or request.headers.get('x-forwarded-proto') == 'https'
+            response.set_cookie(
+                key='refresh_token',
+                value=new_refresh,
+                httponly=True,
+                secure=secure,
+                samesite='Lax',
+                path='/api/instauth/'
+            )
+            
+        return response
+
+
+class InstitutionAdminLogout(APIView):
+    def post(self, request):
+        response = Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+        response.delete_cookie(
+            key='refresh_token',
+            path='/api/instauth/'
+        )
+        return response
+

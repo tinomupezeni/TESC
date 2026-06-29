@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Search, 
   MoreVertical, 
@@ -41,7 +42,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
-  Trash2 // Imported Trash icon
+  Trash2,
+  GraduationCap
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -56,6 +58,8 @@ import { AddStudentDialog } from "@/components/AddStudentDialog";
 import studentService, { Student } from "@/services/students.services";
 import { UploadStudentsDialog } from "@/components/helpers/UploadStudentsDialog";
 import { EditStudentDialog } from "@/components/EditStudentDialog"; 
+import { MarkGraduatedDialog } from "@/components/graduates/MarkGraduatedDialog";
+import { BulkMarkGraduatedDialog } from "@/components/graduates/BulkMarkGraduatedDialog";
 import { toast } from "sonner"; // Assuming you use sonner or similar for notifications
 
 const Students = () => {
@@ -66,10 +70,16 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgram, setFilterProgram] = useState("all");
   
+  // Selection State
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
   // Dialog States
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  const [studentToGraduate, setStudentToGraduate] = useState<Student | null>(null);
+  const [showBulkGraduate, setShowBulkGraduate] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination State
@@ -95,6 +105,7 @@ const Students = () => {
       setStudents([]);
     } finally {
       setLoading(false);
+      setSelectedIds([]);
     }
   }, [user]);
 
@@ -124,19 +135,37 @@ const Students = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await studentService.bulkDeleteStudents(selectedIds);
+      toast.success("Students deleted successfully");
+      setShowBulkDeleteConfirm(false);
+      setSelectedIds([]);
+      fetchStudents();
+    } catch (error) {
+      toast.error("Failed to delete students");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // --- Client-Side Filtering ---
-  const filteredStudents = students.filter((student) => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch =
-      (student.full_name?.toLowerCase() || "").includes(searchLower) ||
-      (student.student_id?.toLowerCase() || "").includes(searchLower) ||
-      (student.national_id?.toLowerCase() || "").includes(searchLower);
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch =
+        (student.full_name?.toLowerCase() || "").includes(searchLower) ||
+        (student.student_id?.toLowerCase() || "").includes(searchLower) ||
+        (student.national_id?.toLowerCase() || "").includes(searchLower);
 
-    const matchesProgram =
-      filterProgram === "all" || student.program_name === filterProgram;
+      const matchesProgram =
+        filterProgram === "all" || student.program_name === filterProgram;
 
-    return matchesSearch && matchesProgram;
-  });
+      return matchesSearch && matchesProgram;
+    });
+  }, [students, searchQuery, filterProgram]);
 
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -150,13 +179,79 @@ const Students = () => {
     if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
 
+  // Selection Handlers
+  const toggleSelectAll = useCallback(() => {
+    const areAllSelected = paginatedStudents.every(s => selectedIds.includes(s.id));
+
+    if (areAllSelected) {
+      setSelectedIds(prev => prev.filter(id => !paginatedStudents.find(s => s.id === id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...paginatedStudents.map(s => s.id)])]);
+    }
+  }, [selectedIds, paginatedStudents]);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]
+    );
+  };
+
+  // Keyboard shortcut for Ctrl+A (or Cmd+A on Mac)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+        event.preventDefault(); // Prevent default browser select all
+        toggleSelectAll();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [toggleSelectAll]);
+
+
   return (
     <div className="space-y-6">
-      <div className="px-1">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Student Management</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          Manage student registrations for <span className="font-semibold text-primary">{user?.institution?.name}</span>
-        </p>
+      <div className="px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Student Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            Manage student registrations for <span className="font-semibold text-primary">{user?.institution?.name}</span>
+          </p>
+        </div>
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="h-9 bg-primary"
+              onClick={() => setShowBulkGraduate(true)}
+            >
+               <GraduationCap className="h-4 w-4 mr-2" /> Graduate ({selectedIds.length})
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="h-9"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+            >
+               <Trash2 className="h-4 w-4 mr-2" /> Delete ({selectedIds.length})
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9"
+              onClick={(e) => {
+                e.preventDefault();
+                setSelectedIds([]);
+              }}
+            >
+               Clear Selection
+            </Button>
+          </div>
+        )}
       </div>
 
       <Card className="overflow-hidden border-none sm:border">
@@ -173,7 +268,7 @@ const Students = () => {
               <div className="flex-1 sm:flex-none">
                 <AddStudentDialog 
                   onStudentAdded={fetchStudents} 
-                  institutionId={user?.institution?.id} 
+                  isStudentDirectory={true}
                 />
               </div>
             </div>
@@ -210,6 +305,12 @@ const Students = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px] px-2 text-center">
+                    <Checkbox 
+                      checked={paginatedStudents.length > 0 && paginatedStudents.every(s => selectedIds.includes(s.id))}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-[100px] text-xs">ID</TableHead>
                   <TableHead className="text-xs">Name</TableHead>
                   <TableHead className="hidden lg:table-cell text-xs">Program</TableHead>
@@ -222,19 +323,25 @@ const Students = () => {
               <TableBody>
                 {loading ? (
                    <TableRow>
-                     <TableCell colSpan={7} className="h-24 text-center">
+                     <TableCell colSpan={8} className="h-24 text-center">
                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Loading...
                      </TableCell>
                    </TableRow>
                 ) : filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-xs">
                       {students.length === 0 ? "No students found." : "No matching results."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginatedStudents.map((student) => (
-                    <TableRow key={student.id}>
+                    <TableRow key={student.id} className={selectedIds.includes(student.id) ? "bg-muted/50" : ""}>
+                      <TableCell className="px-2 text-center">
+                        <Checkbox 
+                          checked={selectedIds.includes(student.id)}
+                          onCheckedChange={() => toggleSelect(student.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium text-[10px] sm:text-xs">{student.student_id}</TableCell>
                       <TableCell className="text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{student.full_name}</TableCell> 
                       <TableCell className="hidden lg:table-cell text-xs">{student.program_name}</TableCell>
@@ -265,6 +372,12 @@ const Students = () => {
                                 <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
                                 Edit Student
                             </DropdownMenuItem>
+                            {student.status === 'Active' && (
+                              <DropdownMenuItem onClick={() => setStudentToGraduate(student)}>
+                                  <GraduationCap className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                                  Graduate Student
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               className="text-destructive focus:text-destructive"
@@ -273,173 +386,204 @@ const Students = () => {
                                 <Trash2 className="mr-2 h-3.5 w-3.5" />
                                 Delete Student
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-            <div className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
-              Showing {filteredStudents.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredStudents.length)} of {filteredStudents.length} entries
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handlePrevPage} disabled={currentPage === 1 || loading}>
-                <ChevronLeft className="h-4 w-4 sm:mr-1" /> Prev
-              </Button>
-              <div className="text-[10px] sm:text-xs font-medium px-2 whitespace-nowrap">
-                Page {currentPage} of {totalPages || 1}
-              </div>
-              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleNextPage} disabled={currentPage >= totalPages || loading}>
-                Next <ChevronRight className="h-4 w-4 sm:ml-1" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                            </TableCell>
+                            </TableRow>
+                            ))
+                            )}
+                            </TableBody>
+                            </Table>
+                            </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Are you absolutely sure?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. This will permanently delete the student record for{" "}
-              <span className="font-semibold text-foreground">{studentToDelete?.full_name}</span>.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStudentToDelete(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Student
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+                            <div className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
+                            Showing {filteredStudents.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredStudents.length)} of {filteredStudents.length} entries
+                            </div>
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                            <Button variant="outline" size="sm" className="h-8 px-2" onClick={handlePrevPage} disabled={currentPage === 1 || loading}>
+                            <ChevronLeft className="h-4 w-4 sm:mr-1" /> Prev
+                            </Button>
+                            <div className="text-[10px] sm:text-xs font-medium px-2 whitespace-nowrap">
+                            Page {currentPage} of {totalPages || 1}
+                            </div>
+                            <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleNextPage} disabled={currentPage >= totalPages || loading}>
+                            Next <ChevronRight className="h-4 w-4 sm:ml-1" />
+                            </Button>
+                            </div>
+                            </div>
+                            </CardContent>
+                            </Card>
 
-      {/* Detail Dialog */}
-      <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Student Profile</DialogTitle>
-            <DialogDescription>Detailed information for {selectedStudent?.full_name}</DialogDescription>
-          </DialogHeader>
-          {selectedStudent && (
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Personal Information */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Personal Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span className="text-muted-foreground">Full Name:</span>
-                      <span className="font-medium">{selectedStudent.full_name}</span>
-                      
-                      <span className="text-muted-foreground">Gender:</span>
-                      <span className="font-medium">{selectedStudent.gender || 'N/A'}</span>
-                      
-                      <span className="text-muted-foreground">Date of Birth:</span>
-                      <span className="font-medium">{selectedStudent.date_of_birth || 'N/A'}</span>
-                      
-                      <span className="text-muted-foreground">National ID:</span>
-                      <span className="font-medium">{selectedStudent.national_id || 'N/A'}</span>
-                      
-                      <span className="text-muted-foreground">Disability:</span>
-                      <span className="font-medium">{selectedStudent.disability_type || 'None'}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                            {/* Delete Confirmation Dialog */}
+                            <Dialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
+                            <DialogContent>
+                            <DialogHeader>
+                            <DialogTitle>Are you absolutely sure?</DialogTitle>
+                            <DialogDescription>
+                            This action cannot be undone. This will permanently delete the student record for{" "}
+                            <span className="font-semibold text-foreground">{studentToDelete?.full_name}</span>.
+                            </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                            <Button variant="outline" onClick={() => setStudentToDelete(null)}>Cancel</Button>
+                            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete Student
+                            </Button>
+                            </DialogFooter>
+                            </DialogContent>
+                            </Dialog>
 
-                {/* Academic Information */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Academic Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span className="text-muted-foreground">Student ID:</span>
-                      <span className="font-medium">{selectedStudent.student_id}</span>
-                      
-                      <span className="text-muted-foreground">Program:</span>
-                      <span className="font-medium">{selectedStudent.program_name || 'N/A'}</span>
-                      
-                      <span className="text-muted-foreground">Enrollment Year:</span>
-                      <span className="font-medium">{selectedStudent.enrollment_year}</span>
-                      
-                      <span className="text-muted-foreground">Status:</span>
-                      <span className="font-medium">
-                        <Badge variant="outline">{selectedStudent.status}</Badge>
-                      </span>
+                            {/* Detail Dialog */}
+                            <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                            <DialogTitle>Student Profile</DialogTitle>
+                            <DialogDescription>Detailed information for {selectedStudent?.full_name}</DialogDescription>
+                            </DialogHeader>
+                            {selectedStudent && (
+                            <div className="space-y-6 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Personal Information */}
+                            <Card>
+                            <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                            Personal Information
+                            </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="text-muted-foreground">Full Name:</span>
+                            <span className="font-medium">{selectedStudent.full_name}</span>
 
-                      {selectedStudent.status === 'Dropout' && (
-                        <>
-                          <span className="text-muted-foreground">Dropout Reason:</span>
-                          <span className="font-medium text-destructive">{selectedStudent.dropout_reason || 'Unspecified'}</span>
-                        </>
-                      )}
+                            <span className="text-muted-foreground">Gender:</span>
+                            <span className="font-medium">{selectedStudent.gender || 'N/A'}</span>
 
-                      {selectedStudent.status === 'Graduated' && (
-                        <>
-                          <span className="text-muted-foreground">Graduation Year:</span>
-                          <span className="font-medium">{selectedStudent.graduation_year || 'N/A'}</span>
-                          <span className="text-muted-foreground">Final Grade:</span>
-                          <span className="font-medium">{selectedStudent.final_grade || 'N/A'}</span>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                            <span className="text-muted-foreground">Date of Birth:</span>
+                            <span className="font-medium">{selectedStudent.date_of_birth || 'N/A'}</span>
 
-              {/* Work for Fees Information (if applicable) */}
-              {selectedStudent.is_work_for_fees && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Work For Fees details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground block">Enrolled:</span>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">Yes</Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground block">Work Area:</span>
-                        <span className="font-medium">{selectedStudent.work_area || 'Not Assigned'}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground block">Hours Pledged:</span>
-                        <span className="font-medium">{selectedStudent.hours_pledged || 0} hrs</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                            <span className="text-muted-foreground">National ID:</span>
+                            <span className="font-medium">{selectedStudent.national_id || 'N/A'}</span>
 
-      <EditStudentDialog 
-        student={studentToEdit} 
-        onClose={() => setStudentToEdit(null)} 
-        onSuccess={handleEditSuccess}
-      />
-    </div>
-  );
-};
+                            <span className="text-muted-foreground">Disability:</span>
+                            <span className="font-medium">{selectedStudent.disability_type || 'None'}</span>
+                            </div>
+                            </CardContent>
+                            </Card>
 
-export default Students;
+                            {/* Academic Information */}
+                            <Card>
+                            <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                            Academic Information
+                            </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                            <span className="text-muted-foreground">Student ID:</span>
+                            <span className="font-medium">{selectedStudent.student_id}</span>
+
+                            <span className="text-muted-foreground">Program:</span>
+                            <span className="font-medium">{selectedStudent.program_name || 'N/A'}</span>
+
+                            <span className="text-muted-foreground">Enrollment Year:</span>
+                            <span className="font-medium">{selectedStudent.enrollment_year}</span>
+
+                            <span className="text-muted-foreground">Status:</span>
+                            <span className="font-medium">
+                            <Badge variant="outline">{selectedStudent.status}</Badge>
+                            </span>
+
+                            {selectedStudent.status === 'Dropout' && (
+                            <>
+                            <span className="text-muted-foreground">Dropout Reason:</span>
+                            <span className="font-medium text-destructive">{selectedStudent.dropout_reason || 'Unspecified'}</span>
+                            </>
+                            )}
+
+                            {selectedStudent.status === 'Graduated' && (
+                            <>
+                            <span className="text-muted-foreground">Graduation Year:</span>
+                            <span className="font-medium">{selectedStudent.graduation_year || 'N/A'}</span>
+                            <span className="text-muted-foreground">Final Grade:</span>
+                            <span className="font-medium">{selectedStudent.final_grade || 'N/A'}</span>
+                            </>
+                            )}
+                            </div>
+                            </CardContent>
+                            </Card>
+                            </div>
+
+                            {/* Work for Fees Information (if applicable) */}
+                            {selectedStudent.is_work_for_fees && (
+                            <Card>
+                            <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                            Work For Fees details
+                            </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div className="space-y-1">
+                            <span className="text-muted-foreground block">Enrolled:</span>
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">Yes</Badge>
+                            </div>
+                            <div className="space-y-1">
+                            <span className="text-muted-foreground block">Work Area:</span>
+                            <span className="font-medium">{selectedStudent.work_area || 'Not Assigned'}</span>
+                            </div>
+                            <div className="space-y-1">
+                            <span className="text-muted-foreground block">Hours Pledged:</span>
+                            <span className="font-medium">{selectedStudent.hours_pledged || 0} hrs</span>
+                            </div>
+                            </div>
+                            </CardContent>
+                            </Card>
+                            )}
+                            </div>
+                            )}
+                            </DialogContent>
+                            </Dialog>
+
+                            <EditStudentDialog 
+                            student={studentToEdit} 
+                            onClose={() => setStudentToEdit(null)} 
+                            onSuccess={handleEditSuccess}
+                            />
+
+                            <MarkGraduatedDialog
+                            student={studentToGraduate}
+                            onClose={() => setStudentToGraduate(null)}
+                            onSuccess={fetchStudents}
+                            />
+
+                            <BulkMarkGraduatedDialog
+                            studentIds={selectedIds}
+                            open={showBulkGraduate}
+                            onClose={() => setShowBulkGraduate(false)}
+                            onSuccess={fetchStudents}
+                            />
+
+                            <Dialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                            <DialogContent>
+                            <DialogHeader>
+                            <DialogTitle>Confirm Bulk Deletion</DialogTitle>
+                            <DialogDescription>
+                            Are you sure you want to delete these {selectedIds.length} students? This action cannot be undone.
+                            </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowBulkDeleteConfirm(false)}>Cancel</Button>
+                            <Button variant="destructive" onClick={handleBulkDelete} disabled={isDeleting}>
+                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete Students
+                            </Button>
+                            </DialogFooter>
+                            </DialogContent>
+                            </Dialog>
+                            </div>
+                            );
+                            };
+
+                            export default Students;

@@ -100,6 +100,15 @@ export const createHub = async (data: Partial<InnovationHub>) => {
   return response.data;
 };
 
+export const updateHub = async (id: number, data: Partial<InnovationHub>) => {
+  const response = await apiClient.patch<InnovationHub>(`${ENDPOINTS.HUBS}${id}/`, data);
+  return response.data;
+};
+
+export const deleteHub = async (id: number) => {
+  await apiClient.delete(`${ENDPOINTS.HUBS}${id}/`);
+};
+
 // 3. PARTNERSHIPS
 export const getPartnerships = async (params?: { institution_id?: number }) => {
   const response = await apiClient.get<Partnership[]>(ENDPOINTS.PARTNERSHIPS, { params });
@@ -109,6 +118,15 @@ export const getPartnerships = async (params?: { institution_id?: number }) => {
 export const createPartnership = async (data: Partial<Partnership>) => {
   const response = await apiClient.post<Partnership>(ENDPOINTS.PARTNERSHIPS, data);
   return response.data;
+};
+
+export const updatePartnership = async (id: number, data: Partial<Partnership>) => {
+  const response = await apiClient.patch<Partnership>(`${ENDPOINTS.PARTNERSHIPS}${id}/`, data);
+  return response.data;
+};
+
+export const deletePartnership = async (id: number) => {
+  await apiClient.delete(`${ENDPOINTS.PARTNERSHIPS}${id}/`);
 };
 
 // 4. GRANTS
@@ -122,26 +140,20 @@ export const createGrant = async (data: Partial<ResearchGrant>) => {
   return response.data;
 };
 
-export const updateHub = async (id: number, data: Partial<InnovationHub>) => {
-  const response = await apiClient.patch<InnovationHub>(`/innovation/hubs/${id}/`, data);
-  return response.data;
-};
-
-export const updatePartnership = async (id: number, data: Partial<Partnership>) => {
-  const response = await apiClient.patch<Partnership>(`/innovation/partnerships/${id}/`, data);
-  return response.data;
-};
-
 export const updateGrant = async (id: number, data: Partial<ResearchGrant>) => {
-  const response = await apiClient.patch<ResearchGrant>(`/innovation/grants/${id}/`, data);
+  const response = await apiClient.patch<ResearchGrant>(`${ENDPOINTS.GRANTS}${id}/`, data);
   return response.data;
+};
+
+export const deleteGrant = async (id: number) => {
+  await apiClient.delete(`${ENDPOINTS.GRANTS}${id}/`);
 };
 
 const innovationService = {
   getProjects, createProject, updateProject, deleteProject,
-  getHubs, createHub,
-  getPartnerships, createPartnership,
-  getGrants, createGrant
+  getHubs, createHub, updateHub, deleteHub,
+  getPartnerships, createPartnership, updatePartnership, deletePartnership,
+  getGrants, createGrant, updateGrant, deleteGrant
 };
 
 export default innovationService;

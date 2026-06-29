@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // FIXED: Added missing import
+import { Label } from "@/components/ui/label";
 import { StudentView } from "@/components/student view";
 import {
   Select,
@@ -74,8 +74,8 @@ export default function Students() {
   const [selectedGender, setSelectedGender] = useState("all");
   const [selectedInstType, setSelectedInstType] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all"); // NEW
-  const [selectedLevel, setSelectedLevel] = useState("all");       // NEW
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedLevel, setSelectedLevel] = useState("all");
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
 
   // --- PAGINATION STATE ---
@@ -107,8 +107,8 @@ export default function Students() {
       genders: Array.from(new Set(allStudents.map(s => s.gender))).filter(Boolean).sort(),
       types: Array.from(new Set(allStudents.map(s => s.type))).filter(Boolean).sort(),
       years: Array.from(new Set(allStudents.map(s => s.enrollment_year?.toString()))).filter(Boolean).sort().reverse(),
-      categories: Array.from(new Set(allStudents.map(s => s.selected_category))).filter(Boolean).sort(), // NEW
-      levels: Array.from(new Set(allStudents.map(s => s.selected_level))).filter(Boolean).sort()        // NEW
+      categories: Array.from(new Set(allStudents.map(s => s.selected_category))).filter(Boolean).sort(),
+      levels: Array.from(new Set(allStudents.map(s => s.selected_level))).filter(Boolean).sort()
     };
   }, [allStudents]);
 
@@ -120,8 +120,8 @@ export default function Students() {
     setSelectedGender("all");
     setSelectedInstType("all");
     setSelectedYear("all");
-    setSelectedCategory("all"); // NEW
-    setSelectedLevel("all");    // NEW
+    setSelectedCategory("all");
+    setSelectedLevel("all");
     setCurrentPage(1);
   };
 
@@ -146,9 +146,9 @@ export default function Students() {
       const matchesYear =
         selectedYear === "all" || student.enrollment_year?.toString() === selectedYear;
       const matchesCategory =
-        selectedCategory === "all" || student.selected_category === selectedCategory; // NEW
+        selectedCategory === "all" || student.selected_category === selectedCategory;
       const matchesLevel =
-        selectedLevel === "all" || student.selected_level === selectedLevel;       // NEW
+        selectedLevel === "all" || student.selected_level === selectedLevel;
 
       return matchesSearch && matchesStatus && matchesInst && matchesProg && matchesGender && matchesInstType && matchesYear && matchesCategory && matchesLevel;
     });
@@ -208,9 +208,18 @@ export default function Students() {
   const femalePercentage = totalStudents > 0 ? ((femaleStudents / totalStudents) * 100).toFixed(1) : "0";
   const maleStudents = filteredStudents.filter((s) => s.gender === "Male").length;
   const malePercentage = totalStudents > 0 ? ((maleStudents / totalStudents) * 100).toFixed(1) : "0";
-  // Updated disability count to be more robust based on types
-  const disabledCount = filteredStudents.filter(s => s.inclusivity_category && s.inclusivity_category !== 'None' && s.inclusivity_category !== 'none').length;
+  const disabledCount = filteredStudents.filter(s => s.disability_type && s.disability_type !== 'None' && s.disability_type !== 'none').length;
   const specialPercentage = totalStudents > 0 ? ((disabledCount / totalStudents) * 100).toFixed(1) : "0";
+
+  // --- ROW BACKGROUND COLORS (mapped to your named colors) ---
+  const rowBackgrounds = [
+    "bg-blue-50",      // Denim
+    "bg-sky-50",       // Cornflower
+    "bg-indigo-50",    // Powder
+    "bg-cyan-50",      // Carolina
+    "bg-blue-100/70",  // Glacier
+    "bg-sky-100/70"    // Iceberg
+  ];
 
   if (isLoading && specialLoading) {
     return (
@@ -229,10 +238,9 @@ export default function Students() {
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:mb-8">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Student Records</h1>
-              <p className="text-muted-foreground mt-1">Manage and track student information across the central system</p>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">STUDENTS RECORDS</h1>
+              <p className="text-muted-foreground mt-1">Manage and track student information across Institutions</p>
             </div>
-            {/* Hides buttons in print */}
             <div className="flex gap-2 print:hidden">
               <Button variant="outline" onClick={() => exportData('excel')} className="flex gap-2 font-bold border-blue-200 hover:bg-blue-50">
                 <Download className="h-4 w-4" /> Excel
@@ -247,40 +255,39 @@ export default function Students() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 print:grid print:grid-cols-4">
-            <StatsCard title="Total Students" value={totalStudents.toLocaleString()} icon={Users} variant="accent" />
-            <StatsCard title="Female Students" value={femaleStudents.toLocaleString()} description={`${femalePercentage}%`} icon={UserCheck} variant="success" />
-            <StatsCard title="Male Students" value={maleStudents.toLocaleString()} description={`${malePercentage}%`} icon={UserCheck} variant="success" />
-            <StatsCard title="Special Support" value={disabledCount.toLocaleString()} description={`${specialPercentage}%`} icon={Users} variant="warning" />
+            <StatsCard title="TOTAL STUDENTS" value={totalStudents.toLocaleString()} icon={Users} variant="default" />
+            <StatsCard title="FEMALE STUDENTS" value={femaleStudents.toLocaleString()} description={`${femalePercentage}%`} icon={UserCheck} variant="default" />
+            <StatsCard title="MALE STUDENTS" value={maleStudents.toLocaleString()} description={`${malePercentage}%`} icon={UserCheck} variant="default" />
+            <StatsCard title="SPECIAL ENROLLMENT" value={disabledCount.toLocaleString()} description={`${specialPercentage}%`} icon={Users} variant="default" />
           </div>
 
-          {/* FILTERS SECTION - Optimized for visibility */}
+          {/* FILTERS SECTION – Dark theme */}
           <Card className="border-blue-100 shadow-sm print:hidden overflow-hidden">
-            <CardHeader className="bg-slate-50/50 py-3 px-4 border-b">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <Filter className="h-4 w-4" /> Advanced Data Filters
+            <CardHeader className="bg-sky-50 py-3 px-4 border-b border-sky-100">
+              <div className="flex items-center gap-2 text-sm font-semibold text-sky-700">
+                <Filter className="h-4 w-4" /> 
+                Advanced Data Filters
               </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-6 bg-slate-700">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-y-6 gap-x-8">
-                {/* Search Bar */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Search ID/Name</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Search ID/Name</Label>
                   <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       placeholder="Type student name or ID..."
-                      className="pl-10 h-11 bg-white shadow-sm border-slate-200 focus-visible:ring-primary"
+                      className="pl-10 h-11 bg-white shadow-sm border-slate-600 focus-visible:ring-blue-400"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                 </div>
 
-                {/* Institution Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Institution</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Institution</Label>
                   <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Institutions" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
@@ -290,11 +297,10 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Inst. Type Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Institution Type</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Institution Type</Label>
                   <Select value={selectedInstType} onValueChange={setSelectedInstType}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
@@ -304,11 +310,10 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Program Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Program of Study</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Program of Study</Label>
                   <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Programs" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
@@ -318,11 +323,10 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Category Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Program Category</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Program Category</Label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -332,11 +336,10 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Level Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Academic Level</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Academic Level</Label>
                   <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Levels" />
                     </SelectTrigger>
                     <SelectContent>
@@ -346,11 +349,10 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Gender Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Gender</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Gender</Label>
                   <Select value={selectedGender} onValueChange={setSelectedGender}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Genders" />
                     </SelectTrigger>
                     <SelectContent>
@@ -360,11 +362,10 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Year Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Enrollment Year</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Enrollment Year</Label>
                   <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm">
+                    <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm">
                       <SelectValue placeholder="All Years" />
                     </SelectTrigger>
                     <SelectContent>
@@ -374,12 +375,11 @@ export default function Students() {
                   </Select>
                 </div>
 
-                {/* Status Filter */}
                 <div className="space-y-1.5 flex flex-col">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Current Status</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-200 ml-1">Current Status</Label>
                   <div className="flex gap-2 w-full">
                     <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                      <SelectTrigger className="h-11 bg-white border-slate-200 shadow-sm flex-1">
+                      <SelectTrigger className="h-11 bg-white border-slate-600 shadow-sm flex-1">
                         <SelectValue placeholder="All Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -391,12 +391,12 @@ export default function Students() {
                       </SelectContent>
                     </Select>
 
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={resetFilters} 
-                      title="Reset All Filters" 
-                      className="shrink-0 h-11 w-11 border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={resetFilters}
+                      title="Reset All Filters"
+                      className="shrink-0 h-11 w-11 border-slate-600 bg-slate-600 text-white hover:bg-slate-500 transition-colors"
                     >
                       <RotateCcw className="h-5 w-5" />
                     </Button>
@@ -406,6 +406,7 @@ export default function Students() {
             </CardContent>
           </Card>
 
+          {/* STUDENT RECORDS TABLE */}
           <Card className="print:shadow-none print:border-none">
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 print:hidden">
               <div>
@@ -471,8 +472,11 @@ export default function Students() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedStudents.map((student) => (
-                      <TableRow key={student.id}>
+                    paginatedStudents.map((student, index) => (
+                      <TableRow
+                        key={student.id}
+                        className={rowBackgrounds[index % rowBackgrounds.length]}
+                      >
                         <TableCell className="font-medium text-xs sm:text-sm">{student.student_id}</TableCell>
                         <TableCell className="max-w-[120px] sm:max-w-none truncate sm:whitespace-normal">{student.full_name}</TableCell>
                         <TableCell className="hidden lg:table-cell">{student.institution_name}</TableCell>
@@ -500,13 +504,7 @@ export default function Students() {
         </div>
       </DashboardLayout>
       <StudentView data={student} setdata={setstudent} />
-
-      {/* Report Builder Dialog */}
-      <ReportBuilder
-        reportType="students"
-        open={reportBuilderOpen}
-        onOpenChange={setReportBuilderOpen}
-      />
+      <ReportBuilder reportType="students" open={reportBuilderOpen} onOpenChange={setReportBuilderOpen} />
     </>
   );
 }

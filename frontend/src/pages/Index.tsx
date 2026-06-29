@@ -5,9 +5,7 @@ import { InstitutionOverview } from "@/components/dashboard/InstitutionOverview"
 import { EnrollmentChart } from "@/components/dashboard/EnrollmentChart";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { DashboardService } from "@/services/admin.dashboard.service";
-// Import from student service instead of dashboard service for specific student endpoints
 import * as StudentService from "@/services/student.service"; 
-// IMPORT YOUR NEW TYPE HERE (Update path based on your actual file structure)
 import { DashboardStats } from "@/lib/types/dashboard.types";
 import { ProgramCompletionStats } from "@/lib/types/academic.types";
 import {
@@ -21,12 +19,13 @@ import {
   Loader2,
   Hourglass // Added icon for completion rate
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  // ADD STATE FOR COMPLETION STATS
   const [completionStats, setCompletionStats] = useState<ProgramCompletionStats | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -80,28 +79,32 @@ const Index = () => {
             value={stats?.total_students || 0}
             description="Across all institutions over the years"
             icon={Users}
-            variant="accent"
+            variant="default"
+            onClick={() => navigate("/students")}
           />
           <StatsCard
             title="Active Institutions"
             value={stats?.active_institutions || 0}
             description="Nationwide coverage"
             icon={Building}
-            variant="success"
+            variant="default"
+            onClick={() => navigate("/institutions")}
           />
           <StatsCard
-            title="Graduates"
+            title="Total Graduates"
             value={stats?.graduates_year || 0}
             description="Across all institutions this year"
             icon={GraduationCap}
             variant="default"
+            onClick={() => navigate("/graduates")}
           />
           <StatsCard
             title="Active Students"
             value={stats?.total_students_this_year || 0}
             description={`Enrolled in ${new Date().getFullYear()}`}
             icon={Award}
-            variant="success"
+            variant="default"
+            onClick={() => navigate("/students")}
           />
           
           {/* --- NEW: Program Completion Rate Card --- */}
@@ -113,7 +116,7 @@ const Index = () => {
             description={`${completionStats?.graduated || 0} graduated / ${completionStats?.total_students || 0} total enrolled`}
             icon={Hourglass}
             // Use warning variant if completion is low, default otherwise
-            variant={ (completionStats?.completion_rate_percentage || 0) < 50 ? "warning" : "default" }
+            variant={ (completionStats?.completion_rate_percentage || 0) < 50 ? "default" : "default" }
           />
         </div>
 
@@ -125,6 +128,7 @@ const Index = () => {
             description="Students enrolled over the years"
             icon={BookOpen}
             variant="default"
+            onClick={() => navigate("/institutions?type=teachers_colleges")}
           />
           <StatsCard
             title="Polytechnics"
@@ -132,6 +136,7 @@ const Index = () => {
             description="Students enrolled over the years"
             icon={TrendingUp}
             variant="default"
+            onClick={() => navigate("/institutions?type=polytechnics")}
           />
           <StatsCard
             title="Industrial Training"
@@ -139,6 +144,7 @@ const Index = () => {
             description="Students enrolled over the years"
             icon={UserCheck}
             variant="default"
+            onClick={() => navigate("/institutions?type=industrial_training")}
           />
         </div>
 

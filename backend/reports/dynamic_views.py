@@ -260,6 +260,17 @@ class RelationOptionsView(APIView):
             except ValueError:
                 institution_id = None
 
+        # Enforce institutional isolation for relation options
+        if request.user.is_authenticated and not request.user.is_superuser:
+            user_inst = getattr(request.user, 'institution', None)
+            if not user_inst and hasattr(request.user, "inst_admin"):
+                user_inst = request.user.inst_admin.institution
+            
+            if user_inst:
+                institution_id = user_inst.id
+            else:
+                institution_id = -1 # No access if no institution context
+
         try:
             options = DynamicReportService.get_relation_options(
                 report_type=report_type,

@@ -8,12 +8,21 @@ class StudentSerializer(serializers.ModelSerializer):
     # =====================
     institution_name = serializers.CharField(source='institution.name', read_only=True)
     type = serializers.CharField(source='institution.type', read_only=True)
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
     program_name = serializers.CharField(source='program.name', read_only=True)
     program_categories = serializers.JSONField(source='program.categories', read_only=True)
     full_name = serializers.CharField(read_only=True)
+    student_id_number = serializers.CharField(source='student_id', read_only=True)
 
     semester_fee = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total_paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    # Custom Program Auto-creation Fields
+    new_program_code = serializers.CharField(required=False, write_only=True, allow_null=True, allow_blank=True)
+    new_program_name = serializers.CharField(required=False, write_only=True, allow_null=True, allow_blank=True)
+    new_program_level = serializers.CharField(required=False, write_only=True, allow_null=True, allow_blank=True)
+    new_program_category = serializers.CharField(required=False, write_only=True, allow_null=True, allow_blank=True)
 
     # =====================
     # 🔐 ENCRYPTED FIELDS MUST BE CHARFIELDS
@@ -49,6 +58,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'gender',
             'date_of_birth',
             'enrollment_year',
+            'enrollment_semester',
             'status',
             'dropout_reason',
             'graduation_year',
@@ -56,6 +66,10 @@ class StudentSerializer(serializers.ModelSerializer):
             'final_grade',
             'institution',
             'institution_name',
+            'faculty',
+            'faculty_name',
+            'department',
+            'department_name',
             'program',
             'program_name',
             'program_categories',
@@ -70,6 +84,11 @@ class StudentSerializer(serializers.ModelSerializer):
             'semester_fee',
             'total_paid',
             'is_iseop',
+            'new_program_code',
+            'new_program_name',
+            'new_program_level',
+            'new_program_category',
+            'student_id_number',
         ]
         read_only_fields = ['created_at', 'updated_at', 'full_name']
 

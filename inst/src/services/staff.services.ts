@@ -108,6 +108,10 @@ export const deleteStaff = async (id: number): Promise<void> => {
   await apiClient.delete(`${END_POINT}${id}/`);
 };
 
+export const bulkDeleteStaff = async (ids: number[]): Promise<void> => {
+  await apiClient.post(`${END_POINT}bulk-delete/`, { ids });
+};
+
 // --- Vacancies ---
 export const getVacancies = async (institutionId: number): Promise<Vacancy[]> => {
   const response = await apiClient.get<Vacancy[]>(VACANCY_ENDPOINT, {

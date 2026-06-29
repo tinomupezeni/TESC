@@ -7,7 +7,9 @@ import {
   TrendingUp, 
   FileText, 
   Download,
-  Activity
+  Activity,
+  Briefcase,
+  Globe
 } from "lucide-react";
 import { ReportBuilder } from "@/components/reports";
 import { useAuth } from "@/context/AuthContext";
@@ -26,6 +28,13 @@ const reportCategories = [
     icon: Activity,
     color: "text-secondary",
     reports: ["staff"]
+  },
+  {
+    title: "Industry & Funding",
+    description: "Industrial placements and scholarship tracking",
+    icon: Briefcase,
+    color: "text-amber-500",
+    reports: ["placements", "scholarships", "mobility"]
   }
 ];
 

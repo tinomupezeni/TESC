@@ -21,7 +21,11 @@ INSTITUTION_STATUSES = [
 STUDENT_GENDERS = [
     ('Male', 'Male'),
     ('Female', 'Female'),
-    ('Other', 'Other'),
+]
+
+STUDENT_SEMESTERS = [
+    ('Semester 1', 'Semester 1'),
+    ('Semester 2', 'Semester 2'),
 ]
 
 STUDENT_STATUSES = [
@@ -141,6 +145,7 @@ class Student(models.Model):
 
     gender = models.CharField(max_length=10, choices=STUDENT_GENDERS)
     enrollment_year = models.PositiveIntegerField()
+    enrollment_semester = models.CharField(max_length=20, choices=STUDENT_SEMESTERS, default='Semester 1')
     status = models.CharField(max_length=20, choices=STUDENT_STATUSES, default='Active')
 
     dropout_reason = models.CharField(
@@ -152,9 +157,25 @@ class Student(models.Model):
 
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='students')
 
+    faculty = models.ForeignKey(
+        'faculties.Faculty',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='students'
+    )
+    department = models.ForeignKey(
+        'faculties.Department',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='students'
+    )
     program = models.ForeignKey(
         'faculties.Program',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='students'
     )
 
@@ -281,6 +302,17 @@ class Student(models.Model):
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
+    def save(self, *args, **kwargs):
+        if self.student_id:
+            self.student_id = self.student_id.upper()
+        if self.national_id:
+            self.national_id = self.national_id.upper()
+        if self.first_name:
+            self.first_name = self.first_name.upper()
+        if self.last_name:
+            self.last_name = self.last_name.upper()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.full_name} ({self.student_id})"
 
@@ -351,3 +383,16 @@ class InternationalMobility(models.Model):
 
     def __str__(self):
         return f"{self.student.student_id} - {self.direction} ({self.country})"
+
+
+class InCountryTransfer(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='transfers')
+    from_institution = models.CharField(max_length=255)
+    to_institution = models.CharField(max_length=255)
+    transfer_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.student.student_id}: {self.from_institution} -> {self.to_institution} ({self.transfer_date})"
+

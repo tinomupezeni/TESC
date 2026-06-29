@@ -74,19 +74,17 @@ class ProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
     queryset = Program.objects.all()
     serializer_class = ProgramSerializer
-    institution_lookup_path = 'department__faculty__institution'
+    institution_lookup_path = 'institution'
 
     def get_queryset(self):
         """
         Filter programs by Department, Faculty, or Institution.
         """
-        # OPTIMIZATION: Updated select_related path
-        # Old: 'faculty', 'faculty__institution'
-        # New: 'department', 'department__faculty', 'department__faculty__institution'
         queryset = super().get_queryset().select_related(
             'department', 
             'department__faculty', 
-            'department__faculty__institution'
+            'department__faculty__institution',
+            'institution'
         )
         
         # 1. Filter by Department (Direct link)
@@ -97,14 +95,16 @@ class ProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         # 2. Filter by Faculty (Through Department)
         faculty_id = self.request.query_params.get('faculty_id')
         if faculty_id:
-            # FIX: Use department__faculty_id instead of faculty_id
             queryset = queryset.filter(department__faculty_id=faculty_id)
             
-        # 3. Filter by Institution (Through Department -> Faculty)
+        # 3. Filter by Institution
         institution_id = self.request.query_params.get('institution_id')
         if institution_id:
-            # FIX: Use department__faculty__institution_id
-            queryset = queryset.filter(department__faculty__institution_id=institution_id)
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(institution_id=institution_id) | 
+                Q(department__faculty__institution_id=institution_id)
+            )
             
         return queryset
 
@@ -119,9 +119,23 @@ class ProgramViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
              return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
+        user = self.request.user
+        if user.is_authenticated and not user.is_superuser:
+            user_inst = getattr(user, 'institution', None)
+            if not user_inst and hasattr(user, "inst_admin"):
+                user_inst = user.inst_admin.institution
+            if user_inst:
+                serializer.validated_data['institution'] = user_inst
         serializer.instance = ProgramService.create_program(serializer.validated_data)
 
     def perform_update(self, serializer):
+        user = self.request.user
+        if user.is_authenticated and not user.is_superuser:
+            user_inst = getattr(user, 'institution', None)
+            if not user_inst and hasattr(user, "inst_admin"):
+                user_inst = user.inst_admin.institution
+            if user_inst:
+                serializer.validated_data['institution'] = user_inst
         ProgramService.update_program(serializer.instance, serializer.validated_data)
 
     def destroy(self, _request, *args, **kwargs):

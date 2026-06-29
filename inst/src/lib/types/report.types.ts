@@ -15,7 +15,7 @@ export type ReportFieldType =
   | 'computed';
 
 // Report type options
-export type ReportType = 'staff' | 'students' | 'graduates';
+export type ReportType = 'staff' | 'students' | 'graduates' | 'placements' | 'scholarships' | 'mobility';
 
 // Output format options
 export type ReportFormat = 'pdf' | 'json' | 'preview';

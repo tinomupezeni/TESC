@@ -103,7 +103,6 @@ export default function Statistics() {
       genders: Array.from(new Set(graduatesOnly.map(d => d.gender))).filter(Boolean),
       institutions: Array.from(new Set(graduatesOnly.map(d => d.institution_name))).filter(Boolean).sort(),
       types: Array.from(new Set(graduatesOnly.map(d => d.type))).filter(Boolean).sort(),
-      // FIX: standardized to program_category
       categories: Array.from(new Set(graduatesOnly.map(d => d.program_category))).filter(Boolean).sort(),
     };
   }, [graduatesOnly]);
@@ -127,7 +126,6 @@ export default function Statistics() {
       const matchesGender = genderFilter === "all" || item.gender === genderFilter;
       const matchesInst = instNameFilter === "all" || item.institution_name === instNameFilter;
       const matchesType = instTypeFilter === "all" || item.type === instTypeFilter;
-      // FIX: standardized to program_category
       const matchesCategory = categoryFilter === "all" || item.program_category === categoryFilter;
 
       return matchesSearch && matchesYear && matchesGender && matchesInst && matchesType && matchesCategory;
@@ -159,8 +157,8 @@ export default function Statistics() {
     const rows = filteredData.map(d => [
       d.student_id,
       d.full_name || `${d.first_name} ${d.last_name}`,
-      d.program_name || 'N/A', // Corrected key
-      d.program_category || 'N/A', // Corrected key
+      d.program_name || 'N/A',
+      d.program_category || 'N/A',
       d.institution_name,
       d.type,
       d.graduation_year,
@@ -197,7 +195,7 @@ export default function Statistics() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
               <GraduationCap className="h-6 w-6 sm:h-8 sm:h-8 text-blue-600" />
-              Graduation Analytics
+              GRADUATION ANALYTICS
             </h1>
           </div>
           <div className="flex flex-wrap gap-2 print:hidden">
@@ -274,15 +272,15 @@ export default function Statistics() {
 
         {/* Stats Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard title="Total Graduates" value={totals.total} icon={Users} variant="default" />
-          <StatsCard title="Male Graduates" value={totals.male} icon={User} variant="default" />
-          <StatsCard title="Female Graduates" value={totals.female} icon={User} variant="accent" />
+          <StatsCard title="TOTAL GRADUATES" value={totals.total} icon={Users} variant="default" />
+          <StatsCard title="MALE GRADUATES" value={totals.male} icon={User} variant="default" />
+          <StatsCard title="FEMALE GRADUATES" value={totals.female} icon={User} variant="default" />
           <StatsCard
-            title="Graduates with Disabilities"
+            title="GRADUATES WITH DISABILITIES"
             value={totals.disabilities}
             description={`${totals.disabilityPerc}% of total`}
             icon={Accessibility}
-            variant="success"
+            variant="default"
           />
         </div>
 
@@ -402,9 +400,15 @@ function GenderDistributionChart({ data }: { data: any[] }) {
     return Object.entries(counts).map(([name, value]: [string, any]) => ({
       name,
       value,
-      percentage: ((value / total) * 100).toFixed(1)
+      percentage: ((value / total) * 100).toFixed(1),
     }));
   }, [data]);
+
+  const getColor = (name: string, index: number) => {
+    if (name === "Female") return "#EC4899";
+    if (name === "Male") return "#3B82F6";
+    return COLORS[index % COLORS.length];
+  };
 
   return (
     <div className="h-80 w-full">
@@ -419,7 +423,9 @@ function GenderDistributionChart({ data }: { data: any[] }) {
             dataKey="value"
             label={({ name, percentage }) => `${name}: ${percentage}%`}
           >
-            {chartData.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+            {chartData.map((entry, index) => (
+              <Cell key={index} fill={getColor(entry.name, index)} />
+            ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
           <Legend iconType="circle" />
@@ -430,11 +436,17 @@ function GenderDistributionChart({ data }: { data: any[] }) {
 }
 
 function ProgramPerformanceChart({ data }: { data: any[] }) {
+  // Define color map for grades
+  const gradeColorMap: Record<string, string> = {
+    Credit: "#4169E1",      // Royal blue
+    Distinction: "#87CEEB", // Sky blue
+    Pass: "#708090",        // Slate grey
+  };
+
   const { chartData, availableGrades } = useMemo(() => {
     const gradesSet = new Set<string>();
 
     const map = data.reduce((acc: any, curr) => {
-      // FIX: Standardized key to curr.program_name
       const n = curr.program_name || "Unknown Program";
       const grade = curr.final_grade;
 
@@ -480,7 +492,7 @@ function ProgramPerformanceChart({ data }: { data: any[] }) {
               key={grade}
               dataKey={grade}
               stackId="a"
-              fill={GRADE_MAP[grade]?.hex || "#94a3b8"}
+              fill={gradeColorMap[grade] || "#94a3b8"}
               radius={[2, 2, 2, 2]}
             >
               <LabelList

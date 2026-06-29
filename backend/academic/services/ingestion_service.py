@@ -35,6 +35,39 @@ TEMPLATE_SCHEMAS = {
     },
     'stem_students': {
         'student_id': ('Student ID', True),
+        'national_id': ('National ID', True),
+        'first_name': ('First Name', True),
+        'last_name': ('Last Name', True),
+        'gender': ('Gender (Male/Female)', True),
+        'date_of_birth': ('Date of Birth (YYYY-MM-DD)', False),
+        'enrollment_year': ('Enrollment Year', True),
+        'status': ('Status (Active/Suspended/Graduated/Dropout)', False),
+        'program_code': ('Program Code', False),
+        'selected_level': ('Selected Level', True),
+    },
+    'specialized_students': {
+        'student_id': ('Student ID', True),
+        'national_id': ('National ID', True),
+        'first_name': ('First Name', True),
+        'last_name': ('Last Name', True),
+        'gender': ('Gender (Male/Female)', True),
+        'date_of_birth': ('Date of Birth (YYYY-MM-DD)', False),
+        'enrollment_year': ('Enrollment Year', True),
+        'status': ('Status (Active/Suspended/Graduated/Dropout)', False),
+        'program_code': ('Program Code', False),
+        'selected_level': ('Selected Level', True),
+    },
+    'critical_students': {
+        'student_id': ('Student ID', True),
+        'national_id': ('National ID', True),
+        'first_name': ('First Name', True),
+        'last_name': ('Last Name', True),
+        'gender': ('Gender (Male/Female)', True),
+        'date_of_birth': ('Date of Birth (YYYY-MM-DD)', False),
+        'enrollment_year': ('Enrollment Year', True),
+        'status': ('Status (Active/Suspended/Graduated/Dropout)', False),
+        'program_code': ('Program Code', False),
+        'selected_level': ('Selected Level', True),
     },
     'inclusivity': {
         'student_id': ('Student ID', True),
@@ -92,6 +125,15 @@ class IngestionService:
             dv = DataValidation(type="list", formula1='"Attachment,Apprenticeship"', allow_blank=False)
             ws.add_data_validation(dv)
             dv.add(f'B2:B1000')
+        elif module_type in ['stem_students', 'specialized_students', 'critical_students']:
+            # Gender is column E (index 4)
+            dv_gender = DataValidation(type="list", formula1='"Male,Female"', allow_blank=False)
+            ws.add_data_validation(dv_gender)
+            dv_gender.add('E2:E1000')
+            # Status is column H (index 7)
+            dv_status = DataValidation(type="list", formula1='"Active,Suspended,Graduated,Dropout"', allow_blank=True)
+            ws.add_data_validation(dv_status)
+            dv_status.add('H2:H1000')
         elif module_type == 'mobility':
             dv = DataValidation(type="list", formula1='"Inbound,Outbound"', allow_blank=False)
             ws.add_data_validation(dv)
@@ -192,6 +234,13 @@ class IngestionService:
                     valid_statuses = [choice[0] for choice in FACULTY_STATUSES]
                     if row_data['status'] not in valid_statuses:
                         errors.append(f"Invalid status: {row_data['status']}. Must be one of {', '.join(valid_statuses)}.")
+                        status = "Error"
+            elif module_type in ['stem_students', 'specialized_students', 'critical_students']:
+                program_code = row_data.get('program_code')
+                if program_code:
+                    program_exists = Program.objects.filter(code=program_code, department__faculty__institution_id=institution_id).exists()
+                    if not program_exists:
+                        errors.append(f"Program with code '{program_code}' not found in this institution.")
                         status = "Error"
                 
             processed_data.append({
@@ -298,17 +347,17 @@ class IngestionService:
                     department=department,
                     name=data['name'],
                     code=data['code'],
-                    duration=int(data.get('duration', 0)),
+                    duration=int(data.get('duration') or 0),
                     levels=levels,
                     categories=categories,
                     is_critical_skill=is_critical_skill,
                     program_type=data.get('program_type'),
-                    description=data.get('description', ''),
-                    coordinator=data.get('coordinator', ''),
-                    student_capacity=int(data.get('student_capacity', 0)),
-                    semester_fee=float(data.get('semester_fee', 0.00)),
-                    modules=data.get('modules', ''),
-                    entry_requirements=data.get('entry_requirements', '')
+                    description=data.get('description') or '',
+                    coordinator=data.get('coordinator') or '',
+                    student_capacity=int(data.get('student_capacity') or 0),
+                    semester_fee=float(data.get('semester_fee') or 0.00),
+                    modules=data.get('modules') or '',
+                    entry_requirements=data.get('entry_requirements') or ''
                 )
             elif module_type == 'inclusivity':
                 student.inclusivity_category = data['inclusivity_category']
@@ -316,8 +365,41 @@ class IngestionService:
             elif module_type == 'possible_graduates':
                 student.graduation_year = int(data['graduation_year'])
                 student.save()
-            elif module_type == 'stem_students':
-                pass
+            elif module_type in ['stem_students', 'specialized_students', 'critical_students']:
+                program_code = data.get('program_code')
+                program = None
+                faculty = None
+                department = None
+                if program_code:
+                    program = Program.objects.filter(code=program_code, department__faculty__institution_id=institution_id).first()
+                    if program:
+                        department = program.department
+                        faculty = department.faculty
+
+                cat = 'STEM'
+                if module_type == 'specialized_students':
+                    cat = 'SPECIALIZED'
+                elif module_type == 'critical_students':
+                    cat = 'CRITICAL'
+
+                Student.objects.update_or_create(
+                    student_id=data['student_id'],
+                    institution_id=institution_id,
+                    defaults={
+                        'national_id': data.get('national_id'),
+                        'first_name': data['first_name'],
+                        'last_name': data['last_name'],
+                        'gender': data['gender'],
+                        'date_of_birth': data.get('date_of_birth'),
+                        'enrollment_year': int(data['enrollment_year']),
+                        'status': data.get('status', 'Active'),
+                        'faculty': faculty,
+                        'department': department,
+                        'program': program,
+                        'selected_level': data.get('selected_level'),
+                        'selected_category': cat
+                    }
+                )
             success_count += 1
             
         return success_count

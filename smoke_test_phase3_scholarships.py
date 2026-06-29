@@ -5,7 +5,7 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "https://localhost/api"
 
 def smoke_test_phase3():
     print("🚀 Starting Phase 3 Smoke Test: Scholarships...")
@@ -38,19 +38,19 @@ def smoke_test_phase3():
 
     try:
         # Create dependencies
-        fac_res = requests.post(f"{BASE_URL}/faculties/faculties/", json={"name": f"Fac {unique_id}", "institution": inst_id}, headers=headers)
+        fac_res = requests.post(f"{BASE_URL}/faculties/faculties/", json={"name": f"Fac {unique_id}", "institution": inst_id}, headers=headers, verify=False)
         fac_id = fac_res.json().get('id')
 
-        dep_res = requests.post(f"{BASE_URL}/faculties/departments/", json={"name": f"Dept {unique_id}", "faculty": fac_id, "code": f"D{unique_id}"}, headers=headers)
+        dep_res = requests.post(f"{BASE_URL}/faculties/departments/", json={"name": f"Dept {unique_id}", "faculty": fac_id, "code": f"D{unique_id}"}, headers=headers, verify=False)
         dep_id = dep_res.json().get('id')
 
-        prog_res = requests.post(f"{BASE_URL}/faculties/programs/", json={"name": f"Prog {unique_id}", "code": f"P{unique_id}", "duration": 1, "department": dep_id}, headers=headers)
+        prog_res = requests.post(f"{BASE_URL}/faculties/programs/", json={"name": f"Prog {unique_id}", "code": f"P{unique_id}", "duration": 1, "department": dep_id}, headers=headers, verify=False)
         prog_id = prog_res.json().get('id')
 
         stud_res = requests.post(f"{BASE_URL}/academic/students/", json={
             "first_name": "Test", "last_name": "Student", "national_id": f"00-{unique_id}", "student_id": f"S{unique_id}",
             "gender": "Female", "enrollment_year": 2026, "program": prog_id, "institution": inst_id
-        }, headers=headers)
+        }, headers=headers, verify=False)
         stud_id = stud_res.json().get('id')
 
         # Create Scholarship
@@ -61,7 +61,7 @@ def smoke_test_phase3():
             "amount": 500.00,
             "year_awarded": 2026
         }
-        sch_res = requests.post(f"{BASE_URL}/academic/scholarships/", json=sch_payload, headers=headers)
+        sch_res = requests.post(f"{BASE_URL}/academic/scholarships/", json=sch_payload, headers=headers, verify=False)
         if sch_res.status_code != 201:
             print(f"❌ Failed to create scholarship: {sch_res.status_code}")
             print(sch_res.text)
@@ -76,7 +76,7 @@ def smoke_test_phase3():
             "filters": {"institution_name": inst_id},
             "columns": ["student_id_number", "provider_name", "amount", "year_awarded"]
         }
-        report_res = requests.post(f"{BASE_URL}/v1/reports/dynamic/preview/", json=report_payload, headers=headers)
+        report_res = requests.post(f"{BASE_URL}/v1/reports/dynamic/preview/", json=report_payload, headers=headers, verify=False)
         if report_res.status_code != 200:
             print(f"❌ Failed to generate report: {report_res.status_code}")
             print(report_res.text)
@@ -88,7 +88,7 @@ def smoke_test_phase3():
         print("✅ Metrics payload successfully calculated for scholarships.")
 
     finally:
-        requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/")
+        requests.delete(f"{BASE_URL}/academic/institutions/{inst_id}/", verify=False)
 
     print("🎉 Phase 3 Smoke Test Passed!")
 

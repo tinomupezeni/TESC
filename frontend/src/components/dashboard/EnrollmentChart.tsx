@@ -4,6 +4,8 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,15 +15,9 @@ import {
 import { DashboardService } from "@/services/admin.dashboard.service";
 import { EnrollmentTrendItem } from "@/lib/types/dashboard.types";
 
-const COLOR_POOL = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
-  "hsl(var(--success))",
-  "hsl(var(--warning))",
-  "hsl(var(--destructive))",
-];
+// Your custom color palette
+const COLOR_POOL = ["#8FD9FB", "#4AB5B5", "#6D8BC0"];
 
-/* Collect ALL possible institution keys (sparse-safe) */
 const getSeriesKeys = (data: EnrollmentTrendItem[]) => {
   const keys = new Set<string>();
   data.forEach((row) => {
@@ -32,17 +28,14 @@ const getSeriesKeys = (data: EnrollmentTrendItem[]) => {
   return Array.from(keys);
 };
 
-export function EnrollmentChart() {
+interface EnrollmentChartProps {
+  type?: "line" | "area";
+}
+
+export function EnrollmentChart({ type = "line" }: EnrollmentChartProps) {
   const [data, setData] = useState<EnrollmentTrendItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  /* Which series are visible */
-  const [visibleSeries, setVisibleSeries] = useState<Record<string, boolean>>(
-    {}
-  );
-
-  /* Which series is isolated (null = none) */
-  const [isolatedKey, setIsolatedKey] = useState<string | null>(null);
+  const [visibleSeries, setVisibleSeries] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,7 +46,6 @@ export function EnrollmentChart() {
     fetchData();
   }, []);
 
-  /* Initialize visibility */
   useEffect(() => {
     if (data.length) {
       const keys = getSeriesKeys(data);
@@ -65,28 +57,25 @@ export function EnrollmentChart() {
 
   const seriesKeys = getSeriesKeys(data);
 
-  /* Legend click = isolate */
   const handleLegendClick = (e: any) => {
     const key = e.dataKey;
+    
+    // Check if we are currently isolating this key
+    const isCurrentlyIsolated = visibleSeries[key] && Object.values(visibleSeries).filter(Boolean).length === 1;
 
-    setIsolatedKey((prev) => {
-      // If clicking the same key again → reset
-      if (prev === key) {
-        const reset: Record<string, boolean> = {};
-        seriesKeys.forEach((k) => (reset[k] = true));
-        setVisibleSeries(reset);
-        return null;
-      }
-
-      // Isolate selected key
+    if (isCurrentlyIsolated) {
+      // Reset all to visible
+      const reset: Record<string, boolean> = {};
+      seriesKeys.forEach((k) => (reset[k] = true));
+      setVisibleSeries(reset);
+    } else {
+      // Isolate the selected key
       const isolated: Record<string, boolean> = {};
       seriesKeys.forEach((k) => (isolated[k] = k === key));
       setVisibleSeries(isolated);
-      return key;
-    });
+    }
   };
 
-  /* Controlled legend payload (prevents reorder/ghost items) */
   const legendPayload = seriesKeys.map((key, index) => ({
     id: key,
     value: key,
@@ -94,7 +83,7 @@ export function EnrollmentChart() {
     dataKey: key,
     color: visibleSeries[key]
       ? COLOR_POOL[index % COLOR_POOL.length]
-      : "hsl(var(--muted-foreground))",
+      : "#94a3b8", // Muted grey when hidden
   }));
 
   if (loading) {
@@ -105,35 +94,45 @@ export function EnrollmentChart() {
     );
   }
 
+  const ChartComponent = type === "area" ? AreaChart : LineChart;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Enrollment Trends (Last 5 Years)</CardTitle>
+        <CardTitle>Enrollment Trends</CardTitle>
       </CardHeader>
-
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
+            <ChartComponent data={data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="year" />
               <YAxis />
               <Tooltip />
-
-              <Legend
-                payload={legendPayload}
-                onClick={handleLegendClick}
-              />
+              <Legend payload={legendPayload} onClick={handleLegendClick} />
 
               {seriesKeys.map((key, index) => {
                 const color = COLOR_POOL[index % COLOR_POOL.length];
                 const visible = visibleSeries[key];
 
-                return (
+                return type === "area" ? (
+                  <Area
+                    key={key}
+                    dataKey={key}
+                    type="monotone"
+                    stroke={color}
+                    fill={color}
+                    fillOpacity={visible ? 0.3 : 0}
+                    strokeOpacity={visible ? 1 : 0.15}
+                    strokeWidth={2}
+                    activeDot={visible ? { r: 6 } : false}
+                    isAnimationActive={false}
+                  />
+                ) : (
                   <Line
                     key={key}
                     dataKey={key}
-                    name={key}
+                    type="monotone"
                     stroke={color}
                     strokeWidth={2}
                     strokeOpacity={visible ? 1 : 0.15}
@@ -143,7 +142,7 @@ export function EnrollmentChart() {
                   />
                 );
               })}
-            </LineChart>
+            </ChartComponent>
           </ResponsiveContainer>
         </div>
       </CardContent>

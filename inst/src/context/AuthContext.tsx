@@ -1,6 +1,6 @@
 // context/AuthContext.tsx
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import apiClient from "@/services/api";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import apiClient, { setTokenForApi, onTokenRefresh } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
 // 1. Update User interface to match what Sidebar expects (nested institution object)
@@ -30,55 +30,89 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  // 2. Add login function definition
-  login: (accessToken: string, refreshToken: string) => Promise<void>;
+  accessToken: string | null;
+  login: (accessToken: string, refreshToken?: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
   updatePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  setAccessToken: (token: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchProfile = async () => {
+  const setAccessToken = useCallback((token: string | null) => {
+    setAccessTokenState(token);
+    setTokenForApi(token);
+  }, []);
+
+  const fetchProfile = useCallback(async (token: string) => {
     try {
-      const res = await apiClient.get("/instauth/profile/");
+      // Set temporary token for profile fetch
+      const res = await apiClient.get("/instauth/profile/", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setUser(res.data);
     } catch (err) {
       console.error("Failed to fetch profile:", err);
       setUser(null);
-      // Optional: if profile fetch fails (e.g. invalid token), clear storage
-      // localStorage.removeItem("accessToken");
+      setAccessToken(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [setAccessToken]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      fetchProfile();
-    } else {
-      setLoading(false); // Stop loading if no token
-    }
-  }, []);
+    // Register the api callback listener
+    onTokenRefresh((token) => {
+      if (token) {
+        setAccessTokenState(token);
+      } else {
+        // Refresh failed (logged out)
+        setAccessTokenState(null);
+        setUser(null);
+        navigate("/login");
+      }
+    });
 
-  // 3. Implement the login function
-  const login = async (accessToken: string, refreshToken: string) => {
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    const initAuth = async () => {
+      try {
+        setLoading(true);
+        // Silently refresh token on app mount/load using the HTTP-only cookie
+        const res = await apiClient.post("/instauth/token/refresh/");
+        const token = res.data.access;
+        setAccessToken(token);
+        await fetchProfile(token);
+      } catch (err) {
+        console.log("No active session or session expired.");
+        setAccessToken(null);
+        setUser(null);
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, [setAccessToken, fetchProfile, navigate]);
+
+  const login = async (accessToken: string, refreshToken?: string) => {
+    setAccessToken(accessToken);
     // Crucial: Fetch profile immediately after setting tokens
-    await fetchProfile();
+    await fetchProfile(accessToken);
   };
 
-  const logout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+  const logout = async () => {
+    try {
+      await apiClient.post("/instauth/logout/");
+    } catch (err) {
+      console.error("Failed to clear cookie on logout", err);
+    }
+    setAccessToken(null);
     setUser(null);
     navigate("/login");
   };
@@ -88,6 +122,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await apiClient.patch("/users/profile/", {
         old_password: oldPassword,
         new_password: newPassword,
+      }, {
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
     } catch (error: any) {
       throw error.response?.data?.error || error.response?.data?.detail || "Failed to update password";
@@ -95,11 +131,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshProfile = async () => {
-    await fetchProfile();
+    if (accessToken) await fetchProfile(accessToken);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, updatePassword, refreshProfile }}>
+    <AuthContext.Provider value={{ user, accessToken, login, logout, loading, updatePassword, refreshProfile, setAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

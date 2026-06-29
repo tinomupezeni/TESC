@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Search,
   Download,
@@ -48,6 +49,7 @@ import {
   Loader2,
   UserCog, // Generic icon
   Shield, // Admin icon
+  Trash2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,10 +65,13 @@ import {
   Staff as StaffType,
   getVacancies,
   Vacancy,
+  bulkDeleteStaff,
+  deleteStaff,
 } from "@/services/staff.services";
 import { AddVacancyDialog } from "@/components/AddVacancyDialog";
 import { UploadStaffDialog } from "@/components/helpers/UploadStaffDialog";
 import { exportStaffToExcel } from "@/services/staff.services";
+import { toast } from "sonner";
 
 const Staff = () => {
   const { user } = useAuth();
@@ -82,13 +87,23 @@ const Staff = () => {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [vacanciesLoading, setVacanciesLoading] = useState(true);
 
+  // --- Multi-Selection State ---
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // 1. Fetch Staff
   const fetchStaff = useCallback(async () => {
     if (!user?.institution?.id) return;
     try {
       setLoading(true);
       const data = await getStaff({ institution_id: user.institution.id });
-      if (Array.isArray(data)) setStaff(data);
+      // The service now returns PaginatedResponse, we need to handle that or adjust the service
+      // Let's check the service again. Ah, it says it returns PaginatedResponse<Staff>
+      if (data && 'results' in data) {
+        setStaff(data.results as StaffType[]);
+      } else if (Array.isArray(data)) {
+        setStaff(data);
+      }
     } catch (error) {
       console.error("Failed to fetch staff:", error);
     } finally {
@@ -165,6 +180,54 @@ const Staff = () => {
   const handleViewProfile = (staffMember: StaffType) => {
     setSelectedStaff(staffMember);
     setShowProfile(true);
+  };
+
+  // --- Selection Logic ---
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredStaff.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredStaff.map(s => s.id));
+    }
+  };
+
+  const toggleSelectStaff = (id: number) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} staff records?`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await bulkDeleteStaff(selectedIds);
+      toast.success(`Successfully deleted ${selectedIds.length} staff records`);
+      setSelectedIds([]);
+      fetchStaff();
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      toast.error("Failed to delete staff records");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this staff record?")) return;
+    try {
+      await deleteStaff(id);
+      toast.success("Staff record deleted");
+      fetchStaff();
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete staff record");
+    }
   };
 
   return (
@@ -285,11 +348,28 @@ const Staff = () => {
       <Card className="overflow-hidden border-none sm:border">
         <CardHeader className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg sm:text-xl">Staff Directory</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                View and manage all staff members
-              </CardDescription>
+            <div className="flex items-center gap-4">
+              <div>
+                <CardTitle className="text-lg sm:text-xl">Staff Directory</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  View and manage all staff members
+                </CardDescription>
+              </div>
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
+                  <Separator orientation="vertical" className="h-8 hidden sm:block" />
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={handleBulkDelete}
+                    disabled={isDeleting}
+                    className="h-9"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete {selectedIds.length}
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Button variant="outline" size="sm" onClick={handleExport} className="h-9 flex-1 sm:flex-none">
@@ -362,6 +442,13 @@ const Staff = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox 
+                      checked={selectedIds.length === filteredStaff.length && filteredStaff.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead className="w-[100px] text-xs">ID</TableHead>
                   <TableHead className="text-xs">Name</TableHead>
                   <TableHead className="hidden lg:table-cell text-xs">Role</TableHead>
@@ -375,7 +462,7 @@ const Staff = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={9} className="h-24 text-center">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                       <span className="text-[10px] text-muted-foreground mt-2 block">
                         Loading Staff...
@@ -385,7 +472,7 @@ const Staff = () => {
                 ) : filteredStaff.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center py-8 text-muted-foreground text-xs"
                     >
                       No staff members found.
@@ -395,9 +482,16 @@ const Staff = () => {
                   filteredStaff.map((staff) => (
                     <TableRow
                       key={staff.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={`cursor-pointer hover:bg-muted/50 ${selectedIds.includes(staff.id) ? "bg-muted" : ""}`}
                       onClick={() => handleViewProfile(staff)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={selectedIds.includes(staff.id)}
+                          onCheckedChange={() => toggleSelectStaff(staff.id)}
+                          aria-label={`Select ${staff.full_name}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium text-[10px] sm:text-xs">
                         {staff.employee_id}
                       </TableCell>
@@ -446,8 +540,11 @@ const Staff = () => {
                             <DropdownMenuItem>Edit Details</DropdownMenuItem>
                             <DropdownMenuItem>Reset Password</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              Suspend Staff
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleDeleteStaff(staff.id)}
+                            >
+                              Delete Staff
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

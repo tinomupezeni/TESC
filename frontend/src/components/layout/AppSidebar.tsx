@@ -44,6 +44,12 @@ const mainNavigation = [
   { title: "Staff Records", url: "/staff", icon: User },
   { title: "Statistics", url: "/statistics", icon: BarChart3 },
   { title: "Graduation Records", url: "/graduates", icon: GraduationCap },
+  { title: "STEM Students", url: "/stem-students", icon: Users },
+  { title: "Specialized Skills", url: "/specialized-students", icon: Users },
+  { title: "Critical Skills", url: "/critical-students", icon: Users },
+  { title: "Inclusivity Report", url: "/inclusivity", icon: Users },
+  { title: "Possible Graduates", url: "/possible-graduates", icon: GraduationCap },
+  { title: "In-Country Transfers", url: "/transfers", icon: Globe },
 ];
 
 const dataCategories = [

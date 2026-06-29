@@ -52,6 +52,20 @@ const TableRowSkeleton = () => (
     <TableCell><Skeleton className="h-8 w-16" /></TableCell>
   </TableRow>
 );
+const rowColors = [
+  "#EAF6FF", // IcyWhisper
+  "#DFF2FE", // FrostedBreeze
+  "#D5EEFD", // WinterSky
+  "#C9E9FC", // Crystal Mist
+  "#BFE4FA", // PaleArctic
+  "#B3DFFA", // SoftCloud
+  "#A6DAF8", // MorningFog
+  "#9CD5F5", // DewyHorizon
+  "#92CFF3", // Bluebell Glow
+  "#88CAF1", // MistyWave
+  "#7EC5EF", // Frozen Lake
+  "#74BFEA", // GentleStream
+];
 
 export default function StaffPage() {
   // --- STATS HOOK ---
@@ -177,7 +191,7 @@ export default function StaffPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Staff Records</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold">STAFF RECORDS</h1>
               <p className="text-sm sm:text-base text-muted-foreground">Manage and track institutional personnel</p>
             </div>
             <div className="flex flex-wrap gap-2 print:hidden">
@@ -196,83 +210,91 @@ export default function StaffPage() {
           {/* Stats Summary Cards - Now Dynamic based on filteredStaff */}
 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
   <StatsCard 
-    title="Total Staff" 
+    title="TOTAL STAFF" 
     // Calculate total from the filtered list
     value={filteredStaff.length.toLocaleString()} 
     icon={Users} 
-    variant="accent" 
+    variant="default" 
   />
   <StatsCard 
-    title="Active Staff" 
-    // Count how many in the filtered list are active
-    value={filteredStaff.filter(s => s.is_active).length.toLocaleString()} 
+    title="MALE STAFF" 
+    value={filteredStaff.filter(s => (s as any).gender === "Male").length.toLocaleString()} 
     icon={UserCheck} 
-    variant="success" 
+    variant="default" 
   />
   <StatsCard 
-    title="Inactive Staff" 
-    // Count how many in the filtered list are inactive
-    value={filteredStaff.filter(s => !s.is_active).length.toLocaleString()} 
-    icon={Users} 
-    variant="warning" 
+    title="FEMALE STAFF" 
+    value={filteredStaff.filter(s => (s as any).gender === "Female").length.toLocaleString()} 
+    icon={UserCheck} 
+    variant="default" 
   />
   <StatsCard 
-    title="Active Rate" 
+    title="ACTIVE STAFF RATE" 
     // Calculate percentage based on the current filtered view
     value={`${filteredStaff.length > 0 
-      ? ((filteredStaff.filter(s => s.is_active).length / filteredStaff.length) * 100).toFixed(1) 
+      ? ((filteredStaff.filter(s => (s as any).is_active).length / filteredStaff.length) * 100).toFixed(1) 
       : 0}%`} 
     icon={UserCheck} 
-    variant="success" 
+    variant="default" 
   />
 </div>
 
-          {/* Search & Filter - Hidden in Print */}
-          <Card className="print:hidden">
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Filter className="h-5 w-5" /> Search and Filter
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                <div className="lg:col-span-1">
-                  <Input
-                    placeholder="Search name, ID..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={instFilter} onValueChange={setInstFilter}>
-                  <SelectTrigger><SelectValue placeholder="Institution" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Institutions</SelectItem>
-                    {filterOptions.institutions.map(inst => <SelectItem key={inst} value={inst}>{inst}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={posFilter} onValueChange={setPosFilter}>
-                  <SelectTrigger><SelectValue placeholder="Position" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Positions</SelectItem>
-                    {filterOptions.positions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="ghost" onClick={resetFilters} className="text-muted-foreground w-full sm:w-auto">
-                  <RotateCcw className="h-4 w-4 mr-2" /> Reset
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+       {/* Search & Filter - Hidden in Print */}
+<Card className="print:hidden bg-stone-100 text-slate-800">
+  <CardHeader className="p-4 sm:p-6">
+    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+      <Filter className="h-5 w-5" /> Search and Filter
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="p-4 sm:p-6 pt-0">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="lg:col-span-1">
+        <Input
+          placeholder="Search name, ID..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-white border-stone-300 text-slate-900 placeholder:text-slate-400"
+        />
+      </div>
+      <Select value={instFilter} onValueChange={setInstFilter}>
+        <SelectTrigger className="bg-white border-stone-300 text-slate-900">
+          <SelectValue placeholder="Institution" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Institutions</SelectItem>
+          {filterOptions.institutions.map(inst => <SelectItem key={inst} value={inst}>{inst}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={posFilter} onValueChange={setPosFilter}>
+        <SelectTrigger className="bg-white border-stone-300 text-slate-900">
+          <SelectValue placeholder="Position" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Positions</SelectItem>
+          {filterOptions.positions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+        <SelectTrigger className="bg-white border-stone-300 text-slate-900">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="Active">Active</SelectItem>
+          <SelectItem value="Inactive">Inactive</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button
+        variant="ghost"
+        onClick={resetFilters}
+        className="text-slate-700 hover:text-slate-900 hover:bg-stone-200 w-full sm:w-auto"
+      >
+        <RotateCcw className="h-4 w-4 mr-2" /> Reset
+      </Button>
+    </div>
+  </CardContent>
+</Card>
 
-          {/* Staff Table */}
           <Card className="print:shadow-none print:border-none">
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 p-4 sm:p-6">
               <div>
@@ -330,8 +352,12 @@ export default function StaffPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedStaff.map((staff) => (
-                      <TableRow key={staff.id}>
+                    paginatedStaff.map((staff, index) => (
+                      <TableRow
+                        key={staff.id}
+                        style={{ backgroundColor: rowColors[index % rowColors.length] }}
+                        className="text-slate-800" // ensure dark text for readability
+                      >
                         <TableCell className="font-medium text-xs sm:text-sm">{staff.employee_id}</TableCell>
                         <TableCell className="text-xs sm:text-sm">{staff.full_name}</TableCell>
                         <TableCell className="hidden lg:table-cell">{staff.institution_name}</TableCell>
@@ -357,15 +383,8 @@ export default function StaffPage() {
         </div>
       </DashboardLayout>
 
-      {/* Profile View Modal */}
       <StaffView data={selectedStaff} setData={setSelectedStaff} />
-
-      {/* Report Builder Dialog */}
-      <ReportBuilder
-        reportType="staff"
-        open={reportBuilderOpen}
-        onOpenChange={setReportBuilderOpen}
-      />
+      <ReportBuilder reportType="staff" open={reportBuilderOpen} onOpenChange={setReportBuilderOpen} />
     </>
   );
 }

@@ -10,8 +10,18 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit, Banknote, Calendar, Search, ArrowUpRight } from "lucide-react";
+import { Edit, Banknote, Calendar, Search, ArrowUpRight, Trash2, Loader2 } from "lucide-react";
 import { GrantFormDialog } from "./GrantFormDialog";
+import { deleteGrant } from "@/services/innovation.services";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface GrantManagerProps {
   grants: any[];
@@ -20,6 +30,24 @@ interface GrantManagerProps {
 
 const GrantManager = ({ grants = [], onRefresh }: GrantManagerProps) => {
   const [search, setSearch] = useState("");
+  const [grantToDelete, setGrantToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!grantToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteGrant(grantToDelete.id);
+      toast.success("Grant deleted successfully");
+      setGrantToDelete(null);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast.error("Failed to delete grant");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredGrants = grants.filter(g => 
     g.donor.toLowerCase().includes(search.toLowerCase()) ||
@@ -31,10 +59,10 @@ const GrantManager = ({ grants = [], onRefresh }: GrantManagerProps) => {
       <CardHeader className="px-0 sm:px-6 pt-0 sm:pt-6 pb-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 uppercase">
               <Banknote className="h-5 w-5 text-primary" /> Research Grants
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm uppercase">
               Track funding received for specific projects.
             </CardDescription>
           </div>
@@ -58,7 +86,7 @@ const GrantManager = ({ grants = [], onRefresh }: GrantManagerProps) => {
         <div className="rounded-md border overflow-x-auto bg-white">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
+              <TableRow className="bg-muted/50 uppercase">
                 <TableHead className="text-xs">Donor / Organization</TableHead>
                 <TableHead className="hidden sm:table-cell text-xs">Linked Project</TableHead>
                 <TableHead className="text-xs">Amount</TableHead>
@@ -69,13 +97,13 @@ const GrantManager = ({ grants = [], onRefresh }: GrantManagerProps) => {
             <TableBody>
               {filteredGrants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-xs">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-xs uppercase">
                     No grants recorded.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredGrants.map((grant) => (
-                  <TableRow key={grant.id} className="hover:bg-muted/5">
+                  <TableRow key={grant.id} className="hover:bg-muted/5 uppercase">
                     <TableCell className="font-medium text-[10px] sm:text-xs">
                       <div>{grant.donor}</div>
                       <div className="sm:hidden text-[9px] text-muted-foreground mt-0.5 truncate max-w-[150px]">{grant.project_name || "Unlinked"}</div>
@@ -100,15 +128,25 @@ const GrantManager = ({ grants = [], onRefresh }: GrantManagerProps) => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                       <GrantFormDialog 
-                         grant={grant} 
-                         onSuccess={onRefresh} 
-                         trigger={
-                           <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
-                             <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                           </Button>
-                         }
-                       />
+                       <div className="flex justify-end gap-1">
+                          <GrantFormDialog 
+                            grant={grant} 
+                            onSuccess={onRefresh} 
+                            trigger={
+                              <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                              </Button>
+                            }
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setGrantToDelete(grant)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </Button>
+                       </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -117,6 +155,28 @@ const GrantManager = ({ grants = [], onRefresh }: GrantManagerProps) => {
           </Table>
         </div>
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!grantToDelete} onOpenChange={(open) => !open && setGrantToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="uppercase">Are you absolutely sure?</DialogTitle>
+            <DialogDescription className="uppercase">
+              This action cannot be undone. This will permanently delete the research grant from{" "}
+              <span className="font-semibold text-foreground">{grantToDelete?.donor?.toUpperCase()}</span> and all associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setGrantToDelete(null)} disabled={isDeleting} className="uppercase">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="uppercase">
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Grant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

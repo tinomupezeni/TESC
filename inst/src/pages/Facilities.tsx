@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -22,11 +23,24 @@ import {
   Users,
   CheckCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Pencil,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AddFacilityDialog } from "@/components/AddFacilityDialog";
-import { getFacilities, Facility } from "@/services/facilities.services";
+import { EditFacilityDialog } from "@/components/EditFacilityDialog";
+import { getFacilities, deleteFacility, Facility } from "@/services/facilities.services";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 // Extended interface for UI display
 interface UIFacility extends Facility {
@@ -40,6 +54,9 @@ const Facilities = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState<UIFacility | null>(null);
+  const [facilityToEdit, setFacilityToEdit] = useState<Facility | null>(null);
+  const [facilityToDelete, setFacilityToDelete] = useState<Facility | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const { user } = useAuth();
   
@@ -68,7 +85,7 @@ const Facilities = () => {
       // Transform data for UI (Add icons and mock occupancy)
       const uiData = data.map(f => ({
         ...f,
-        current: Math.floor(Math.random() * f.capacity), 
+        current: f.current_usage || 0, 
         icon: getIconForType(f.facility_type)
       }));
       
@@ -84,6 +101,22 @@ const Facilities = () => {
   useEffect(() => {
     fetchFacilities();
   }, [institutionId]);
+
+  const handleDelete = async () => {
+    if (!facilityToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteFacility(facilityToDelete.id);
+      toast.success("Facility deleted successfully");
+      setFacilityToDelete(null);
+      fetchFacilities();
+    } catch (error) {
+      toast.error("Failed to delete facility");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredFacilities = facilities.filter(facility => {
     const matchesSearch = 
@@ -224,7 +257,32 @@ const Facilities = () => {
                               <CardDescription className="text-[10px] sm:text-xs truncate">{facility.facility_type}</CardDescription>
                             </div>
                           </div>
-                          <div className="shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFacilityToEdit(facility);
+                                }}>
+                                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setFacilityToDelete(facility);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             {facility.status === "Active" ? (
                               <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                             ) : (
@@ -282,7 +340,7 @@ const Facilities = () => {
 
       {/* Facility Detail Dialog */}
       <Dialog open={!!selectedFacility} onOpenChange={(open) => !open && setSelectedFacility(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedFacility?.name}</DialogTitle>
             <DialogDescription>
@@ -290,13 +348,13 @@ const Facilities = () => {
             </DialogDescription>
           </DialogHeader>
           {selectedFacility && (
-            <div className="space-y-6">
+            <div className="space-y-6 py-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Facility Overview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Facility ID</p>
                       <p className="font-medium">{selectedFacility.id}</p>
@@ -341,7 +399,18 @@ const Facilities = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                     <p className="text-sm">{selectedFacility.equipment || "No equipment listed."}</p>
+                     <p className="text-sm whitespace-pre-wrap">{selectedFacility.equipment || "No equipment listed."}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                     <p className="text-sm whitespace-pre-wrap">{selectedFacility.description || "No description provided."}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -351,22 +420,82 @@ const Facilities = () => {
                   <CardTitle>Management & Contact</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Manager</p>
-                      <p className="font-medium">{selectedFacility.manager}</p>
+                      <p className="font-medium">{selectedFacility.manager || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Contact Number</p>
-                      <p className="font-medium">{selectedFacility.contact_number}</p>
+                      <p className="font-medium">{selectedFacility.contact_number || "N/A"}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-6 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedFacility(null)}
+                  className="order-3 sm:order-1"
+                >
+                  Close
+                </Button>
+                <div className="flex gap-3 order-1 sm:order-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setFacilityToEdit(selectedFacility);
+                      setSelectedFacility(null);
+                    }}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Facility
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => {
+                      setFacilityToDelete(selectedFacility);
+                      setSelectedFacility(null);
+                    }}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Facility
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!facilityToDelete} onOpenChange={(open) => !open && setFacilityToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you absolutely sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the facility{" "}
+              <span className="font-semibold text-foreground">{facilityToDelete?.name}</span> and all associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setFacilityToDelete(null)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Facility
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <EditFacilityDialog 
+        facility={facilityToEdit} 
+        onClose={() => setFacilityToEdit(null)} 
+        onSuccess={fetchFacilities}
+      />
     </div>
   );
 };

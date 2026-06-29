@@ -152,7 +152,6 @@ export default function Industrialisation() {
                                         cx="50%"
                                         cy="50%"
                                         outerRadius={80}
-                                        sm:outerRadius={100}
                                         innerRadius={0}
                                         stroke="none"
                                     >

@@ -15,6 +15,10 @@ export interface Program {
   name: string;
   code: string;
   duration: number;
+  duration_years?: number;
+  duration_months?: number;
+  duration_weeks?: number;
+  duration_days?: number;
   level: string;
   description: string;
   coordinator: string;

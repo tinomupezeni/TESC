@@ -1,9 +1,20 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Edit, Activity } from "lucide-react";
+import { Building2, Edit, Activity, Trash2, Loader2 } from "lucide-react";
 import { HubFormDialog } from "./HubFormDialog";
+import { deleteHub } from "@/services/innovation.services";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface HubManagerProps {
   hubs: any[];
@@ -20,6 +31,25 @@ const getStatusColor = (status: string) => {
 };
 
 const HubManager = ({ hubs = [], onRefresh }: HubManagerProps) => {
+  const [hubToDelete, setHubToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!hubToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteHub(hubToDelete.id);
+      toast.success("Hub deleted successfully");
+      setHubToDelete(null);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast.error("Failed to delete hub");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background p-1 rounded-lg">
@@ -44,13 +74,13 @@ const HubManager = ({ hubs = [], onRefresh }: HubManagerProps) => {
                         <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
                      </div>
                      <div className="min-w-0">
-                        <CardTitle className="text-sm sm:text-base font-bold truncate" title={hub.name}>{hub.name}</CardTitle>
+                        <CardTitle className="text-sm sm:text-base font-bold truncate uppercase" title={hub.name}>{hub.name}</CardTitle>
                         <CardDescription className="text-[10px] sm:text-xs">Capacity: {hub.capacity} Units</CardDescription>
                      </div>
                   </div>
                   
-                  {/* Edit Button */}
-                  <div className="shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Edit Button */}
                     <HubFormDialog 
                       hub={hub} 
                       onSuccess={onRefresh}
@@ -60,6 +90,15 @@ const HubManager = ({ hubs = [], onRefresh }: HubManagerProps) => {
                           </Button>
                       }
                     />
+                    {/* Delete Button */}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => setHubToDelete(hub)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -72,14 +111,14 @@ const HubManager = ({ hubs = [], onRefresh }: HubManagerProps) => {
                     <span className="text-muted-foreground flex items-center gap-1 shrink-0">
                         <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> <span className="hidden xs:inline">Activity</span>
                     </span>
-                    <Badge variant="outline" className={`text-[10px] sm:text-xs px-1.5 py-0.5 whitespace-nowrap ${getStatusColor(hub.status)}`}>
+                    <Badge variant="outline" className={`text-[10px] sm:text-xs px-1.5 py-0.5 whitespace-nowrap uppercase ${getStatusColor(hub.status)}`}>
                         {hub.status} Activity
                     </Badge>
                   </div>
 
                   {/* Progress Bar */}
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-[10px] sm:text-xs font-medium gap-2">
+                    <div className="flex justify-between text-[10px] sm:text-xs font-medium gap-2 uppercase">
                       <span className="truncate">Occupancy</span>
                       <span className={`shrink-0 ${usage > 90 ? "text-red-600 font-bold" : "text-muted-foreground"}`}>
                         {hub.occupied} / {hub.capacity} ({Math.round(usage)}%)
@@ -97,10 +136,32 @@ const HubManager = ({ hubs = [], onRefresh }: HubManagerProps) => {
         {hubs.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-muted/10">
                 <Building2 className="h-10 w-10 mb-2 opacity-20" />
-                <p>No Innovation Hubs found.</p>
+                <p className="uppercase">No Innovation Hubs found.</p>
             </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!hubToDelete} onOpenChange={(open) => !open && setHubToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="uppercase">Are you absolutely sure?</DialogTitle>
+            <DialogDescription className="uppercase">
+              This action cannot be undone. This will permanently delete the innovation hub{" "}
+              <span className="font-semibold text-foreground">{hubToDelete?.name?.toUpperCase()}</span> and all associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setHubToDelete(null)} disabled={isDeleting} className="uppercase">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="uppercase">
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Hub
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

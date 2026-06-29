@@ -1,27 +1,31 @@
 import axios from "axios";
 
 // Resolve baseURL dynamically
-const getBaseURL = () => {
-  if (typeof window !== "undefined") {
-    const { hostname, protocol } = window.location;
-    // If accessing via IP or localhost directly on port 8081/8082, 
-    // the backend is likely on 8000
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.50.")) {
-      return `${protocol}//${hostname}:8000/api`;
-    }
-    // Otherwise assume standard production routing (/api proxied by nginx)
-    // 🚨 Respect the current protocol (http or https)
-    if (hostname.endsWith(".zchpc.ac.zw")) {
-      return `${protocol}//${hostname}/api`;
-    }
-    return `${protocol}//${hostname}/api`;
-  }
-  return "https://tesc.zchpc.ac.zw/api";
-};
+// const getBaseURL = () => {
+//   if (typeof window !== "undefined") {
+//     const { hostname, protocol } = window.location;
+//     // If accessing via IP or localhost directly on port 8081/8082,
+//     // the backend is likely on 8000
+//     if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.50.")) {
+//       return `${protocol}//${hostname}:8000/api`;
+//     }
+//     // Otherwise assume standard production routing (/api proxied by nginx)
+//     if (hostname.endsWith(".zchpc.ac.zw")) {
+//       return `${protocol}//${hostname}/api`;
+//     }
+//     return `${protocol}//${hostname}/api`;
+//   }
+//   // Server-side fallback – use environment variable or a sensible default
+//   return "http://127.0.0.1:8000/api";
+// };
 
-export const baseURL = getBaseURL();
+
+// export const baseURL = getBaseURL();
+export const baseURL = "http://127.0.0.1:8000/api";
+
+
 const apiClient = axios.create({
-  baseURL: baseURL,
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -61,16 +65,15 @@ apiClient.interceptors.response.use(
 
     // If the error is 401 (Unauthorized) and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      
-      // Safety: If the refresh request OR login request itself fails, don't try to refresh
+      // Skip retry for login/refresh endpoints themselves
       if (originalRequest.url?.includes("/users/token/")) {
-        // If it was the refresh token failing, clear and redirect
+        // If it's the refresh endpoint failing, clear tokens and redirect
         if (originalRequest.url?.includes("/users/token/refresh/")) {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            window.location.href = "/";
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          window.location.href = "/";
         }
-        // If it was the login failing, just pass the error through to the component
+        // For login failures, just pass the error to the component
         return Promise.reject(error);
       }
 
@@ -79,7 +82,7 @@ apiClient.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            originalRequest.headers["Authorization"] = `Bearer ${token}`;
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             return apiClient(originalRequest);
           })
           .catch((err) => Promise.reject(err));
@@ -96,7 +99,6 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        // We use a clean axios instance here to avoid interceptor loops
         const response = await axios.post(`${baseURL}/users/token/refresh/`, {
           refresh: refreshToken,
         });
@@ -104,9 +106,9 @@ apiClient.interceptors.response.use(
         const { access } = response.data;
         localStorage.setItem("accessToken", access);
 
-        // Update the current request and the instance defaults
-        apiClient.defaults.headers.common["Authorization"] = `Bearer ${access}`;
-        originalRequest.headers["Authorization"] = `Bearer ${access}`;
+        // Update default and current request headers
+        apiClient.defaults.headers.common.Authorization = `Bearer ${access}`;
+        originalRequest.headers.Authorization = `Bearer ${access}`;
 
         processQueue(null, access);
         return apiClient(originalRequest);

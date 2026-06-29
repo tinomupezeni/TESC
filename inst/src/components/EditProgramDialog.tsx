@@ -85,7 +85,10 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
     faculty: program.faculty?.toString() || "",
     department: program.department?.toString() || "",
     categories: Array.isArray(program.categories) ? program.categories : [program.category].filter(Boolean),
-    duration: program.duration?.toString() || "",
+    duration_years: program.duration_years?.toString() || "0",
+    duration_months: program.duration_months?.toString() || "0",
+    duration_weeks: program.duration_weeks?.toString() || "0",
+    duration_days: program.duration_days?.toString() || "0",
     levels: Array.isArray(program.levels) ? program.levels : [program.level].filter(Boolean),
     description: program.description || "",
     coordinator: program.coordinator || "",
@@ -120,7 +123,7 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
   }, [open, institutionId]);
 
   const filteredDepartments = useMemo(() => {
-    if (!formData.faculty) return [];
+    if (!formData.faculty) return departments;
     return departments.filter(d => d.faculty.toString() === formData.faculty);
   }, [departments, formData.faculty]);
 
@@ -156,11 +159,32 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
         return;
       }
 
+      const yrs = parseInt(formData.duration_years) || 0;
+      const mths = parseInt(formData.duration_months) || 0;
+      const wks = parseInt(formData.duration_weeks) || 0;
+      const dys = parseInt(formData.duration_days) || 0;
+
+      if (yrs === 0 && mths === 0 && wks === 0 && dys === 0) {
+        toast.error("Please specify a program duration (at least one field must be > 0).");
+        setLoading(false);
+        return;
+      }
+
       const payload = {
-        ...formData,
-        department: parseInt(formData.department),
-        duration: parseInt(formData.duration),
+        department: formData.department ? parseInt(formData.department) : null,
+        name: formData.name,
+        code: formData.code,
+        categories: formData.categories, 
+        duration_years: yrs,
+        duration_months: mths,
+        duration_weeks: wks,
+        duration_days: dys,
+        levels: formData.levels,
+        description: formData.description,
+        coordinator: formData.coordinator,
         student_capacity: parseInt(formData.student_capacity) || 0,
+        modules: formData.modules,
+        entry_requirements: formData.entry_requirements,
       };
 
       await updateProgram(program.id, payload);
@@ -195,33 +219,90 @@ export function EditProgramDialog({ program, institutionId, onSuccess }: EditPro
                 <Input id="name" value={formData.name} onChange={handleChange} required />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="code">Program Code *</Label>
                   <Input id="code" value={formData.code} onChange={handleChange} required />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (Years) *</Label>
-                  <Input id="duration" type="number" value={formData.duration} onChange={handleChange} required />
+                
+                <div className="space-y-2 p-3 border rounded-md bg-muted/20">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2">Program Duration</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_years" className="text-xs">Years</Label>
+                      <Input 
+                        id="duration_years" 
+                        type="number" 
+                        min="0"
+                        value={formData.duration_years} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_months" className="text-xs">Months</Label>
+                      <Input 
+                        id="duration_months" 
+                        type="number" 
+                        min="0"
+                        max="11"
+                        value={formData.duration_months} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_weeks" className="text-xs">Weeks</Label>
+                      <Input 
+                        id="duration_weeks" 
+                        type="number" 
+                        min="0"
+                        max="51"
+                        value={formData.duration_weeks} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_days" className="text-xs">Days</Label>
+                      <Input 
+                        id="duration_days" 
+                        type="number" 
+                        min="0"
+                        max="364"
+                        value={formData.duration_days} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="p-4 bg-muted/30 rounded-md border space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Faculty *</Label>
-                    <Select value={formData.faculty} onValueChange={(v) => handleSelectChange("faculty", v)}>
+                    <Label>Faculty</Label>
+                    <Select value={formData.faculty || "none"} onValueChange={(v) => {
+                      const actualVal = v === "none" ? "" : v;
+                      handleSelectChange("faculty", actualVal);
+                    }}>
                       <SelectTrigger><SelectValue placeholder="Select faculty" /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">None (No Faculty)</SelectItem>
                         {faculties.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Department *</Label>
-                    <Select value={formData.department} onValueChange={(v) => handleSelectChange("department", v)} disabled={!formData.faculty}>
+                    <Label>Department</Label>
+                    <Select value={formData.department || "none"} onValueChange={(v) => {
+                      const actualVal = v === "none" ? "" : v;
+                      handleSelectChange("department", actualVal);
+                    }} disabled={filteredDepartments.length === 0}>
                       <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">None (No Department)</SelectItem>
                         {filteredDepartments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
                       </SelectContent>
                     </Select>

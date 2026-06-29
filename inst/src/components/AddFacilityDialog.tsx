@@ -49,15 +49,22 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
   }, [institutionId]);
 
   const handleInputChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-) => {
-  const { id, value } = e.target;
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
 
-  const numericFields = ['capacity', 'current_usage'];
-  const val = numericFields.includes(id) ? parseInt(value) || 0 : value;
+    // Validate Phone Number: Remove any non-numeric or special characters that aren't allowed
+    if (id === "contact_number") {
+      const cleanedValue = value.replace(/[^0-9+\s()-]/g, "");
+      setFormData(prev => ({ ...prev, [id]: cleanedValue }));
+      return;
+    }
 
-  setFormData(prev => ({ ...prev, [id]: val }));
-};
+    const numericFields = ['capacity', 'current_usage'];
+    const val = numericFields.includes(id) ? parseInt(value) || 0 : value;
+
+    setFormData(prev => ({ ...prev, [id]: val }));
+  };
 
 
   const handleSelectChange = (field: keyof CreateFacilityData, value: string) => {
@@ -118,7 +125,7 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
           Add Facility
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Add New Facility</DialogTitle>
           <DialogDescription>Register a new institutional facility</DialogDescription>
@@ -155,20 +162,26 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="capacity">Capacity *</Label>
-              <Input id="capacity" type="number" placeholder="50" required onChange={handleInputChange} />
+              <Input 
+                id="capacity" 
+                type="number" 
+                min={0}
+                placeholder="50" 
+                required 
+                onChange={handleInputChange} 
+              />
             </div>
 
-          <div className="space-y-2">
-    <Label htmlFor="current_usage">Current Usage</Label>
-    <Input
-      id="current_usage"
-      type="number"
-      min={0}
-      placeholder="e.g. 35"
-      onChange={handleInputChange}
-    />
-  </div>
-
+            <div className="space-y-2">
+              <Label htmlFor="current_usage">Current Usage</Label>
+              <Input
+                id="current_usage"
+                type="number"
+                min={0}
+                placeholder="e.g. 35"
+                onChange={handleInputChange}
+              />
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -207,7 +220,13 @@ export function AddFacilityDialog({ onFacilityAdded }: { onFacilityAdded?: () =>
             </div>
             <div className="space-y-2">
               <Label htmlFor="contact_number">Contact Number</Label>
-              <Input id="contact_number" type="tel" placeholder="+263 77 123 4567" onChange={handleInputChange} />
+              <Input 
+                id="contact_number" 
+                type="tel" 
+                placeholder="+263 77 123 4567" 
+                value={formData.contact_number || ""}
+                onChange={handleInputChange} 
+              />
             </div>
           </div>
 

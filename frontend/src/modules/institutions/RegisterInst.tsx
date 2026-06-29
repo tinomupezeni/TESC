@@ -38,7 +38,6 @@ const INSTITUTION_TYPES: InstitutionWriteData["type"][] = [
   "Polytechnic",
   "Teachers College",
   "Industrial Training",
-  "Other",
 ];
 const INSTITUTION_STATUSES: InstitutionWriteData["status"][] = [
   "Active",

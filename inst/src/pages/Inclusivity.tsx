@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 // Components & Services
 import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
+import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { InclusivityStudent, InclusivityStudentsAPIResponse, getInclusivityStudents } from "../services/reports.services";
 
 
@@ -102,7 +103,8 @@ const Inclusivity = () => {
               <CardTitle className="text-lg sm:text-xl">Inclusivity Students Directory</CardTitle>
               <CardDescription className="text-xs sm:text-sm">List of students by inclusivity category</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <AddStudentDialog onStudentAdded={fetchInclusivityStudents} />
               <div className="flex-1 sm:flex-none">
                 <Dialog>
                   <DialogTrigger asChild>

@@ -103,7 +103,7 @@ export default function SpecialEnrollmentDashboard() {
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} sm:outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
+                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} labelLine={false} label={renderCustomizedLabel}>
                       {pieData.map((entry, index) => <Cell key={index} fill={COLOR_MAP[entry.name] || "#6B7280"} />)}
                     </Pie>
                     <Tooltip wrapperStyle={{ fontSize: '10px' }} />
@@ -120,7 +120,7 @@ export default function SpecialEnrollmentDashboard() {
               {iseopPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={iseopPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} sm:outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
+                    <Pie data={iseopPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60}labelLine={false} label={renderCustomizedLabel}>
                       {iseopPieData.map((entry, index) => <Cell key={index} fill={COLOR_MAP[entry.name] || "#6B7280"} />)}
                     </Pie>
                     <Tooltip wrapperStyle={{ fontSize: '10px' }} />

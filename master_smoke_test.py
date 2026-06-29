@@ -3,7 +3,7 @@ import os
 import sys
 
 # List of all smoke tests to run
-smoke_tests = [
+TEST_SCRIPTS = [
     "smoke_test.py",
     "smoke_test_admin.py",
     "smoke_test_inst.py",
@@ -17,7 +17,10 @@ smoke_tests = [
     "smoke_test_report_isolation.py",
     "smoke_test_graduates.py",
     "smoke_test_student_quick_graduate.py",
-    "smoke_test_iseop.py"
+    "smoke_test_iseop.py",
+    "smoke_test_facilities.py",
+    "smoke_test_innovation.py",
+    "smoke_test_student_bulk_delete.py"
 ]
 
 def run_test(script_path):
@@ -48,10 +51,10 @@ def run_test(script_path):
 if __name__ == "__main__":
     print(f"--- TESC MASTER SMOKE TEST RUNNER ---")
     print(f"Target: https://localhost/api")
-    print(f"Tests: {len(smoke_tests)}")
+    print(f"Tests: {len(TEST_SCRIPTS)}")
     
     results = []
-    for test in smoke_tests:
+    for test in TEST_SCRIPTS:
         if os.path.exists(test):
             success = run_test(test)
             results.append((test, success))

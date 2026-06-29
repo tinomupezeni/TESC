@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { 
   Upload, FileSpreadsheet, AlertCircle, CheckCircle2, 
@@ -15,10 +15,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-// You'll need to create this service function
 import { bulkUploadStaff } from "@/services/staff.services"; 
 
 // Required columns for validation
@@ -30,7 +28,7 @@ const REQUIRED_COLUMNS = [
   "employee_id", 
   "position", 
   "qualification",
-  "faculty_name", // We use names in excel, backend maps to IDs
+  "faculty_name", 
   "department_name" 
 ];
 
@@ -38,11 +36,24 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [serverErrors, setServerErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // File Preview States
+  const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+  const [previewRows, setPreviewRows] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!open) {
+      setFile(null);
+      setValidationError(null);
+      setServerErrors([]);
+      setPreviewHeaders([]);
+      setPreviewRows([]);
+    }
+  }, [open]);
 
   // --- Handlers ---
 
@@ -50,7 +61,6 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // 1. Basic Type Check
     if (!selectedFile.name.match(/\.(xlsx|csv)$/)) {
       setValidationError("Please upload a valid Excel (.xlsx) or CSV file.");
       return;
@@ -58,53 +68,42 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
 
     setFile(selectedFile);
     setValidationError(null);
-    setIsAnalyzing(true);
+    setServerErrors([]);
 
-    try {
-      // 2. Client-Side Parsing & Validation
-      const data = await parseExcelFile(selectedFile);
-      
-      // Check Headers
-      const headers = Object.keys(data[0] || {});
-      const missingColumns = REQUIRED_COLUMNS.filter(col => !headers.includes(col));
-
-      if (missingColumns.length > 0) {
-        setValidationError(`Missing required columns: ${missingColumns.join(", ")}`);
-        setFile(null); // Reset file if invalid
-      } else {
-        setPreviewData(data.slice(0, 3)); // Show first 3 rows as preview
-      }
-    } catch (error) {
-      console.error("Error parsing file:", error);
-      setValidationError("Could not read file. It might be corrupted.");
-      setFile(null);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const parseExcelFile = (file: File): Promise<any[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "binary" });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(sheet);
-          resolve(jsonData);
-        } catch (err) {
-          reject(err);
+    // Client-side header check and preview extraction
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        if (data.length > 0) {
+          const rawHeaders = data[0] as string[];
+          const headers = rawHeaders.map(h => String(h || "").toLowerCase().trim().replace(/ /g, '_'));
+          const missing = REQUIRED_COLUMNS.filter(col => !headers.includes(col));
+          
+          if (missing.length > 0) {
+            setValidationError(`Missing required columns: ${missing.join(", ")}`);
+            setFile(null);
+            setPreviewHeaders([]);
+            setPreviewRows([]);
+          } else {
+            setPreviewHeaders(rawHeaders);
+            setPreviewRows(data.slice(1, 6)); // Extract first 5 rows
+          }
         }
-      };
-      reader.onerror = (error) => reject(error);
-      reader.readAsBinaryString(file);
-    });
+      } catch (err) {
+        setValidationError("Failed to parse the file. Please check if the file format is valid.");
+        setFile(null);
+      }
+    };
+    reader.readAsBinaryString(selectedFile);
   };
 
   const handleDownloadTemplate = () => {
-    // Create a dummy template
     const templateData = [
       {
         first_name: "John",
@@ -131,8 +130,8 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
     if (!file || !user?.institution?.id) return;
     
     setIsUploading(true);
+    setServerErrors([]);
     try {
-      // Create FormData to send file to backend
       const formData = new FormData();
       formData.append("file", file);
       formData.append("institution_id", user.institution.id.toString());
@@ -142,13 +141,17 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
       toast.success("Bulk upload successful! Records are being processed.");
       setOpen(false);
       setFile(null);
-      setPreviewData([]);
       if (onSuccess) onSuccess();
       
     } catch (error: any) {
       console.error(error);
-      const msg = error.response?.data?.detail || "Upload failed. Please check your data format.";
-      toast.error(msg);
+      const errors = error.response?.data?.errors;
+      if (errors && errors.length > 0) {
+        setServerErrors(errors);
+        toast.error("Upload completed with errors. Please check the error list.");
+      } else {
+        setValidationError(error.response?.data?.detail || "Upload failed. Please check your data format.");
+      }
     } finally {
       setIsUploading(false);
     }
@@ -162,7 +165,7 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
           Bulk Upload
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Bulk Upload Staff</DialogTitle>
           <DialogDescription>
@@ -170,8 +173,7 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          
+        <div className="space-y-4 py-2">
           {/* 1. Template Download */}
           <div className="bg-muted/30 p-4 rounded-md border border-dashed flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -183,70 +185,107 @@ export function UploadStaffDialog({ onSuccess }: { onSuccess?: () => void }) {
                 <p className="text-xs text-muted-foreground">Use this format to avoid errors</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleDownloadTemplate}>
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               Template
             </Button>
           </div>
 
           {/* 2. File Drop Zone */}
-          {!file ? (
-            <div 
-              className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/20 cursor-pointer transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={handleFileChange}
-              />
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-              <p className="text-sm font-medium">Click to select file</p>
-              <p className="text-xs text-muted-foreground mt-1">.xlsx or .csv (Max 5MB)</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-                {/* File Selected State */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Step 2: Upload Data</p>
+            {!file ? (
+              <div 
+                className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/20 cursor-pointer transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={handleFileChange}
+                />
+                <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm font-medium">Click to select file</p>
+                <p className="text-xs text-muted-foreground mt-1">.xlsx or .csv (Max 5MB)</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 border rounded-md bg-background">
-                    <div className="flex items-center gap-3">
-                        <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                        <div>
-                            <p className="text-sm font-medium">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
-                        </div>
+                  <div className="flex items-center gap-3">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => { setFile(null); setPreviewData([]); setValidationError(null); }}>
-                        <X className="h-4 w-4" />
-                    </Button>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => { setFile(null); setPreviewHeaders([]); setPreviewRows([]); setValidationError(null); setServerErrors([]); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
 
-                {/* Validation Error */}
-                {validationError && (
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Validation Error</AlertTitle>
-                        <AlertDescription>{validationError}</AlertDescription>
-                    </Alert>
+                {previewRows.length > 0 && (
+                  <div className="space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      <span>File Preview (First 5 Rows)</span>
+                    </div>
+                    <div className="overflow-x-auto border rounded-md max-h-[160px] bg-muted/5 scrollbar-thin">
+                      <table className="w-full text-[10px] sm:text-xs text-left border-collapse">
+                        <thead>
+                          <tr className="bg-muted/80 border-b">
+                            {previewHeaders.map((header, idx) => (
+                              <th key={idx} className="p-2 font-medium text-muted-foreground border-r whitespace-nowrap">
+                                {header}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewRows.map((row, rowIdx) => (
+                            <tr key={rowIdx} className="border-b last:border-0 hover:bg-muted/10">
+                              {previewHeaders.map((_, colIdx) => (
+                                <td key={colIdx} className="p-2 border-r truncate max-w-[120px]">
+                                  {row[colIdx] !== undefined ? String(row[colIdx]) : ""}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
+              </div>
+            )}
+          </div>
 
-                {/* Success Preview */}
-                {!validationError && !isAnalyzing && (
-                    <Alert className="border-green-200 bg-green-50 dark:bg-green-900/10">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertTitle className="text-green-700 dark:text-green-400">File Ready</AlertTitle>
-                        <AlertDescription className="text-green-600 dark:text-green-300 text-xs mt-1">
-                            Successfully parsed {previewData.length > 0 ? "data" : "file"}. 
-                            Detected columns match requirements.
-                        </AlertDescription>
-                    </Alert>
-                )}
-            </div>
+          {validationError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Validation Error</AlertTitle>
+              <AlertDescription>{validationError}</AlertDescription>
+            </Alert>
+          )}
+
+          {serverErrors.length > 0 && (
+            <Alert variant="destructive" className="max-h-[150px] overflow-y-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Upload Failed</AlertTitle>
+              <AlertDescription>
+                <p className="mb-2 text-xs font-semibold">Please fix the following validation errors and try again:</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  {serverErrors.map((err, i) => (
+                    <li key={i} className="text-[11px]">{err}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="pt-2 border-t">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isUploading}>Cancel</Button>
           <Button onClick={handleUpload} disabled={!file || !!validationError || isUploading}>
             {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -378,6 +378,8 @@ const Settings = () => {
                   <Input 
                     id="established" 
                     type="number"
+                    min={1900}
+                    max={new Date().getFullYear()}
                     value={instData.established} 
                     onChange={(e) => setInstData({...instData, established: parseInt(e.target.value) || 2000})}
                     className="h-9 sm:h-10 text-xs sm:text-sm" 
@@ -391,6 +393,7 @@ const Settings = () => {
                   <Input 
                     id="capacity" 
                     type="number"
+                    min={0}
                     value={instData.capacity} 
                     onChange={(e) => setInstData({...instData, capacity: parseInt(e.target.value) || 0})}
                     className="h-9 sm:h-10 text-xs sm:text-sm" 

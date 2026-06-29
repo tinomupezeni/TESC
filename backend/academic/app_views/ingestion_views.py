@@ -30,13 +30,20 @@ class ValidateUploadView(APIView):
         if not file:
             return Response({'error': 'No file uploaded'}, status=400)
             
+        institution_id = request.query_params.get('institution_id') or request.data.get('institution_id')
+        if not institution_id:
+            if hasattr(request.user, 'institution') and request.user.institution:
+                institution_id = request.user.institution.id
+            elif hasattr(request.user, 'staff') and request.user.staff.institution:
+                institution_id = request.user.staff.institution.id
+            
         # Save file temporarily to validate
         import os
         from django.core.files.storage import default_storage
         file_path = default_storage.save(f'temp_{file.name}', file)
         
         try:
-            results = IngestionService.validate_upload(module_type, default_storage.path(file_path))
+            results = IngestionService.validate_upload(module_type, default_storage.path(file_path), institution_id)
             return Response(results)
         finally:
             os.remove(default_storage.path(file_path))

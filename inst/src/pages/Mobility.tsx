@@ -13,13 +13,21 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle,
-  CardDescription // Added CardDescription
+  CardDescription
 } from "@/components/ui/card";
-import { Globe, PlaneTakeoff, PlaneLanding } from "lucide-react";
+import { Globe, PlaneTakeoff, PlaneLanding, Upload } from "lucide-react";
 import { getMobility, InternationalMobility } from "@/services/mobility.services";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button"; // Added Button import
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
 
 export default function Mobility() {
   const [mobility, setMobility] = useState<InternationalMobility[]>([]);
@@ -63,6 +71,21 @@ export default function Mobility() {
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <div className="flex-1 sm:flex-none">
                 <AddMobilityDialog onSuccess={fetchMobility} />
+              </div>
+              <div className="flex-1 sm:flex-none">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Upload className="mr-2 h-4 w-4" /> Bulk Upload
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Bulk Upload International Mobility</DialogTitle>
+                    </DialogHeader>
+                    <BulkUploadResolver moduleType="mobility" onSuccess={fetchMobility} />
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </div>

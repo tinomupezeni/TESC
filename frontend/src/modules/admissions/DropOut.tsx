@@ -124,8 +124,8 @@ export default function DropoutAnalysis() {
     cy="50%"
     innerRadius={50}
     outerRadius={80}
-    sm:innerRadius={80}
-    sm:outerRadius={120}
+    innerRadius={80}
+    outerRadius={120}
     paddingAngle={2}
     stroke="none"
     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}

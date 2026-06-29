@@ -88,28 +88,52 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='bulk-actions', parser_classes=[JSONParser])
     def bulk_actions(self, request):
         """
-        Handles bulk delete or revert status for graduates.
-        Payload: { "student_ids": [1, 2, 3], "action": "delete" | "revert" }
+        Handles bulk graduation or revert status for students.
+        Payload: { 
+            "student_ids": [1, 2, 3], 
+            "action": "graduate" | "revert",
+            "graduation_year": 2024,
+            "final_grade": "Pass" 
+        }
         """
         student_ids = request.data.get('student_ids', [])
         action_type = request.data.get('action')
+        grad_year = request.data.get('graduation_year')
+        final_grade = request.data.get('final_grade', 'Pass')
 
         if not student_ids or not isinstance(student_ids, list):
             return Response({"detail": "Invalid or missing 'student_ids' list."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Ensure we only act on students belonging to the user's institution
-        queryset = self.get_queryset().filter(id__in=student_ids, status='Graduated')
+        queryset = self.get_queryset().filter(id__in=student_ids)
 
-        if action_type == 'delete':
+        if action_type == 'graduate':
+            if not grad_year:
+                return Response({"detail": "Graduation year is required for 'graduate' action."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            count = queryset.update(
+                status='Graduated', 
+                graduation_year=grad_year, 
+                final_grade=final_grade
+            )
+            return Response({"message": f"Successfully graduated {count} students."})
+        
+        elif action_type == 'revert':
+            # Revert only those that are currently Graduated
+            count = queryset.filter(status='Graduated').update(
+                status='Active', 
+                graduation_year=None, 
+                final_grade=None
+            )
+            return Response({"message": f"Successfully reverted {count} students back to Active status."})
+        
+        elif action_type == 'delete':
+            # Keep delete but maybe restrict it?
             count, _ = queryset.delete()
             return Response({"message": f"Successfully deleted {count} records."})
         
-        elif action_type == 'revert':
-            count = queryset.update(status='Active', graduation_year=None, final_grade=None)
-            return Response({"message": f"Successfully reverted {count} students back to Active status."})
-        
         else:
-            return Response({"detail": "Invalid action. Choose 'delete' or 'revert'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid action. Choose 'graduate', 'revert' or 'delete'."}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='bulk-upload', parser_classes=[MultiPartParser, FormParser])
     def bulk_upload(self, request):
@@ -255,6 +279,8 @@ class GraduateViewSet(InstitutionalIsolationMixin, viewsets.ViewSet):
         # Group by program
         cohorts = {}
         for student in eligible_students:
+            if not student.program:
+                continue
             prog_id = student.program.id
             if prog_id not in cohorts:
                 cohorts[prog_id] = {

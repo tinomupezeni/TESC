@@ -42,7 +42,7 @@ class DynamicReportService:
         # Apply institutional isolation
         if user and not user.is_superuser:
             if hasattr(user, 'institution') and user.institution:
-                if report_type in ['placements', 'scholarships']:
+                if report_type in ['placements', 'scholarships', 'mobility']:
                     queryset = queryset.filter(student__institution=user.institution)
                 else:
                     queryset = queryset.filter(institution=user.institution)
@@ -164,6 +164,8 @@ class DynamicReportService:
                 'institution_name': 'student__institution_id',
                 'program_name': 'student__program_id',
                 'gender': 'student__gender',
+                'student_id_number': 'student__student_id',
+                'student_name': 'student__first_name',
             },
             'scholarships': {
                 'institution_name': 'student__institution_id',

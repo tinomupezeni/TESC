@@ -122,6 +122,20 @@ class StaffViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({"detail": "No IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        queryset = self.get_queryset().filter(id__in=ids)
+        count = queryset.count()
+        
+        for instance in queryset:
+            StaffService.delete_staff(instance)
+            
+        return Response({"message": f"Successfully deleted {count} staff records."}, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['post'], url_path='bulk_upload')
     def bulk_upload(self, request):
         file_obj = request.FILES.get('file')

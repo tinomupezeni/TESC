@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 // Components & Services
 import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
+import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { StemStudent, StemStudentsAPIResponse, getStemStudents } from "../services/reports.services";
 
 
@@ -104,7 +105,8 @@ const StemStudents = () => {
               <CardTitle className="text-lg sm:text-xl">STEM Students Directory</CardTitle>
               <CardDescription className="text-xs sm:text-sm">Comprehensive list of STEM program students</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <AddStudentDialog onStudentAdded={fetchStemStudents} />
               <div className="flex-1 sm:flex-none">
                 <Dialog>
                   <DialogTrigger asChild>

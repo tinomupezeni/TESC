@@ -250,7 +250,12 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
                 </div>
                 <div className="space-y-2">
                   <Label>Date Filed *</Label>
-                  <Input type="date" value={formData.date_filed} onChange={e => handleChange('date_filed', e.target.value)} />
+                  <Input 
+                    type="date" 
+                    max={new Date().toISOString().split('T')[0]}
+                    value={formData.date_filed} 
+                    onChange={e => handleChange('date_filed', e.target.value)} 
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -265,15 +270,30 @@ export const ProjectFormDialog = ({ project, trigger, onSuccess }: ProjectFormPr
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Revenue ($)</Label>
-              <Input type="number" value={formData.revenue_generated} onChange={e => handleChange('revenue_generated', parseFloat(e.target.value))} />
+              <Input 
+                type="number" 
+                min={0}
+                value={formData.revenue_generated} 
+                onChange={e => handleChange('revenue_generated', parseFloat(e.target.value))} 
+              />
             </div>
             <div className="space-y-2">
               <Label>Funding ($)</Label>
-              <Input type="number" value={formData.funding_acquired} onChange={e => handleChange('funding_acquired', parseFloat(e.target.value))} />
+              <Input 
+                type="number" 
+                min={0}
+                value={formData.funding_acquired} 
+                onChange={e => handleChange('funding_acquired', parseFloat(e.target.value))} 
+              />
             </div>
             <div className="space-y-2">
               <Label>Jobs Created</Label>
-              <Input type="number" value={formData.jobs_created} onChange={e => handleChange('jobs_created', parseInt(e.target.value))} />
+              <Input 
+                type="number" 
+                min={0}
+                value={formData.jobs_created} 
+                onChange={e => handleChange('jobs_created', parseInt(e.target.value))} 
+              />
             </div>
           </div>
           

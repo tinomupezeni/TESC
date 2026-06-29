@@ -25,7 +25,7 @@ export const getPlacementsStats = async (filters = {}) => {
     const response = await apiClient.post<PlacementsReportResponse>("/v1/reports/dynamic/preview/", {
         report_type: "placements",
         filters,
-        columns: ["student_id_number", "student_name", "placement_type", "company_name", "institution_name", "gender"]
+        columns: ["student_id_number", "student_name", "placement_type", "company_name", "gender"]
     });
     return response.data;
 };

@@ -93,12 +93,17 @@ PROGRAM_TYPES = [
 ]
 
 class Program(models.Model):
-    # Changed from Faculty to Department
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='programs')
+    # Changed from Faculty to Department (relaxed to optional)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='programs')
+    institution = models.ForeignKey('academic.Institution', on_delete=models.CASCADE, null=True, blank=True, related_name='programs')
     
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, help_text="e.g., BSCS")
-    duration = models.PositiveIntegerField(help_text="Duration in years")
+    duration = models.DecimalField(max_digits=6, decimal_places=3, default=0.000, help_text="Duration in years")
+    duration_years = models.PositiveIntegerField(default=0)
+    duration_months = models.PositiveIntegerField(default=0)
+    duration_weeks = models.PositiveIntegerField(default=0)
+    duration_days = models.PositiveIntegerField(default=0)
     
     # --- Refactored to support multiple selections ---
     levels = models.JSONField(default=list, help_text="List of levels applicable to this program (e.g. ['Class 4', 'Class 3'])")
@@ -111,6 +116,7 @@ class Program(models.Model):
     
     # --- NEW PHASE 1 FIELDS ---
     is_critical_skill = models.BooleanField(default=False, help_text="Flags this program as a critical national skill")
+    is_specialized_skill = models.BooleanField(default=False, help_text="Flags this program as a specialized skill")
     program_type = models.CharField(max_length=50, choices=PROGRAM_TYPES, default='Degree')
     
     description = models.TextField(blank=True)
@@ -128,6 +134,19 @@ class Program(models.Model):
     class Meta:
         ordering = ['name']
         unique_together = ('department', 'code') 
+
+    def save(self, *args, **kwargs):
+        if self.department and not self.institution:
+            self.institution = self.department.faculty.institution
+        if self.duration_years > 0 or self.duration_months > 0 or self.duration_weeks > 0 or self.duration_days > 0:
+            from decimal import Decimal
+            self.duration = Decimal(str(
+                float(self.duration_years) + 
+                (float(self.duration_months) / 12.0) + 
+                (float(self.duration_weeks) / 52.0) + 
+                (float(self.duration_days) / 365.0)
+            ))
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.code})"

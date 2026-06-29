@@ -4,12 +4,9 @@ import axios from "axios";
 const getBaseURL = () => {
   if (typeof window !== "undefined") {
     const { hostname, protocol } = window.location;
-    // If accessing via IP or localhost directly on port 8081/8082, 
-    // the backend is likely on 8000
     if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.50.")) {
       return `${protocol}//${hostname}:8000/api`;
     }
-    // Otherwise assume standard production routing (/api proxied by nginx)
     if (hostname.endsWith(".zchpc.ac.zw")) {
       return `${protocol}//${hostname}/api`;
     }
@@ -25,14 +22,35 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-// Request Interceptor: Adds the token to headers
+// Since we cannot directly import useAuth (it's a hook, context provider wraps the app),
+// we need a mechanism to get the token.
+// A common pattern is to update the interceptor when the token changes,
+// or store it in a module-level variable that the AuthProvider updates.
+let currentToken: string | null = null;
+
+export const setTokenForApi = (token: string | null) => {
+  currentToken = token;
+};
+
+// Listeners to propagate refreshed tokens back to AuthContext
+type TokenRefreshListener = (token: string | null) => void;
+let tokenRefreshListener: TokenRefreshListener | null = null;
+
+export const onTokenRefresh = (cb: TokenRefreshListener) => {
+  tokenRefreshListener = cb;
+};
+
+// Request Interceptor: Adds the token to headers from module variable
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    console.log("Interceptor: Using token:", !!currentToken);
+    if (currentToken && config.headers) {
+      config.headers.Authorization = `Bearer ${currentToken}`;
+    } else {
+        console.warn("Interceptor: No access token available.");
     }
     return config;
   },
@@ -63,17 +81,10 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Check if error is 401 and not a retry
     if (error.response?.status === 401 && !originalRequest._retry) {
       
-      // Safety check: Prevent infinite loop if the refresh OR login endpoint itself returns 401
+      // Prevent infinite loop
       if (originalRequest.url?.includes("/instauth/login/") || originalRequest.url?.includes("/instauth/token/refresh/")) {
-        // Only redirect to home if it was the refresh token that failed
-        if (originalRequest.url?.includes("/instauth/token/refresh/")) {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            window.location.href = "/";
-        }
         return Promise.reject(error);
       }
 
@@ -91,35 +102,31 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) {
-        localStorage.removeItem("accessToken");
-        window.location.href = "/";
-        return Promise.reject(error);
-      }
-
       try {
-        // Use standard axios here to avoid triggering the interceptor loop
-        const response = await axios.post(`${baseURL}/instauth/token/refresh/`, {
-          refresh: refreshToken,
-        });
+        // Send a POST request to refresh. The browser automatically attaches the HttpOnly cookie.
+        const res = await apiClient.post("/instauth/token/refresh/");
+        const newAccessToken = res.data.access;
 
-        const { access } = response.data;
-        localStorage.setItem("accessToken", access);
+        setTokenForApi(newAccessToken);
 
-        // Update the main client and the current failed request
-        apiClient.defaults.headers.common["Authorization"] = `Bearer ${access}`;
-        originalRequest.headers["Authorization"] = `Bearer ${access}`;
+        if (tokenRefreshListener) {
+          tokenRefreshListener(newAccessToken);
+        }
 
-        processQueue(null, access);
+        processQueue(null, newAccessToken);
+        
+        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        console.error("Refresh token expired. Logging out.");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/";
-        return Promise.reject(refreshError);
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        
+        // If refresh fails, clear token and notify listener (which will trigger log out)
+        setTokenForApi(null);
+        if (tokenRefreshListener) {
+          tokenRefreshListener(null);
+        }
+        
+        return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }

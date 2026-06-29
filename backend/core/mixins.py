@@ -40,3 +40,38 @@ class InstitutionalIsolationMixin:
         # 5. Apply the institutional filter
         filter_kwargs = {self.institution_lookup_path: user_inst}
         return queryset.filter(**filter_kwargs)
+
+    def get_serializer(self, *args, **kwargs):
+        if not hasattr(super(), 'get_serializer'):
+            return None
+        serializer = super().get_serializer(*args, **kwargs)
+        request = self.request
+        if request and request.user and request.user.is_authenticated and not request.user.is_superuser:
+            user_inst = getattr(request.user, 'institution', None)
+            if not user_inst and hasattr(request.user, "inst_admin"):
+                user_inst = request.user.inst_admin.institution
+            
+            if user_inst:
+                # Restrict querysets of all related fields to the user's institution
+                for field_name, field in getattr(serializer, 'fields', {}).items():
+                    if hasattr(field, 'queryset') and field.queryset is not None:
+                        model = field.queryset.model
+                        model_name = model.__name__
+                        
+                        try:
+                            if model_name == 'Institution':
+                                field.queryset = field.queryset.filter(id=user_inst.id)
+                            elif hasattr(model, 'institution'):
+                                field.queryset = field.queryset.filter(institution=user_inst)
+                            elif hasattr(model, 'student'):
+                                field.queryset = field.queryset.filter(student__institution=user_inst)
+                            elif hasattr(model, 'department'):
+                                field.queryset = field.queryset.filter(department__institution=user_inst)
+                            elif hasattr(model, 'faculty'):
+                                field.queryset = field.queryset.filter(faculty__institution=user_inst)
+                            elif hasattr(model, 'program'):
+                                field.queryset = field.queryset.filter(program__department__faculty__institution=user_inst)
+                        except Exception:
+                            # Graceful fallback if lookup paths don't match
+                            pass
+        return serializer

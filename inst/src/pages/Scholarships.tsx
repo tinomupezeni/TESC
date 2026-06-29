@@ -13,12 +13,20 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle,
-  CardDescription // Added CardDescription
+  CardDescription
 } from "@/components/ui/card";
-import { GraduationCap, DollarSign, Calendar } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, Upload } from "lucide-react";
 import { getScholarships, StudentScholarship } from "@/services/scholarships.services";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button"; // Added Button import
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
 
 export default function Scholarships() {
   const [scholarships, setScholarships] = useState<StudentScholarship[]>([]);
@@ -61,6 +69,21 @@ export default function Scholarships() {
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <div className="flex-1 sm:flex-none">
                 <AddScholarshipDialog onSuccess={fetchScholarships} />
+              </div>
+              <div className="flex-1 sm:flex-none">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Upload className="mr-2 h-4 w-4" /> Bulk Upload
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Bulk Upload Student Scholarships</DialogTitle>
+                    </DialogHeader>
+                    <BulkUploadResolver moduleType="scholarships" onSuccess={fetchScholarships} />
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </div>

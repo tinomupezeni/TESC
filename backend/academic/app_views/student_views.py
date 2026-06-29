@@ -1,5 +1,6 @@
 from jsonschema import ValidationError
 from rest_framework import viewsets, status, filters, serializers
+from core.mixins import InstitutionalIsolationMixin
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -26,8 +27,6 @@ COLOR_MAP = {
 
 # Define STEM categories from PROGRAM_CATEGORIES
 STEM_CATEGORIES = [choice[0] for choice in PROGRAM_CATEGORIES if choice[0] in ['STEM']] # Add more STEM categories as needed
-
-from core.mixins import InstitutionalIsolationMixin
 
 class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     """
@@ -97,6 +96,7 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     def bulk_upload(self, request):
         file_obj = request.FILES.get('file')
         institution_id = request.data.get('institution_id')
+        confirm_creation = request.data.get('confirm_creation') == 'true' or request.data.get('confirm_creation') is True
 
         if not file_obj:
             return Response({"detail": "File is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -105,15 +105,27 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
             institution_id = request.user.institution.id
 
         try:
-            count = StudentService.bulk_create_from_file(file_obj, institution_id)
+            result = StudentService.bulk_create_from_file(file_obj, institution_id, confirm_creation=confirm_creation)
+            if isinstance(result, dict) and result.get("requires_approval"):
+                return Response(
+                    {
+                        "requires_approval": True,
+                        "new_programs": result["new_programs"],
+                        "message": "Some programs in the uploaded file do not exist. Please approve to create them."
+                    },
+                    status=status.HTTP_200_OK
+                )
+            count = result.get("count", 0) if isinstance(result, dict) else result
             return Response(
                 {"message": f"Successfully enrolled {count} students."},
                 status=status.HTTP_201_CREATED
             )
-        except ValidationError as e:
+        except (DjangoValidationError, serializers.ValidationError) as e:
             error_data = {}
             if hasattr(e, 'message_dict') and e.message_dict:
                 error_data = e.message_dict
+            elif hasattr(e, 'detail'):
+                error_data = {"detail": e.detail}
             elif hasattr(e, 'messages'):
                 error_data = {"detail": "Validation error", "errors": e.messages}
             else:
@@ -122,12 +134,164 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['get'], url_path='bulk_upload_template')
+    def bulk_upload_template(self, request):
+        """
+        Generates a dynamic Excel template for bulk student uploads.
+        Includes data validation (dropdowns) for specific choices to prevent GIGO.
+        """
+        from django.http import HttpResponse
+        from openpyxl import Workbook
+        from openpyxl.worksheet.datavalidation import DataValidation
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Students_Template"
+
+        # Define columns matching the schema fields
+        columns = [
+            "Student ID", "First Name", "Last Name", "Gender", "Enrollment Year",
+            "Enrollment Semester", "National ID", "Date of Birth", "Faculty", "Department",
+            "Program Name", "Program Code", "Status", "Dropout Reason", "Is Work For Fees",
+            "Work Area", "Hours Pledged", "Inclusivity Category", "Disability Specifications"
+        ]
+        ws.append(columns)
+
+        # 1. Gender Validation (Male, Female)
+        dv_gender = DataValidation(type="list", formula1='"Male,Female"', allow_blank=False)
+        dv_gender.error ='Your entry is not in the list (Male or Female)'
+        dv_gender.errorTitle = 'Invalid Gender'
+        dv_gender.prompt = 'Please select Gender'
+        dv_gender.promptTitle = 'Gender'
+        ws.add_data_validation(dv_gender)
+        dv_gender.add('D2:D1000')
+
+        # 2. Status Validation
+        status_options = ["Active", "Attachment", "Graduated", "Suspended", "Deferred", "Dropout"]
+        dv_status = DataValidation(type="list", formula1=f'"{",".join(status_options)}"', allow_blank=True)
+        dv_status.error ='Your entry is not in the list'
+        dv_status.errorTitle = 'Invalid Status'
+        ws.add_data_validation(dv_status)
+        dv_status.add('M2:M1000')
+
+        # 3. Is Work For Fees Validation
+        dv_work_fees = DataValidation(type="list", formula1='"TRUE,FALSE"', allow_blank=True)
+        dv_work_fees.error ='Must be TRUE or FALSE'
+        dv_work_fees.errorTitle = 'Invalid Selection'
+        ws.add_data_validation(dv_work_fees)
+        dv_work_fees.add('O2:O1000')
+
+        # 4. Enrollment Semester Validation
+        dv_semester = DataValidation(type="list", formula1='"Semester 1,Semester 2"', allow_blank=False)
+        dv_semester.error ='Must be Semester 1 or Semester 2'
+        dv_semester.errorTitle = 'Invalid Semester'
+        ws.add_data_validation(dv_semester)
+        dv_semester.add('F2:F1000')
+
+        # Formatting header to bold
+        for cell in ws[1]:
+            cell.font = cell.font.copy(bold=True)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=Student_Upload_Template.xlsx'
+        wb.save(response)
+        return response
+
     @action(detail=False, methods=['get'], url_path='stem-students')
     def stem_students(self, request):
         institution_id = request.query_params.get('institution_id')
         search_query = request.query_params.get('search')
 
-        queryset = self.get_queryset().filter(program__categories__contains=['STEM']) # Filter by STEM category
+        queryset = self.get_queryset().filter(
+            Q(program__categories__contains='STEM') |
+            Q(program__categories__contains=['STEM']) |
+            Q(program__category='STEM') |
+            Q(selected_category='STEM')
+        )
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+        if search_query:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(student_id__icontains=search_query) |
+                Q(program__name__icontains=search_query)
+            )
+
+        total_students = queryset.count()
+        male_students = queryset.filter(gender='Male').count()
+        female_students = queryset.filter(gender='Female').count()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({
+                "total_students": total_students,
+                "male_students": male_students,
+                "female_students": female_students,
+                "results": serializer.data
+            })
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "total_students": total_students,
+            "male_students": male_students,
+            "female_students": female_students,
+            "results": serializer.data
+        })
+
+    @action(detail=False, methods=['get'], url_path='specialized-students')
+    def specialized_students(self, request):
+        institution_id = request.query_params.get('institution_id')
+        search_query = request.query_params.get('search')
+
+        queryset = self.get_queryset().filter(
+            Q(program__is_specialized_skill=True) |
+            Q(selected_category='SPECIALIZED')
+        )
+
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+        if search_query:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(student_id__icontains=search_query) |
+                Q(program__name__icontains=search_query)
+            )
+
+        total_students = queryset.count()
+        male_students = queryset.filter(gender='Male').count()
+        female_students = queryset.filter(gender='Female').count()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({
+                "total_students": total_students,
+                "male_students": male_students,
+                "female_students": female_students,
+                "results": serializer.data
+            })
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "total_students": total_students,
+            "male_students": male_students,
+            "female_students": female_students,
+            "results": serializer.data
+        })
+
+    @action(detail=False, methods=['get'], url_path='critical-students')
+    def critical_students(self, request):
+        institution_id = request.query_params.get('institution_id')
+        search_query = request.query_params.get('search')
+
+        queryset = self.get_queryset().filter(
+            Q(program__is_critical_skill=True) |
+            Q(selected_category='CRITICAL')
+        )
 
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
@@ -164,10 +328,19 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='inclusivity-report')
     def inclusivity_report(self, request):
         institution_id = request.query_params.get('institution_id')
+        search_query = request.query_params.get('search')
         queryset = self.get_queryset().exclude(inclusivity_category__in=['None', '', None])
 
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
+        if search_query:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(student_id__icontains=search_query) |
+                Q(program__name__icontains=search_query) |
+                Q(inclusivity_category__icontains=search_query)
+            )
 
         total_students = queryset.count()
         male_students = queryset.filter(gender='Male').count()
@@ -184,11 +357,19 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='possible-graduates')
     def possible_graduates(self, request):
         institution_id = request.query_params.get('institution_id')
+        search_query = request.query_params.get('search')
         # Logic for eligible but not graduated students
         queryset = self.get_queryset().filter(status='Active').exclude(graduation_year__isnull=False)
 
         if institution_id:
             queryset = queryset.filter(institution_id=institution_id)
+        if search_query:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(student_id__icontains=search_query) |
+                Q(program__name__icontains=search_query)
+            )
 
         total_students = queryset.count()
         male_students = queryset.filter(gender='Male').count()

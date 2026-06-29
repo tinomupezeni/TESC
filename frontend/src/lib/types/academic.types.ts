@@ -50,7 +50,7 @@ export interface Facility {
 export interface Institution {
   id: number;
   name: string;
-  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' | 'Other';
+  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training';
   location: string;
   address: string;
   capacity: number;
@@ -65,7 +65,7 @@ export interface Institution {
 
 export interface InstitutionWriteData {
   name: string;
-  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' | 'Other';
+  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' ;
   location: string;
   address?: string;
   capacity: number;
@@ -101,7 +101,7 @@ export interface Student {
   full_name: string;
   first_name: string;
   last_name: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: 'Male' | 'Female' ;
   date_of_birth: string | null;
   enrollment_year: number;
   status: 'Active' | 'Attachment' | 'Graduated' | 'Suspended' | 'Deferred' | 'Dropout';
@@ -225,13 +225,13 @@ export interface GraduationStat {
   graduation_year: number;
   program__name: string;
   program__level: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: 'Male' | 'Female' ;
   total_graduates: number;
   disabilities: number;
   distinctions: number;
   credits: number;
   passes: number;
-  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' | 'Other';
+  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training';
 }
 
 // Summarized version for charts
@@ -242,7 +242,7 @@ export interface GraduationSummary {
   female: number;
   disabilities: number;
   programs: { [key: string]: number };
-  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' | 'Other';
+  type: 'Polytechnic' | 'Teachers College' | 'Industrial Trainin;
 }
 
 export interface StudentGraduate {
@@ -262,7 +262,7 @@ export interface StudentGraduate {
   final_grade: 'Distinction' | 'Credit' | 'Pass' | 'Fail';
   gender: string;
   status: 'Graduated';
-  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training' | 'Other';
+  type: 'Polytechnic' | 'Teachers College' | 'Industrial Training';
   // Additional fields from API
   distinctions: number;
   credits: number;
@@ -304,7 +304,7 @@ export interface IseopStudent {
   full_name: string;
   email?: string;
   phone?: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: 'Male' | 'Female';
   status: string;
   institution: number;
   institution_name: string;

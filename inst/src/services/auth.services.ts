@@ -8,7 +8,7 @@ interface LoginData {
 interface LoginResponse {
   tokens: {
     access: string;
-    refresh: string;
+    refresh?: string;
   };
   must_change_password: boolean;
   institution_id: number;
@@ -32,10 +32,9 @@ export const loginInstitutionAdmin = async (
 /**
  * Refresh JWT access token
  */
-export const refreshToken = async (refresh: string): Promise<{ access: string }> => {
+export const refreshToken = async (): Promise<{ access: string }> => {
   const response = await apiClient.post<{ access: string }>(
-    "/instauth/token/refresh/",
-    { refresh }
+    "/instauth/token/refresh/"
   );
   return response.data;
 };
@@ -50,8 +49,8 @@ export const verifyToken = async (token: string): Promise<void> => {
 /**
  * Logout institution admin
  */
-export const logoutInstitutionAdmin = async (refresh: string): Promise<void> => {
-  await apiClient.post("/instauth/logout/", { refresh });
+export const logoutInstitutionAdmin = async (): Promise<void> => {
+  await apiClient.post("/instauth/logout/");
 };
 
 /**

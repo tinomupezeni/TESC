@@ -94,15 +94,7 @@ const Register = () => {
 
       toast.success("Registration successful! Please log in.");
       
-      // ✅ FIX: Type-safe token extraction
-      const token = response.data.tokens.access;
-      
-      if (token) {
-        localStorage.setItem("token", token);
-        // Also store refresh token if needed
-        localStorage.setItem("refreshToken", response.data.tokens.refresh);
-        console.log('Token stored successfully');
-      }
+      // Tokens are not stored in localStorage for security
       
       navigate("/login");
     } catch (err: unknown) {

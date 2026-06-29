@@ -66,8 +66,10 @@ REPORT_SCHEMAS = {
             {'key': 'placement_type', 'label': 'Placement Type', 'type': 'choice', 'choices': ['Attachment', 'Apprenticeship'], 'filterable': True, 'selectable': True, 'groupable': True},
             {'key': 'company_name', 'label': 'Company Name', 'type': 'string', 'filterable': True, 'selectable': True, 'groupable': True},
             {'key': 'gender', 'label': 'Gender', 'type': 'choice', 'choices': STUDENT_GENDERS, 'filterable': True, 'selectable': True, 'groupable': True},
+            {'key': 'student_id_number', 'label': 'Student ID', 'type': 'string', 'filterable': False, 'selectable': True, 'groupable': False},
+            {'key': 'student_name', 'label': 'Student Name', 'type': 'string', 'filterable': False, 'selectable': True, 'groupable': False},
         ],
-        'default_columns': ['placement_type', 'company_name']
+        'default_columns': ['student_id_number', 'student_name', 'placement_type', 'company_name']
     },
     'scholarships': {
         'model': 'academic.StudentScholarship',

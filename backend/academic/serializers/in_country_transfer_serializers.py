@@ -9,6 +9,7 @@ class InCountryTransferSerializer(serializers.ModelSerializer):
         model = InCountryTransfer
         fields = [
             'id',
+            'student',
             'student_id_number',
             'student_name',
             'from_institution',

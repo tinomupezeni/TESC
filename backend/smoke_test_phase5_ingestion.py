@@ -7,7 +7,7 @@ import io
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "https://localhost/api"
 
 def smoke_test_phase5():
     print("🚀 Starting Phase 5 Smoke Test: Ingestion Engine...")
@@ -79,9 +79,10 @@ def smoke_test_phase5():
             raise Exception("Validation failed")
             
         results = res.json()
-        assert len(results) == 2
-        assert results[0]['status'] == 'Ready'
-        assert results[1]['status'] == 'Requires Student Creation'
+        assert results['status'] == 'success'
+        assert len(results['processed_data']) == 2
+        assert results['processed_data'][0]['status'] == 'Success'
+        assert results['processed_data'][1]['status'] == 'Success'
         
         print("✅ Ingestion validation smoke test passed.")
 

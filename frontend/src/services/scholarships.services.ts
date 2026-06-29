@@ -26,7 +26,7 @@ export const getScholarshipsStats = async (filters = {}) => {
     const response = await apiClient.post<ScholarshipsReportResponse>("/v1/reports/dynamic/preview/", {
         report_type: "scholarships",
         filters,
-        columns: ["student_id_number", "student_name", "provider_name", "amount", "year_awarded", "gender"]
+        columns: ["student_id_number", "student_name", "provider_name", "amount", "year_awarded"]
     });
     return response.data;
 };

@@ -63,6 +63,8 @@ const menuGroups = [
       { title: "Faculties", url: "/dashboard/faculties", icon: School }, // Changed icon to distinguish
       { title: "Programs", url: "/dashboard/programs", icon: BookOpen },
       { title: "STEM Students", url: "/dashboard/stem-students", icon: Users }, // Assuming Users icon for students
+      { title: "Specialized Skills", url: "/dashboard/specialized-students", icon: Users },
+      { title: "Critical Skills", url: "/dashboard/critical-students", icon: Users },
       { title: "Inclusivity Report", url: "/dashboard/inclusivity", icon: Users }, // Assuming Users icon for inclusivity
       { title: "Graduates", url: "/dashboard/graduates", icon: GraduationCap },
       { title: "Possible Graduates", url: "/dashboard/possible-graduates", icon: GraduationCap },

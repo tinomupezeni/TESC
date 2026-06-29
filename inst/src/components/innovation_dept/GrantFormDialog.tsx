@@ -134,6 +134,7 @@ export const GrantFormDialog = ({ grant, trigger, onSuccess }: GrantFormProps) =
               <Input
                 type="date"
                 required
+                max={new Date().toISOString().split('T')[0]}
                 value={formData.date_awarded}
                 onChange={(e) => setFormData({ ...formData, date_awarded: e.target.value })}
               />

@@ -483,6 +483,7 @@ export const EditStudentDialog: React.FC<EditStudentDialogProps> = ({
                 <Input
                   id="date_of_birth"
                   type="date"
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 9)).toISOString().split("T")[0]}
                   value={formData.date_of_birth || ""}
                   onChange={handleInputChange}
                   disabled={isLoading}

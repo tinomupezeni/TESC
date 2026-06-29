@@ -87,7 +87,10 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     faculty: "",
     department: "",
     categories: [] as string[], 
-    duration: "",
+    duration_years: "0",
+    duration_months: "0",
+    duration_weeks: "0",
+    duration_days: "0",
     levels: [] as string[],
     description: "",
     coordinator: "", 
@@ -130,7 +133,7 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
 
   // --- 2. Filter Departments ---
   const filteredDepartments = useMemo(() => {
-    if (!formData.faculty) return [];
+    if (!formData.faculty) return departments;
     return departments.filter(d => d.faculty.toString() === formData.faculty);
   }, [departments, formData.faculty]);
 
@@ -165,18 +168,32 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
     setLoading(true);
 
     try {
-      if (!formData.faculty || !formData.department || formData.categories.length === 0 || formData.levels.length === 0) {
-        toast.error("Please fill in all required fields including Faculty, Department, and at least one Category/Level.");
+      if (formData.categories.length === 0 || formData.levels.length === 0) {
+        toast.error("Please select at least one Category/Level.");
+        setLoading(false);
+        return;
+      }
+
+      const yrs = parseInt(formData.duration_years) || 0;
+      const mths = parseInt(formData.duration_months) || 0;
+      const wks = parseInt(formData.duration_weeks) || 0;
+      const dys = parseInt(formData.duration_days) || 0;
+
+      if (yrs === 0 && mths === 0 && wks === 0 && dys === 0) {
+        toast.error("Please specify a program duration (at least one field must be > 0).");
         setLoading(false);
         return;
       }
 
       const payload = {
-        department: parseInt(formData.department),
+        department: formData.department ? parseInt(formData.department) : null,
         name: formData.name,
         code: formData.code,
         categories: formData.categories, 
-        duration: parseInt(formData.duration),
+        duration_years: yrs,
+        duration_months: mths,
+        duration_weeks: wks,
+        duration_days: dys,
         levels: formData.levels,
         description: formData.description,
         coordinator: formData.coordinator,
@@ -230,8 +247,8 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                 />
               </div>
 
-              {/* Code & Duration */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Code & Duration Breakdown */}
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="code">Program Code *</Label>
                   <Input 
@@ -242,17 +259,58 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                     required 
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (Years) *</Label>
-                  <Input 
-                    id="duration" 
-                    type="number" 
-                    value={formData.duration} 
-                    onChange={handleChange} 
-                    placeholder="4" 
-                    min="1"
-                    required 
-                  />
+                
+                <div className="space-y-2 p-3 border rounded-md bg-muted/20">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2">Program Duration</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_years" className="text-xs">Years</Label>
+                      <Input 
+                        id="duration_years" 
+                        type="number" 
+                        min="0"
+                        value={formData.duration_years} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_months" className="text-xs">Months</Label>
+                      <Input 
+                        id="duration_months" 
+                        type="number" 
+                        min="0"
+                        max="11"
+                        value={formData.duration_months} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_weeks" className="text-xs">Weeks</Label>
+                      <Input 
+                        id="duration_weeks" 
+                        type="number" 
+                        min="0"
+                        max="51"
+                        value={formData.duration_weeks} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="duration_days" className="text-xs">Days</Label>
+                      <Input 
+                        id="duration_days" 
+                        type="number" 
+                        min="0"
+                        max="364"
+                        value={formData.duration_days} 
+                        onChange={handleChange} 
+                        placeholder="0" 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -289,17 +347,20 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="faculty">Faculty *</Label>
+                        <Label htmlFor="faculty">Faculty</Label>
                         <Select 
                             value={formData.faculty} 
-                            onValueChange={(val) => handleSelectChange("faculty", val)}
+                            onValueChange={(val) => {
+                              const actualVal = val === "none" ? "" : val;
+                              handleSelectChange("faculty", actualVal);
+                            }}
                             disabled={loadingData}
-                            required
                         >
                             <SelectTrigger id="faculty">
                             <SelectValue placeholder={loadingData ? "Loading..." : "Select faculty"} />
                             </SelectTrigger>
                             <SelectContent>
+                            <SelectItem value="none">None (No Faculty)</SelectItem>
                             {faculties.map((fac) => (
                                 <SelectItem key={fac.id} value={String(fac.id)}>{fac.name}</SelectItem>
                             ))}
@@ -308,17 +369,20 @@ export function AddProgramDialog({ institutionId = 1, onSuccess }: { institution
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="department">Department *</Label>
+                        <Label htmlFor="department">Department</Label>
                         <Select 
                             value={formData.department} 
-                            onValueChange={(val) => handleSelectChange("department", val)}
-                            disabled={!formData.faculty || filteredDepartments.length === 0}
-                            required
+                            onValueChange={(val) => {
+                              const actualVal = val === "none" ? "" : val;
+                              handleSelectChange("department", actualVal);
+                            }}
+                            disabled={filteredDepartments.length === 0}
                         >
                             <SelectTrigger id="department">
-                            <SelectValue placeholder={!formData.faculty ? "Select faculty first" : "Select department"} />
+                            <SelectValue placeholder="Select department" />
                             </SelectTrigger>
                             <SelectContent>
+                            <SelectItem value="none">None (No Department)</SelectItem>
                             {filteredDepartments.map((dept) => (
                                 <SelectItem key={dept.id} value={String(dept.id)}>{dept.name}</SelectItem>
                             ))}

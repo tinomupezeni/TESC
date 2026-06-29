@@ -1,13 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
 
 @layer base {
   :root {
@@ -17,6 +12,13 @@ All colors MUST be HSL.
 
     --card: 0 0% 100%;
     --card-foreground: 215 25% 15%;
+    
+    /* Stat Card Specific Variable */
+    --stat-card: 0 0% 100%;
+
+    /* New Card Custom Colors */
+    --card-sky: 199 89% 90%;
+    --card-navy: 215 90% 20%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 15%;
@@ -56,7 +58,7 @@ All colors MUST be HSL.
     /* Government Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(215 85% 35%), hsl(215 85% 45%));
     --gradient-secondary: linear-gradient(135deg, hsl(215 15% 92%), hsl(215 15% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 85% 25%), hsl(215 85% 35%), hsl(35 100% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 85% 25%), hsl(215 85% 35%), hsl(40, 14%, 91%));
 
     /* Professional Shadows */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -65,21 +67,13 @@ All colors MUST be HSL.
     --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
 
     --radius: 0.5rem;
-
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -87,39 +81,33 @@ All colors MUST be HSL.
     /* Dark mode for government systems */
     --background: 215 25% 8%;
     --foreground: 215 15% 92%;
-
     --card: 215 25% 12%;
     --card-foreground: 215 15% 92%;
+    
+    /* Ensure Stat Card stays white */
+    --stat-card: 0 0% 100%;
 
     --popover: 215 25% 12%;
     --popover-foreground: 215 15% 92%;
-
     --primary: 215 85% 55%;
     --primary-foreground: 215 25% 8%;
     --primary-light: 215 85% 25%;
     --primary-dark: 215 85% 65%;
-
     --secondary: 215 15% 18%;
     --secondary-foreground: 215 15% 85%;
-
     --muted: 215 15% 15%;
     --muted-foreground: 215 15% 65%;
-
     --accent: 35 100% 60%;
     --accent-foreground: 215 25% 8%;
     --accent-light: 35 100% 15%;
-
     --success: 145 65% 45%;
     --success-foreground: 215 25% 8%;
     --success-light: 145 65% 15%;
-
     --warning: 35 85% 65%;
     --warning-foreground: 215 25% 8%;
     --warning-light: 35 85% 15%;
-
     --destructive: 0 75% 60%;
     --destructive-foreground: 215 25% 8%;
-
     --border: 215 15% 22%;
     --input: 215 15% 18%;
     --ring: 215 85% 55%;
@@ -134,71 +122,25 @@ All colors MUST be HSL.
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    @apply font-sans; /* This will now use Inter */
+@layer components {
+  /* White Stat Card Component */
+  .stat-card {
+    background-color: hsl(var(--stat-card));
+    @apply border border-border shadow-sm rounded-lg p-6;
   }
 }
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans; }
+  :focus-visible { @apply outline-none ring-2 ring-primary ring-offset-2; }
+}
+
 @media print {
-  /* 1. Hide the Sidebar and the entire Navigation pane */
-  aside, 
-  .sidebar, 
-  nav,
-  [data-sidebar="sidebar"],
-  .dashboard-sidebar { 
-    display: none !important; 
-  }
-
-  /* 2. Hide specific interactive elements from your screenshot */
-  button,
-  .print\:hidden,
-  .actions-header, /* The 'Actions' column header */
-  .actions-cell,   /* The 'View' buttons */
-  .pagination-controls,
-  input[type="text"], /* Search bars */
-  .select-trigger {
-    display: none !important;
-  }
-
-  /* 3. Hide the User/Admin profile info seen in the bottom left */
-  .user-profile-section,
-  .admin-footer,
-  [data-access-level] {
-    display: none !important;
-  }
-
-  /* 4. Force the main dashboard to take up 100% width */
-  main, 
-  .dashboard-layout, 
-  #root > div {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 10mm !important; /* Professional margin for PDF */
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-  }
-
-  /* 5. Prevent charts from being cut in half across pages */
-  .card, .recharts-responsive-container {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-    margin-bottom: 1rem !important;
-  }
-
-  /* 6. Clean up the table (Remove the 'Actions' column) */
-  table th:last-child, 
-  table td:last-child {
-    display: none !important;
-  }
-}
-@layer base {
-  :focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2;
-  }
+  aside, .sidebar, nav, [data-sidebar="sidebar"], .dashboard-sidebar { display: none !important; }
+  button, .print\:hidden, .actions-header, .actions-cell, .pagination-controls, input[type="text"], .select-trigger { display: none !important; }
+  .user-profile-section, .admin-footer, [data-access-level] { display: none !important; }
+  main, .dashboard-layout, #root > div { width: 100% !important; margin: 0 !important; padding: 10mm !important; position: absolute !important; left: 0 !important; top: 0 !important; }
+  .card, .recharts-responsive-container { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 1rem !important; }
+  table th:last-child, table td:last-child { display: none !important; }
 }

@@ -35,6 +35,14 @@ import Help from "./pages/Help";
 import Admissions from "./pages/Admissions";
 import ISEOP from "./pages/ISEOP";
 
+// New Report & Analytics Pages
+import StemStudents from "./pages/StemStudents";
+import SpecializedStudents from "./pages/SpecializedStudents";
+import CriticalStudents from "./pages/CriticalStudents";
+import Inclusivity from "./pages/Inclusivity";
+import PossibleGraduates from "./pages/PossibleGraduates";
+import InCountryTransfers from "./pages/InCountryTransfers";
+
 // Modules
 import Hubs from "./modules/innovation/Hubs";
 import Startups from "./modules/innovation/Startups";
@@ -205,6 +213,66 @@ const App = () => (
                   <ProtectedRoute>
                     <PermissionGuard>
                       <Graduates />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/stem-students"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <StemStudents />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/specialized-students"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <SpecializedStudents />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/critical-students"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <CriticalStudents />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inclusivity"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <Inclusivity />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/possible-graduates"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <PossibleGraduates />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transfers"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <InCountryTransfers />
                     </PermissionGuard>
                   </ProtectedRoute>
                 }

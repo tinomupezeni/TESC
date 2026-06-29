@@ -179,6 +179,9 @@ export function ReportBuilder({
     staff: 'Staff',
     students: 'Students',
     graduates: 'Graduates',
+    placements: 'Industry Placements',
+    scholarships: 'Scholarships',
+    mobility: 'International Mobility',
   }[reportType];
 
   return (

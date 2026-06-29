@@ -22,15 +22,26 @@ import {
   Cell,
   BarChart,
   Bar,
-  Rectangle,
 } from "recharts";
 
-const COLORS = [
+// ----- BAR CHART COLORS (Denim, Cornflower, Powder, Carolina, Glacier, Iceberg) -----
+const BAR_COLORS = [
+  "#1565C0", // Denim (dark blue)
+  "#6495ED", // Cornflower (medium blue)
+  "#B0E0E6", // Powder (light blue)
+  "#4A8FE4", // Carolina (bright blue)
+  "#B6D4E7", // Glacier (pale ice blue)
+  "#71A6D2", // Iceberg (soft blue)
+];
+
+// ----- PIE CHART COLORS (using your existing theme colours) -----
+const PIE_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--accent-foreground))",
   "hsl(var(--success))",
 ];
 
+// ----- CUSTOM TOOLTIP -----
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -45,6 +56,29 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+// ----- REUSABLE BAR CHART (optional – you can use it elsewhere) -----
+export function MyBarChart({ data }: { data: { name: string; value: number }[] }) {
+  return (
+    <div className="h-80 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="value" fill="#8884d8">
+            {data.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ----- MAIN STATISTICS PAGE -----
 export default function Statistics() {
   const { data, loading, error } = useStatistics();
   const navigate = useNavigate();
@@ -56,8 +90,8 @@ export default function Statistics() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 sm:h-7 sm:h-7" />
-              TESC Statistics
+              <BarChart3 className="h-6 w-6 sm:h-7 sm:w-7" />
+              TESC STATISTICS
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">
               Overall insights and analytics for all institutions
@@ -72,8 +106,8 @@ export default function Statistics() {
         {!loading && data && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard
-              title="Institutions"
-              value={data.total_institutions}
+              title="TOTAL INSTITUTIONS"
+              value={data.total_institutions ?? 0}
               description="All types"
               icon={Building}
               variant="default"
@@ -81,29 +115,29 @@ export default function Statistics() {
             />
 
             <StatsCard
-              title="Students"
-              value={data.total_students}
+              title="TOTAL STUDENTS"
+              value={data.total_students ?? 0}
               description="Enrolled"
               icon={Users}
-              variant="accent"
+              variant="default"
               onClick={() => navigate("/students")}
             />
 
             <StatsCard
-              title="Programs"
-              value={data.total_programs}
+              title="TOTAL PROGRAMS"
+              value={data.total_programs ?? 0}
               description="Active"
               icon={GraduationCap}
-              variant="success"
+              variant="default"
               onClick={() => navigate("/programs")}
             />
 
             <StatsCard
-              title="Total Staff"
-              value={data.total_staff}
+              title="TOTAL STAFF"
+              value={data.total_staff ?? 0}
               description="Personnel"
               icon={UserCheck}
-              variant="success"
+              variant="default"
               onClick={() => navigate("/staff")}
             />
           </div>
@@ -113,14 +147,14 @@ export default function Statistics() {
           <p className="text-muted-foreground">No statistics available.</p>
         )}
 
-        {/* Charts */}
+        {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <EnrollmentChart />
           <InstitutionOverview />
         </div>
 
+        {/* Charts Row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Student Distribution */}
           <Card>
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg">Student Distribution by Institution Type</CardTitle>
@@ -129,26 +163,14 @@ export default function Statistics() {
               <StudentDistributionChart />
             </CardContent>
           </Card>
-
-          {/* Student-Staff Ratio */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-base sm:text-lg">Student-Staff Ratio</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 sm:p-6">
-              <div className="h-64 sm:h-80 w-full">
-                <RatioChart />
-              </div>
-            </CardContent>
-          </Card>
+          {/* You can add another chart here if needed */}
         </div>
       </div>
     </DashboardLayout>
   );
 }
 
-/* -------------------- Charts -------------------- */
-
+// ----- STUDENT DISTRIBUTION PIE CHART -----
 export function StudentDistributionChart() {
   const { data, loading, error } = useStudentDistribution();
 
@@ -176,7 +198,7 @@ export function StudentDistributionChart() {
             paddingAngle={3}
           >
             {chartData.map((_, index) => (
-              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+              <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
             ))}
           </Pie>
           <Tooltip />
@@ -184,30 +206,5 @@ export function StudentDistributionChart() {
         </PieChart>
       </ResponsiveContainer>
     </div>
-  );
-}
-
-export function RatioChart() {
-  const { data, loading, error } = useStudentTeacherRatio();
-
-  if (loading) return <p>Loading…</p>;
-  if (error || !data) return <p>Failed to load data.</p>;
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis dataKey="name" fontSize={12} />
-        <YAxis fontSize={12} />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend />
-        <Bar
-          dataKey="ratio"
-          name="Student-Staff Ratio"
-          fill="hsl(var(--primary))"
-          activeBar={<Rectangle fill="hsl(var(--primary-foreground))" />}
-        />
-      </BarChart>
-    </ResponsiveContainer>
   );
 }

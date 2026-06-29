@@ -6,7 +6,7 @@ import urllib3
 # Suppress insecure request warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "https://localhost/api"
 
 def smoke_test_phase1():
     print("🚀 Starting Phase 1 Smoke Test...")

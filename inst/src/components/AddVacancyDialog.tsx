@@ -227,6 +227,7 @@ export function AddVacancyDialog({ institutionId, onVacancyAdded }: AddVacancyDi
               <Input 
                 id="deadline" 
                 type="date" 
+                min={new Date().toISOString().split('T')[0]}
                 value={formData.deadline} 
                 onChange={handleChange} 
                 required 

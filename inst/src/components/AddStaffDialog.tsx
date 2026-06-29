@@ -77,6 +77,14 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
+    
+    // Validate Phone Number: Remove any non-numeric or special characters that aren't allowed
+    if (id === "phone") {
+        const cleanedValue = value.replace(/[^0-9+\s()-]/g, "");
+        setFormData(prev => ({ ...prev, [id]: cleanedValue }));
+        return;
+    }
+
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
@@ -143,7 +151,7 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
           Add Staff
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Add New Staff Member</DialogTitle>
           <DialogDescription>Register a new staff member in the system</DialogDescription>
@@ -169,7 +177,14 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number *</Label>
-              <Input id="phone" type="tel" placeholder="+263 77 123 4567" required onChange={handleInputChange} />
+              <Input 
+                id="phone" 
+                type="tel" 
+                placeholder="+263 77 123 4567" 
+                required 
+                value={formData.phone || ""}
+                onChange={handleInputChange} 
+              />
             </div>
           </div>
 
@@ -266,7 +281,8 @@ export function AddStaffDialog({ onStaffAdded }: { onStaffAdded?: () => void }) 
                 id="date_joined" 
                 type="date" 
                 required 
-                defaultValue={new Date().toISOString().split('T')[0]}
+                max={new Date().toISOString().split('T')[0]}
+                value={formData.date_joined || ""}
                 onChange={handleInputChange} 
               />
             </div>

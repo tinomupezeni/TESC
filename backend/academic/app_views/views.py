@@ -38,6 +38,18 @@ class InstitutionViewSet(viewsets.ModelViewSet):
     queryset = Institution.objects.all()
     serializer_class = InstitutionSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if self.action != 'list' and user.is_authenticated and not user.is_superuser:
+            user_inst = getattr(user, 'institution', None)
+            if not user_inst and hasattr(user, "inst_admin"):
+                user_inst = user.inst_admin.institution
+            if user_inst:
+                return queryset.filter(id=user_inst.id)
+            return queryset.none()
+        return queryset
+
     def get_permissions(self):
         if self.action == 'list':
             return [permissions.AllowAny()]

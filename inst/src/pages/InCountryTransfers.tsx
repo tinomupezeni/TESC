@@ -33,6 +33,7 @@ import { toast } from "sonner";
 
 // Components & Services
 import { BulkUploadResolver } from "@/components/common/BulkUploadResolver";
+import { AddTransferDialog } from "@/components/AddTransferDialog";
 import { InCountryTransfer, InCountryTransfersAPIResponse, getInCountryTransfers } from "../services/reports.services";
 
 
@@ -86,7 +87,8 @@ const InCountryTransfers = () => {
               <CardTitle className="text-lg sm:text-xl">Transfers Directory</CardTitle>
               <CardDescription className="text-xs sm:text-sm">List of student transfers between institutions</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <AddTransferDialog onSuccess={fetchTransfers} />
               <div className="flex-1 sm:flex-none">
                 <Dialog>
                   <DialogTrigger asChild>

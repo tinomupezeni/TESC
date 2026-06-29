@@ -31,6 +31,8 @@ import StemStudents from "./pages/StemStudents"; // New Import
 import Inclusivity from "./pages/Inclusivity"; // New Import
 import PossibleGraduates from "./pages/PossibleGraduates"; // New Import
 import InCountryTransfers from "./pages/InCountryTransfers"; // New Import
+import SpecializedStudents from "./pages/SpecializedStudents";
+import CriticalStudents from "./pages/CriticalStudents";
 import { PermissionGuard } from "./components/PermissionGuard";
 
 
@@ -120,6 +122,30 @@ const App = () => {
                 <PermissionGuard>
                   <DashboardLayout>
                     <StemStudents />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/specialized-students"
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <SpecializedStudents />
+                  </DashboardLayout>
+                </PermissionGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/critical-students"
+            element={
+              <ProtectedRoute>
+                <PermissionGuard>
+                  <DashboardLayout>
+                    <CriticalStudents />
                   </DashboardLayout>
                 </PermissionGuard>
               </ProtectedRoute>

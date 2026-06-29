@@ -26,12 +26,24 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, Filter, TrendingUp, Loader2, PieChart, Search, Trash2, RotateCcw, GraduationCap } from "lucide-react";
-import { getGraduationStats, GraduationStat } from "@/services/graduates.services";
-import { getStudents, Student } from "@/services/students.services";
+import { 
+  Download, 
+  Filter, 
+  Loader2, 
+  Search, 
+  RotateCcw, 
+  GraduationCap,
+  Users,
+  UserCheck,
+  TrendingUp,
+  PieChart,
+  Trash2
+} from "lucide-react";
+import { getGraduationStats, GraduationStat, getStudents, Student } from "@/services/students.services";
 import * as XLSX from "xlsx";
 import { AutoGraduationBanner } from "@/components/graduates/AutoGraduationBanner";
 import { UploadGraduatesDialog } from "@/components/helpers/UploadGraduatesDialog";
+import { MarkGraduatedDialog } from "@/components/graduates/MarkGraduatedDialog";
 import apiClient from "@/services/api";
 import { toast } from "sonner";
 
@@ -48,10 +60,15 @@ const Graduates = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterYear, setFilterYear] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
+  const [filterGender, setFilterGender] = useState("all");
+  const [filterLevel, setFilterLevel] = useState("all");
 
   // Selection State
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+  
+  // Dialog State
+  const [studentToGraduate, setStudentToGraduate] = useState<Student | null>(null);
 
   // Fetch Data
   const fetchData = useCallback(async () => {
@@ -88,24 +105,24 @@ const Graduates = () => {
       
       const matchesYear = filterYear === "all" || grad.graduation_year?.toString() === filterYear;
       const matchesProgram = filterProgram === "all" || grad.program_name === filterProgram;
+      const matchesGender = filterGender === "all" || grad.gender === filterGender;
+      const matchesLevel = filterLevel === "all" || grad.selected_level === filterLevel;
       
-      return matchesSearch && matchesYear && matchesProgram;
+      return matchesSearch && matchesYear && matchesProgram && matchesGender && matchesLevel;
     });
-  }, [graduates, searchQuery, filterYear, filterProgram]);
+  }, [graduates, searchQuery, filterYear, filterProgram, filterGender, filterLevel]);
 
   // Summary Metrics
   const currentYear = new Date().getFullYear();
-  const totalGraduatesCurrent = stats
-    .filter(s => s.graduation_year === currentYear)
-    .reduce((sum, s) => sum + s.total_graduates, 0);
-    
-  const totalGraduatesPrev = stats
-    .filter(s => s.graduation_year === currentYear - 1)
-    .reduce((sum, s) => sum + s.total_graduates, 0);
+  const previousYear = currentYear - 1;
+
+  const currentYearCount = graduates.filter(g => g.graduation_year === currentYear).length;
+  const previousYearCount = graduates.filter(g => g.graduation_year === previousYear).length;
 
   // Get unique options for filters
   const uniqueYears = Array.from(new Set(graduates.map(g => g.graduation_year).filter(Boolean))).sort((a,b) => (b as number)-(a as number));
   const uniquePrograms = Array.from(new Set(graduates.map(g => g.program_name).filter(Boolean))).sort();
+  const uniqueLevels = Array.from(new Set(graduates.map(g => g.selected_level).filter(Boolean))).sort();
 
   const handleExport = () => {
     const ws = XLSX.utils.json_to_sheet(filteredGraduates.map(g => ({
@@ -113,6 +130,7 @@ const Graduates = () => {
       "Name": g.full_name,
       "Gender": g.gender,
       "Program": g.program_name,
+      "Level": g.selected_level,
       "Graduation Year": g.graduation_year,
       "Final Grade": g.final_grade
     })));
@@ -136,26 +154,24 @@ const Graduates = () => {
     );
   };
 
-  const handleBulkAction = async (action: 'delete' | 'revert') => {
+  const handleBulkAction = async (action: 'revert') => {
     if (selectedIds.length === 0) return;
     
-    const isDelete = action === 'delete';
-    const confirmMessage = isDelete 
-      ? `Are you sure you want to completely DELETE ${selectedIds.length} graduate records? This cannot be undone.`
-      : `Are you sure you want to REVERT ${selectedIds.length} students back to 'Active' status?`;
+    const confirmMessage = `Are you sure you want to REVERT ${selectedIds.length} students back to 'Active' status?`;
       
     if (!window.confirm(confirmMessage)) return;
 
     setIsProcessingBulk(true);
     try {
-      const response = await apiClient.post('/academic/graduates-mgmt/bulk-actions/', {
+      await apiClient.post('/academic/graduates-mgmt/bulk-actions/', {
         student_ids: selectedIds,
         action: action
       });
-      toast.success(response.data.message || `Successfully processed ${selectedIds.length} records`);
+      toast.success(`Successfully updated ${selectedIds.length} records.`);
       fetchData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Failed to process bulk action");
+    } catch (error) {
+      toast.error("Bulk action failed.");
+      console.error(error);
     } finally {
       setIsProcessingBulk(false);
     }
@@ -163,139 +179,164 @@ const Graduates = () => {
 
   return (
     <div className="space-y-6">
-      <div className="px-1">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Graduates Management
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          Manage, verify, and export graduation records for your institution.
-        </p>
+      <div className="px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Graduates Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            Manage, verify, and export graduation records for your institution.
+          </p>
+        </div>
+        <div className="flex gap-2">
+           <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredGraduates.length === 0}>
+             <Download className="h-4 w-4 mr-2" /> Export
+           </Button>
+        </div>
       </div>
 
-      <AutoGraduationBanner onSuccess={fetchData} />
+      <AutoGraduationBanner onGraduated={fetchData} />
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 p-4 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">{currentYear} Graduates</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl text-primary">
-              {totalGraduatesCurrent}
-            </CardTitle>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="relative overflow-hidden border-primary/10 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardDescription className="font-medium text-foreground">{currentYear} Graduates</CardDescription>
+            <CardTitle className="text-3xl font-bold text-primary">{currentYearCount}</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground">
-              Current academic year
-            </p>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">Current academic year</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 p-4 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">{currentYear - 1} Graduates</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">{totalGraduatesPrev}</CardTitle>
+
+        <Card className="relative overflow-hidden border-primary/10 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardDescription className="font-medium text-foreground">{previousYear} Graduates</CardDescription>
+            <CardTitle className="text-3xl font-bold">{previousYearCount}</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3" />
-              <span>Previous year comparison</span>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">Previous year comparison</p>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-primary/10 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardDescription className="font-medium text-foreground">Total Records</CardDescription>
+            <CardTitle className="text-3xl font-bold">{graduates.length}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">All time graduates</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions - Updated: Removed Bulk Upload */}
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="hover:bg-muted/50 transition-colors border-dashed">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
+                <Users className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Graduate Records</h3>
+                <p className="text-sm text-muted-foreground mt-1">View and manage individual graduate records.</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 p-4 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">Total Records</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">
-                {graduates.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground">All time graduates</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/10 border-dashed hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2 p-4 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">Quick Actions</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl text-muted-foreground flex gap-2">
-              <UploadGraduatesDialog onSuccess={fetchData} />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-             <p className="text-[10px] sm:text-xs text-muted-foreground">Import historical data</p>
-          </CardContent>
-        </Card>
       </div>
 
-      <Card className="overflow-hidden border-none sm:border">
+      <Card className="border-none sm:border">
         <CardHeader className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg sm:text-xl">Graduate Records</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                View and manage individual graduate records.
-              </CardDescription>
-            </div>
-            
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search Alumni..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
+              
               {selectedIds.length > 0 && (
-                <>
-                  <Button variant="outline" size="sm" className="h-9 border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => handleBulkAction('revert')} disabled={isProcessingBulk}>
-                    {isProcessingBulk ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
-                    Revert to Active
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 text-blue-600 border-blue-200 bg-blue-50"
+                    onClick={() => handleBulkAction('revert')}
+                    disabled={isProcessingBulk}
+                  >
+                     <RotateCcw className="h-4 w-4 mr-2" /> Revert Status
                   </Button>
-                  <Button variant="outline" size="sm" className="h-9 border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleBulkAction('delete')} disabled={isProcessingBulk}>
-                    {isProcessingBulk ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                    Delete Selected
-                  </Button>
-                </>
+                </div>
               )}
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredGraduates.length === 0} className="w-full sm:w-auto h-9">
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Select value={filterYear} onValueChange={setFilterYear}>
+                <SelectTrigger className="w-full sm:w-[140px] h-9">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {uniqueYears.map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterProgram} onValueChange={setFilterProgram}>
+                <SelectTrigger className="w-full sm:w-[200px] h-9">
+                  <SelectValue placeholder="Program" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Programs</SelectItem>
+                  {uniquePrograms.map(prog => (
+                    <SelectItem key={prog} value={prog}>{prog}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterGender} onValueChange={setFilterGender}>
+                <SelectTrigger className="w-full sm:w-[140px] h-9">
+                  <SelectValue placeholder="Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Genders</SelectItem>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterLevel} onValueChange={setFilterLevel}>
+                <SelectTrigger className="w-full sm:w-[180px] h-9">
+                  <SelectValue placeholder="Program Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  {uniqueLevels.map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setFilterYear("all");
+                  setFilterProgram("all");
+                  setFilterGender("all");
+                  setFilterLevel("all");
+                  setSearchQuery("");
+                }}
+                className="h-9 text-muted-foreground"
+              >
+                Clear Filters
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-9 sm:h-10"
-              />
-            </div>
-            <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-full md:w-[200px] h-9 sm:h-10 text-xs sm:text-sm">
-                <div className="flex items-center">
-                  <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
-                  <SelectValue placeholder="All Years" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Years</SelectItem>
-                {uniqueYears.map(y => (
-                    <SelectItem key={y as number} value={(y as number).toString()}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterProgram} onValueChange={setFilterProgram}>
-              <SelectTrigger className="w-full md:w-[250px] h-9 sm:h-10 text-xs sm:text-sm">
-                <div className="flex items-center">
-                  <Filter className="h-3.5 w-3.5 mr-2 shrink-0" />
-                  <SelectValue placeholder="All Programs" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Programs</SelectItem>
-                {uniquePrograms.map(p => (
-                    <SelectItem key={p as string} value={p as string}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+        <CardContent className="p-0 sm:p-6 pt-0">
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -308,7 +349,9 @@ const Graduates = () => {
                   </TableHead>
                   <TableHead className="text-xs">ID</TableHead>
                   <TableHead className="text-xs">Name</TableHead>
+                  <TableHead className="text-xs">Gender</TableHead>
                   <TableHead className="text-xs">Program</TableHead>
+                  <TableHead className="text-xs">Level</TableHead>
                   <TableHead className="text-xs">Year</TableHead>
                   <TableHead className="text-xs">Grade</TableHead>
                 </TableRow>
@@ -316,14 +359,14 @@ const Graduates = () => {
               <TableBody>
                 {loadingGrads ? (
                    <TableRow>
-                     <TableCell colSpan={6} className="h-24 text-center">
+                     <TableCell colSpan={8} className="h-24 text-center">
                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                      </TableCell>
                    </TableRow>
                 ) : filteredGraduates.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={8}
                       className="text-center py-8 text-muted-foreground text-xs"
                     >
                       <GraduationCap className="h-8 w-8 mx-auto mb-2 opacity-20" />
@@ -341,7 +384,9 @@ const Graduates = () => {
                       </TableCell>
                       <TableCell className="font-medium text-[10px] sm:text-xs">{grad.student_id}</TableCell>
                       <TableCell className="text-[10px] sm:text-sm">{grad.full_name}</TableCell>
+                      <TableCell className="text-[10px] sm:text-xs">{grad.gender}</TableCell>
                       <TableCell className="text-[10px] sm:text-xs truncate max-w-[200px]">{grad.program_name}</TableCell>
+                      <TableCell className="text-[10px] sm:text-xs">{grad.selected_level || "N/A"}</TableCell>
                       <TableCell className="text-[10px] sm:text-xs">{grad.graduation_year}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px] sm:text-xs">
@@ -355,19 +400,26 @@ const Graduates = () => {
             </Table>
           </div>
           <div className="flex justify-between items-center mt-4">
-             <p className="text-xs text-muted-foreground">
+             <p className="text-xs text-muted-foreground px-2 sm:px-0">
                Showing {filteredGraduates.length} graduates
              </p>
              {selectedIds.length > 0 && (
-               <p className="text-xs font-medium text-primary">
+               <p className="text-xs font-medium text-primary px-2 sm:px-0">
                  {selectedIds.length} selected
                </p>
              )}
           </div>
         </CardContent>
       </Card>
+      
+      <MarkGraduatedDialog 
+        student={studentToGraduate} 
+        onClose={() => setStudentToGraduate(null)} 
+        onSuccess={fetchData}
+      />
     </div>
   );
 };
+
 
 export default Graduates;
