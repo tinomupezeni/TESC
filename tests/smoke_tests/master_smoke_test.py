@@ -36,6 +36,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import requests
 old_req = requests.Session.request
 def new_req(self, method, url, **kwargs):
+    url = url.replace('http://localhost:8000/api', 'https://tesc.zchpc.ac.zw/api')
+    url = url.replace('https://localhost/api', 'https://tesc.zchpc.ac.zw/api')
     kwargs.setdefault('headers', {{}})
     kwargs['headers']['X-Smoke-Test-Key'] = 'default-insecure-smoke-key'
     return old_req(self, method, url, **kwargs)
@@ -59,7 +61,7 @@ runpy.run_path('{script_path}', run_name='__main__')
 
 if __name__ == "__main__":
     print(f"--- TESC MASTER SMOKE TEST RUNNER ---")
-    print(f"Target: https://localhost/api")
+    print(f"Target: https://tesc.zchpc.ac.zw/api")
     print(f"Tests: {len(TEST_SCRIPTS)}")
     
     results = []
