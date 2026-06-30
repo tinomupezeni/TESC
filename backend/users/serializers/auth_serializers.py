@@ -60,6 +60,27 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             refresh = self.get_token(user)
             data['refresh'] = str(refresh)
             data['access'] = str(refresh.access_token)
+            data['user'] = {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'level': user.level,
+                'must_change_password': user.must_change_password,
+                'institution': {
+                    'id': user.institution.id,
+                    'name': user.institution.name
+                } if getattr(user, 'institution', None) else None,
+                'role': {
+                    'id': user.role.id,
+                    'name': user.role.name
+                } if getattr(user, 'role', None) else None,
+                'department': {
+                    'id': user.department.id,
+                    'name': user.department.name,
+                    'permissions': getattr(user.department, 'permissions', [])
+                } if getattr(user, 'department', None) else None,
+            }
             return data
 
         otp = str(random.randint(100000, 999999))

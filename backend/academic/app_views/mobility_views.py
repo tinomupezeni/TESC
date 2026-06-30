@@ -19,7 +19,9 @@ class InternationalMobilityViewSet(viewsets.ModelViewSet):
         queryset = InternationalMobility.objects.all().select_related('student', 'student__program', 'student__institution')
         
         if user.is_superuser:
-            pass
+            institution_id = self.request.query_params.get('institution_id') or self.request.query_params.get('institution')
+            if institution_id:
+                queryset = queryset.filter(student__institution_id=institution_id)
         elif hasattr(user, 'institution') and user.institution:
             queryset = queryset.filter(student__institution=user.institution)
         elif hasattr(user, 'staff') and user.staff.institution:

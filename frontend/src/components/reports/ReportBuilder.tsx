@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -56,6 +57,9 @@ interface ReportBuilderProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGenerated?: () => void;
+
+  defaultFilters?: Record<string, any>;
+  hideFilters?: boolean;
 }
 
 export function ReportBuilder({
@@ -64,6 +68,8 @@ export function ReportBuilder({
   open,
   onOpenChange,
   onGenerated,
+  defaultFilters,
+  hideFilters
 }: ReportBuilderProps) {
   // Schema state
   const [schema, setSchema] = useState<ReportSchema | null>(null);
@@ -213,7 +219,7 @@ export function ReportBuilder({
             </div>
 
             {/* Main Tabs */}
-            <Tabs defaultValue="filters" className="flex-1 overflow-hidden">
+            <Tabs defaultValue={hideFilters ? "columns" : "filters"} className="flex-1 overflow-hidden">
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="filters">
                   Filters

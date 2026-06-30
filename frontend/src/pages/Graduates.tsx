@@ -205,6 +205,9 @@ export default function Statistics() {
             <Button variant="outline" size="sm" onClick={() => exportData('csv')} className="flex gap-2 font-bold border-blue-200 h-9">
               <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
             </Button>
+              <Button size="sm" onClick={() => setReportBuilderOpen(true)} className="bg-green-600 hover:bg-green-700 h-9 font-bold">
+                <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Generate Report</span>
+              </Button>
             <Button size="sm" onClick={() => setReportBuilderOpen(true)} className="flex gap-2 font-bold bg-green-600 hover:bg-green-700 h-9">
               <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Report</span>
             </Button>

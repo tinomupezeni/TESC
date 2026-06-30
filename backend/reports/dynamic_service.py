@@ -70,6 +70,36 @@ class DynamicReportService:
         # Apply user-provided filters
         if filters:
             print(f"DEBUG BUILD_QUERYSET: filters={filters}")
+            
+            # Apply custom students filters
+            if report_type in ['students', 'graduates']:
+                from django.db.models import Q
+                
+                has_specialized = filters.get('has_specialized_skills')
+                if has_specialized in [True, 'true', 'True', '1', 1]:
+                    queryset = queryset.filter(Q(program__is_specialized_skill=True) | Q(selected_category='SPECIALIZED'))
+                
+                has_critical = filters.get('has_critical_skills')
+                if has_critical in [True, 'true', 'True', '1', 1]:
+                    queryset = queryset.filter(Q(program__is_critical_skill=True) | Q(selected_category='CRITICAL'))
+                    
+                prog_category = filters.get('program__category')
+                if prog_category:
+                    queryset = queryset.filter(
+                        Q(program__categories__contains=prog_category) |
+                        Q(program__categories__contains=[prog_category]) |
+                        Q(program__category=prog_category) |
+                        Q(selected_category=prog_category)
+                    )
+                
+                inclusivity = filters.get('inclusivity')
+                if inclusivity in [True, 'true', 'True', '1', 1]:
+                    queryset = queryset.exclude(inclusivity_category__in=['None', '', None])
+                    
+                is_iseop = filters.get('is_iseop')
+                if is_iseop in [True, 'true', 'True', '1', 1]:
+                    queryset = queryset.filter(is_iseop=True)
+
             filter_kwargs = {}
             exclude_kwargs = {}
 

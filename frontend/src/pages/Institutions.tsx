@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllInstitutions,
@@ -58,6 +59,7 @@ const InstitutionCardSkeleton = () => (
 
 export default function Institutions() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [registerInst, setRegisterInst] = useState(false);
   const [editingInstitution, setEditingInstitution] = useState<Institution | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -109,10 +111,10 @@ const stats = useMemo(() => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-4">
-          <Card className="border-l-4 border-l-blue-500"><CardContent className="p-4 flex items-center gap-4"><div className="p-3 bg-blue-50 rounded-xl"><FontAwesomeIcon icon={faCalculator} className="text-blue-600" /></div><div><p className="text-xs uppercase text-muted-foreground">TOTAL INSTITUTIONS</p><h3 className="text-xl font-bold">{stats.total}</h3></div></CardContent></Card>
-          <Card className="border-l-4 border-l-green-500"><CardContent className="p-4 flex items-center gap-4"><div className="p-3 bg-green-50 rounded-xl"><FontAwesomeIcon icon={faBridge} className="text-green-600" /></div><div><p className="text-xs uppercase text-muted-foreground">ACTIVE INSTITUTIONS</p><h3 className="text-xl font-bold">{stats.active}</h3></div></CardContent></Card>
-          <Card className="border-l-4 border-l-purple-500"><CardContent className="p-4 flex items-center gap-4"><div className="p-3 bg-purple-50 rounded-xl"><FontAwesomeIcon icon={faUsers} className="text-purple-600" /></div><div><p className="text-xs uppercase text-muted-foreground">TOTAL STUDENTS</p><h3 className="text-xl font-bold">{stats.students.toLocaleString()}</h3></div></CardContent></Card>
-          <Card className="border-l-4 border-l-orange-500"><CardContent className="p-4 flex items-center gap-4"><div className="p-3 bg-orange-50 rounded-xl"><FontAwesomeIcon icon={faUsers} className="text-orange-600" /></div><div><p className="text-xs uppercase text-muted-foreground">TOTAL STAFF</p><h3 className="text-xl font-bold">{stats.staff.toLocaleString()}</h3></div></CardContent></Card>
+          <Card><CardContent className="p-4"><div><p className="text-xs uppercase text-muted-foreground">TOTAL INSTITUTIONS</p><h3 className="text-xl font-bold">{stats.total}</h3></div></CardContent></Card>
+          <Card><CardContent className="p-4"><div><p className="text-xs uppercase text-muted-foreground">ACTIVE INSTITUTIONS</p><h3 className="text-xl font-bold">{stats.active}</h3></div></CardContent></Card>
+          <Card><CardContent className="p-4"><div><p className="text-xs uppercase text-muted-foreground">TOTAL STUDENTS</p><h3 className="text-xl font-bold">{stats.students.toLocaleString()}</h3></div></CardContent></Card>
+          <Card><CardContent className="p-4"><div><p className="text-xs uppercase text-muted-foreground">TOTAL STAFF</p><h3 className="text-xl font-bold">{stats.staff.toLocaleString()}</h3></div></CardContent></Card>
         </div>
 
         {/* Table */}
@@ -130,7 +132,11 @@ const stats = useMemo(() => {
               {filteredInstitutions.map((institution: Institution) => {
                 const theme = getInstitutionTheme(institution.type);
                 return (
-                  <TableRow key={institution.id} className={`${theme.bg} hover:bg-muted/50 transition-colors`}>
+                  <TableRow 
+                    key={institution.id} 
+                    className={`${theme.bg} hover:bg-muted/50 transition-colors cursor-pointer`}
+                    onClick={() => navigate(`/institutions/${institution.id}`)}
+                  >
                     <TableCell className="font-bold">{institution.name}</TableCell>
                     <TableCell>
                       <Badge className={`border-none ${theme.badge}`}>{institution.type}</Badge>
@@ -141,7 +147,7 @@ const stats = useMemo(() => {
                     <TableCell className="text-center">{institution.program_count || 0}</TableCell>
                     <TableCell className="text-center font-bold text-blue-700">{institution.user_count || 0}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" onClick={() => setEditingInstitution(institution)}><ExternalLink className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(institution.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
@@ -154,6 +160,26 @@ const stats = useMemo(() => {
         </div>
       </div>
       <RegisterInst open={registerInst || !!editingInstitution} onOpenChange={handleModalClose} institutionToEdit={editingInstitution} />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(isOpen) => !isOpen && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {institutions?.find((i: Institution) => i.id === deleteId)?.name || "Institution"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{" "}
+              <strong className="text-slate-800">{institutions?.find((i: Institution) => i.id === deleteId)?.name}</strong>{" "}
+              and all its associated data (students, staff, facilities, etc).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </DashboardLayout>
   );
 }

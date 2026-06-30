@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { ReportBuilder } from "@/components/reports";
+import { ExportButtons } from "@/components/ExportButtons";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,6 +33,39 @@ import { toast } from "sonner";
 import { getPossibleGraduates, PossibleGraduate } from "@/services/reports.services";
 
 export default function PossibleGraduates() {
+  const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
+
+  const exportData = (type: 'csv' | 'excel') => {
+    const headers = ["Student ID", "Name", "Program", "Gender", "Institution"];
+    const rows = filteredData.map((s: any) => [
+      s.student_id_number || s.student_id || "N/A",
+      s.full_name || "N/A",
+      s.program_name || "N/A",
+      s.gender || "N/A",
+      s.institution_name || "N/A"
+    ]);
+
+    let content = "";
+    let mimeType = "";
+    let fileExtension = "";
+
+    if (type === 'csv') {
+      content = [headers, ...rows].map(e => e.join(",")).join("\n");
+      mimeType = 'text/csv;charset=utf-8;';
+      fileExtension = 'csv';
+    } else {
+      content = [headers.join("\\t"), ...rows.map(r => r.join("\\t"))].join("\n");
+      mimeType = 'application/vnd.ms-excel;charset=utf-8;';
+      fileExtension = 'xls';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Export_Records.${fileExtension}`;
+    link.click();
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [instFilter, setInstFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("all");
@@ -107,7 +142,8 @@ export default function PossibleGraduates() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:mb-8">
+<div>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
             <GraduationCap className="h-6 w-6 sm:h-8 sm:h-8 text-blue-600" />
             Possible Graduates
@@ -116,6 +152,8 @@ export default function PossibleGraduates() {
             System-wide projection records showing students expected to graduate based on academic program timelines.
           </p>
         </div>
+<ExportButtons onExport={exportData} onGenerateReport={() => setReportBuilderOpen(true)} />
+</div>
 
         {/* Filters Section */}
         <Card className="p-4 border-blue-100 dark:border-slate-800 shadow-sm">
@@ -246,6 +284,7 @@ export default function PossibleGraduates() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+      <ReportBuilder reportType="students" open={reportBuilderOpen} onOpenChange={setReportBuilderOpen} />
+</DashboardLayout>
   );
 }

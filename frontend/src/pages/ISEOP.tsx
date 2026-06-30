@@ -537,7 +537,7 @@ export default function Students() {
       </DashboardLayout>
 
       <StudentView data={selectedStudent} setdata={setSelectedStudent} />
-      <ReportBuilder reportType="students" open={reportBuilderOpen} onOpenChange={setReportBuilderOpen} />
+      <ReportBuilder reportType="students" open={reportBuilderOpen} onOpenChange={setReportBuilderOpen} hideFilters={true} defaultFilters={{ is_iseop: true }} />
     </>
   );
 }

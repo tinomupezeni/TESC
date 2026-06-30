@@ -275,12 +275,45 @@ const Login = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-xs sm:text-sm font-medium">Password</Label>
-                  <Button variant="link" className="p-0 h-auto text-xs font-normal" onClick={() => navigate("/forgot-password")}>
+                  <Button type="button" variant="link" className="p-0 h-auto text-xs font-normal" onClick={() => navigate("/forgot-password")}>
                     Forgot password?
                   </Button>
-              </p>
-            </div>
-          </form>
+                </div>
+                <div className="relative group">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="h-10 sm:h-11 pl-9 pr-10 bg-slate-50/50 text-xs sm:text-sm transition-all focus:bg-white group-hover:border-slate-400"
+                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-hover:text-slate-600" />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full h-10 sm:h-11 mt-6 text-sm font-medium shadow-sm transition-all hover:shadow-md" disabled={isLoading || isLoadingInsts}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

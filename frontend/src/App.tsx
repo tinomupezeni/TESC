@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Students from "./pages/Students";
 import ISEOPStudents from "./pages/ISEOP";
 import Institutions from "./pages/Institutions";
+import InstitutionDetail from "./pages/InstitutionDetail";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -207,6 +208,16 @@ const App = () => (
                   <ProtectedRoute>
                     <PermissionGuard>
                       <Institutions />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institutions/:id"
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard>
+                      <InstitutionDetail />
                     </PermissionGuard>
                   </ProtectedRoute>
                 }

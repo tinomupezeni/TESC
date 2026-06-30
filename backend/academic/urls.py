@@ -5,6 +5,7 @@ from .app_views.admin_views import (
     DashboardStatsView,
     EnrollmentTrendsView,
     InstitutionOverviewView, 
+    InstitutionCountsView
 )
 from .app_views.student_views import StudentViewSet
 from .app_views.bulk_delete_views import BulkDeleteView
@@ -41,4 +42,5 @@ urlpatterns = [
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('dashboard/enrollment-trends/', EnrollmentTrendsView.as_view(), name='enrollment-trends'),
     path('dashboard/institutions/', InstitutionOverviewView.as_view(), name='dashboard-institutions'),
+    path('dashboard/institution-counts/', InstitutionCountsView.as_view(), name='dashboard_institution_counts'),
 ]

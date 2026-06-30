@@ -53,6 +53,6 @@ export const ScalarEyeLogo = ({ className = "w-10 h-10" }) => (
 );
 
 export const coat_of_arms = 'https://www.image2url.com/r2/default/images/1782284628462-fa1ac477-a954-4909-891f-f81f8e4c4ad2.jpeg'
-export const bg_image = 'https://www.image2url.com/r2/default/images/1782284628462-fa1ac477-a954-4909-891f-f81f8e4c4ad2.jpeg'
+export const bg_image = 'https://www.uz.ac.zw/images/uzfrontgallery_2/Administration%20Block.png'
 export const scalareye_logo_svg = ScalarEyeLogo;
 

@@ -19,7 +19,11 @@ class BaseInnovationViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
     institution_lookup_path = 'institution'
 
     def get_queryset(self):
-        return super().get_queryset()
+        queryset = super().get_queryset()
+        institution_id = self.request.query_params.get('institution_id') or self.request.query_params.get('institution')
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+        return queryset
 
 class InnovationHubViewSet(BaseInnovationViewSet):
     queryset = InnovationHub.objects.all()

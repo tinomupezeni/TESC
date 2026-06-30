@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { access, refresh, user: fetchedUser } = response.data;
 
     // 🚨 Block Institution Users from Main Dashboard
-    if (fetchedUser.institution) {
+    if (fetchedUser?.institution) {
       throw new Error("Institution accounts are not authorized to access the main dashboard. Please use the Institution Portal.");
     }
 
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { access, refresh, user: fetchedUser } = response.data;
 
     // 🚨 Block Institution Users from Main Dashboard
-    if (fetchedUser.institution) {
+    if (fetchedUser?.institution) {
       throw new Error("Institution accounts are not authorized to access the main dashboard. Please use the Institution Portal.");
     }
 

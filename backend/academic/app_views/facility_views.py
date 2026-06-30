@@ -28,6 +28,10 @@ class FacilityViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         if f_type:
             queryset = queryset.filter(facility_type__iexact=f_type)
             
+        institution_id = self.request.query_params.get('institution_id') or self.request.query_params.get('institution')
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+            
         return queryset
 
     def create(self, request, *args, **kwargs):

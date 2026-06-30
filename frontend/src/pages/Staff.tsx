@@ -201,6 +201,9 @@ export default function StaffPage() {
               <Button variant="outline" size="sm" onClick={handleCSVExport} disabled={filteredStaff.length === 0} className="h-9">
                 <Download className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
               </Button>
+              <Button size="sm" onClick={() => setReportBuilderOpen(true)} className="bg-green-600 hover:bg-green-700 h-9 font-bold">
+                <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Generate Report</span>
+              </Button>
               <Button size="sm" onClick={() => setReportBuilderOpen(true)} className="bg-green-600 hover:bg-green-700 h-9">
                 <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Report</span>
               </Button>

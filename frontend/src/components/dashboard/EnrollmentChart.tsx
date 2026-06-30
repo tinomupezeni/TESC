@@ -30,21 +30,22 @@ const getSeriesKeys = (data: EnrollmentTrendItem[]) => {
 
 interface EnrollmentChartProps {
   type?: "line" | "area";
+  institutionId?: string;
 }
 
-export function EnrollmentChart({ type = "line" }: EnrollmentChartProps) {
+export function EnrollmentChart({ type = "line", institutionId }: EnrollmentChartProps) {
   const [data, setData] = useState<EnrollmentTrendItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleSeries, setVisibleSeries] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
-      const trends = await DashboardService.getEnrollmentTrends();
+      const trends = await DashboardService.getEnrollmentTrends(institutionId);
       setData(trends);
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [institutionId]);
 
   useEffect(() => {
     if (data.length) {

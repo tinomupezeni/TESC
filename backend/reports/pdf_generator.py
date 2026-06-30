@@ -203,10 +203,10 @@ class ProfessionalPDFGenerator:
             # Header with actual logo
             header_data = [[
                 logo,
-                Paragraph("SCALAREYE CENTRAL DATA SYSTEM", ParagraphStyle(
+                Paragraph("CENTRAL DATA SYSTEM", ParagraphStyle(
                     'HeaderText',
                     parent=self.styles['Normal'],
-                    fontSize=14,
+                    fontSize=18,
                     textColor=WHITE,
                     fontName='Helvetica-Bold',
                     alignment=TA_CENTER
@@ -215,17 +215,11 @@ class ProfessionalPDFGenerator:
         else:
             # Fallback: Text-based header
             header_data = [[
-                Paragraph("SCALAREYE", ParagraphStyle(
-                    'LogoText',
-                    parent=self.styles['Normal'],
-                    fontSize=24,
-                    textColor=WHITE,
-                    fontName='Helvetica-Bold'
-                )),
-                Paragraph("SCALAREYE CENTRAL DATA SYSTEM", ParagraphStyle(
+                "",
+                Paragraph("CENTRAL DATA SYSTEM", ParagraphStyle(
                     'HeaderText',
                     parent=self.styles['Normal'],
-                    fontSize=14,
+                    fontSize=18,
                     textColor=WHITE,
                     fontName='Helvetica-Bold',
                     alignment=TA_CENTER

@@ -38,6 +38,10 @@ class StaffViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         faculty_id = self.request.query_params.get('faculty_id')
         if faculty_id:
             queryset = queryset.filter(faculty_id=faculty_id)
+            
+        institution_id = self.request.query_params.get('institution_id') or self.request.query_params.get('institution')
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
 
         status_param = self.request.query_params.get('status')
         if status_param:

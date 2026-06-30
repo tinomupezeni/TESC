@@ -37,27 +37,33 @@ class DashboardStatsView(views.APIView):
     """
     def get(self, request):
         current_year = timezone.now().year
+        institution_id = request.query_params.get('institution_id')
+        
+        students_qs = Student.objects.all()
+        institutions_qs = Institution.objects.filter(status='Active')
+        
+        if institution_id:
+            students_qs = students_qs.filter(institution_id=institution_id)
+            institutions_qs = institutions_qs.filter(id=institution_id)
         
         # 1. Key Metrics
-        total_students = Student.objects.count()
-        active_institutions = Institution.objects.filter(status='Active').count()
-        total_students_this_year= Student.objects.filter(status__in=['Active', 'Attachment']).count()
+        total_students = students_qs.count()
+        active_institutions = institutions_qs.count()
+        total_students_this_year = students_qs.filter(status__in=['Active', 'Attachment']).count()
         # optimized count for graduates in current year
-        graduates_current_year = Student.objects.filter(
+        graduates_current_year = students_qs.filter(
             status='Graduated', 
             updated_at__year=current_year
         ).count()
 
-        # Calculate Completion Rate (Simplified logic: Graduates / (Graduates + Dropouts/Failures))
-        # For this example, we'll use a placeholder logic or real calculation if data permits
-        # Assuming 'Active' + 'Graduated' base for now.
-        total_outcomes = Student.objects.filter(status__in=['Graduated', 'Suspended']).count()
+        # Calculate Completion Rate
+        total_outcomes = students_qs.filter(status__in=['Graduated', 'Suspended']).count()
         completion_rate = 0
         if total_outcomes > 0:
-            completion_rate = (Student.objects.filter(status='Graduated').count() / total_outcomes) * 100
+            completion_rate = (students_qs.filter(status='Graduated').count() / total_outcomes) * 100
 
         # 2. Institution Breakdown (Students per type)
-        students_by_type = Student.objects.values('institution__type').annotate(
+        students_by_type = students_qs.values('institution__type').annotate(
             count=Count('id')
         )
         
@@ -84,9 +90,14 @@ class EnrollmentTrendsView(views.APIView):
     def get(self, request):
         # Fetch last 5 years
         start_year = timezone.now().year - 5
+        institution_id = request.query_params.get('institution_id')
         
+        qs = Student.objects.filter(enrollment_year__gte=start_year)
+        if institution_id:
+            qs = qs.filter(institution_id=institution_id)
+            
         # Aggregate query: Group by Year AND Type
-        data = Student.objects.filter(enrollment_year__gte=start_year).values(
+        data = qs.values(
             'enrollment_year', 'institution__type'
         ).annotate(count=Count('id')).order_by('enrollment_year')
 
@@ -115,19 +126,61 @@ class InstitutionOverviewView(views.APIView):
         student_count=Student.objects.count()
         print(student_count)
         institutions = Institution.objects.annotate(
-    student_count=Count(
-        'students',
-        filter=Q(students__status='Active'),
-        distinct=True
-    ),
-    program_count=Count(
-        'faculties__departments__programs',
-        distinct=True
-    )
-).order_by('-student_count')[:10]
-
-
-        print(institutions)
+            student_count=Count(
+                'students',
+                filter=Q(students__status='Active'),
+                distinct=True
+            ),
+            program_count=Count(
+                'faculties__departments__programs',
+                distinct=True
+            )
+        ).order_by('-student_count')[:10]
 
         serializer = InstitutionOverviewSerializer(institutions, many=True)
         return Response(serializer.data)
+
+class InstitutionCountsView(views.APIView):
+    """
+    Returns counts for all dynamic categories for a specific institution.
+    """
+    def get(self, request):
+        institution_id = request.query_params.get('institution_id')
+        if not institution_id:
+            return Response({"detail": "institution_id is required"}, status=400)
+            
+        students_qs = Student.objects.filter(institution_id=institution_id)
+        
+        # We need to import models carefully if they are in other apps
+        from staff.models import Staff
+        from innovation.models import Project, InnovationHub
+        from academic.models import Facility, IndustryPlacement, InternationalMobility
+        
+        counts = {
+            "students": students_qs.count(),
+            "iseop": students_qs.filter(is_iseop=True).count(),
+            "staff": Staff.objects.filter(institution_id=institution_id).count(),
+            "graduates": students_qs.filter(status='Graduated').count(),
+            "stem": students_qs.filter(
+                Q(program__categories__contains='STEM') |
+                Q(program__categories__contains=['STEM']) |
+                Q(program__category='STEM') |
+                Q(selected_category='STEM')
+            ).count(),
+            "specialized": students_qs.filter(
+                Q(program__is_specialized_skill=True) |
+                Q(selected_category='SPECIALIZED')
+            ).count(),
+            "critical": students_qs.filter(
+                Q(program__is_critical_skill=True) |
+                Q(selected_category='CRITICAL')
+            ).count(),
+            "inclusivity": students_qs.exclude(inclusivity_category__in=['None', '', None]).count(),
+            "facilities": Facility.objects.filter(institution_id=institution_id).count(),
+            "innovation": Project.objects.filter(institution_id=institution_id).count() if hasattr(Project, 'institution_id') else 0,
+            "startups": InnovationHub.objects.filter(institution_id=institution_id).count() if hasattr(InnovationHub, 'institution_id') else 0,
+            "placements": IndustryPlacement.objects.filter(student__institution_id=institution_id).count(),
+            "mobility": InternationalMobility.objects.filter(student__institution_id=institution_id).count()
+        }
+        
+        return Response(counts)

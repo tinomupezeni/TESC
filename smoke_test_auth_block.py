@@ -24,12 +24,12 @@ def test_login(email, password, expected_status, description):
 
 def create_inst_user(email, password, institution_id):
     print(f"Creating test institution user: {email}")
-    cmd = f"docker exec tesc-v5-backend-1 python3 manage.py shell -c \"from users.models import CustomUser; from academic.models import Institution; inst = Institution.objects.get(id={institution_id}); user = CustomUser.objects.create_user(username='{email}', email='{email}', password='{password}', institution=inst); print('USER_CREATED')\""
+    cmd = f"docker exec tesc-backend-1 python3 manage.py shell -c \"from users.models import CustomUser; from academic.models import Institution; inst = Institution.objects.get(id={institution_id}); user = CustomUser.objects.create_user(username='{email}', email='{email}', password='{password}', institution=inst); print('USER_CREATED')\""
     os.system(cmd)
 
 def delete_inst_user(email):
     print(f"Deleting test institution user: {email}")
-    cmd = f"docker exec tesc-v5-backend-1 python3 manage.py shell -c \"from users.models import CustomUser; CustomUser.objects.filter(email='{email}').delete(); print('USER_DELETED')\""
+    cmd = f"docker exec tesc-backend-1 python3 manage.py shell -c \"from users.models import CustomUser; CustomUser.objects.filter(email='{email}').delete(); print('USER_DELETED')\""
     os.system(cmd)
 
 if __name__ == "__main__":

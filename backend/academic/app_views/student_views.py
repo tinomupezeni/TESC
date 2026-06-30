@@ -49,6 +49,41 @@ class StudentViewSet(InstitutionalIsolationMixin, viewsets.ModelViewSet):
         if program_id:
             queryset = queryset.filter(program_id=program_id)
 
+        # Allow superadmins to filter by institution
+        institution_id = self.request.query_params.get('institution_id') or self.request.query_params.get('institution')
+        if institution_id:
+            queryset = queryset.filter(institution_id=institution_id)
+            
+        # Optional filters
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+            
+        is_iseop = self.request.query_params.get('is_iseop')
+        if is_iseop:
+            queryset = queryset.filter(is_iseop=is_iseop.lower() == 'true')
+            
+        has_specialized_skills = self.request.query_params.get('has_specialized_skills')
+        if has_specialized_skills:
+            queryset = queryset.filter(Q(program__is_specialized_skill=True) | Q(selected_category='SPECIALIZED'))
+            
+        has_critical_skills = self.request.query_params.get('has_critical_skills')
+        if has_critical_skills:
+            queryset = queryset.filter(Q(program__is_critical_skill=True) | Q(selected_category='CRITICAL'))
+            
+        program__category = self.request.query_params.get('program__category')
+        if program__category:
+            queryset = queryset.filter(
+                Q(program__categories__contains=program__category) |
+                Q(program__categories__contains=[program__category]) |
+                Q(program__category=program__category) |
+                Q(selected_category=program__category)
+            )
+
+        inclusivity = self.request.query_params.get('inclusivity')
+        if inclusivity:
+            queryset = queryset.exclude(inclusivity_category__in=['None', '', None])
+
         return queryset.annotate(
             semester_fee=Coalesce(
                 F('program__semester_fee'),

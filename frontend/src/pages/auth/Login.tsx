@@ -92,9 +92,9 @@ const Login = () => {
       className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
       style={{ backgroundImage: `url(${bg_image})` }}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-60" />
+      <div className="absolute inset-0 bg-black/70" />
       
-      <Card className="w-full max-w-md bg-black/40 backdrop-blur-lg border-white/10 shadow-2xl rounded-2xl relative z-10 text-white">
+      <Card className="w-full max-w-md bg-white/95 dark:bg-slate-950/95 border-white/10 shadow-2xl rounded-2xl relative z-10 text-slate-900 dark:text-white">
         <CardContent className="p-8 space-y-6">
           <div className="flex justify-center">
             <ScalarEyeLogo className="h-24 w-24" />
@@ -102,7 +102,7 @@ const Login = () => {
           
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-bold tracking-tight">Scalareye </h1>
-            <p className="text-gray-300 text-sm font-medium">
+            <p className="text-muted-foreground text-sm font-medium">
               Zimbabwe Human Capital Planning and Skills Development
             </p>
           </div>
@@ -110,20 +110,20 @@ const Login = () => {
           {requiresOtp ? (
             <form className="space-y-4" onSubmit={handleOtpSubmit}>
               {error && (
-                <div className="flex items-center p-3 text-sm text-red-200 bg-red-900/30 border border-red-500/50 rounded-lg">
+                <div className="flex items-center p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
                   <AlertCircle className="mr-2" size={18} />
                   {error}
                 </div>
               )}
               
               <div className="text-center mb-4">
-                <p className="text-sm text-gray-300">
+                <p className="text-sm text-muted-foreground">
                   An email has been sent to your address with a 6-digit OTP code.
                 </p>
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Lock className="absolute left-3 top-3 text-muted-foreground" size={18} />
                 <Input
                   type="text"
                   name="otp"
@@ -132,7 +132,7 @@ const Login = () => {
                   onChange={(e) => setOtp(e.target.value)}
                   required
                   maxLength={6}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
+                  className="pl-10"
                   disabled={isLoading}
                 />
               </div>
@@ -146,7 +146,7 @@ const Login = () => {
               </Button>
 
               <div className="text-center mt-4">
-                <Button variant="link" onClick={() => setRequiresOtp(false)} className="text-xs text-gray-400 hover:text-white">
+                <Button variant="link" onClick={() => setRequiresOtp(false)} className="text-xs text-muted-foreground hover:text-foreground">
                   Back to Login
                 </Button>
               </div>
@@ -154,14 +154,14 @@ const Login = () => {
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
               {error && (
-                <div className="flex items-center p-3 text-sm text-red-200 bg-red-900/30 border border-red-500/50 rounded-lg">
+                <div className="flex items-center p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
                   <AlertCircle className="mr-2" size={18} />
                   {error}
                 </div>
               )}
               
               <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                <User className="absolute left-3 top-3 text-muted-foreground" size={18} />
                 <Input
                   type="email"
                   name="email"
@@ -169,13 +169,13 @@ const Login = () => {
                   value={form.email}
                   onChange={handleChange}
                   required
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
+                  className="pl-10"
                   disabled={isLoading}
                 />
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Lock className="absolute left-3 top-3 text-muted-foreground" size={18} />
                 <Input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -183,11 +183,11 @@ const Login = () => {
                   value={form.password}
                   onChange={handleChange}
                   required
-                  className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-blue-400"
+                  className="pl-10 pr-10"
                   disabled={isLoading}
                 />
                 <div
-                  className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-white"
+                  className="absolute right-3 top-3 cursor-pointer text-muted-foreground hover:text-foreground"
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -213,9 +213,9 @@ const Login = () => {
             </form>
           )}
 
-          <div className="text-center text-sm text-gray-400 mt-4">
+          <div className="text-center text-sm text-muted-foreground mt-4">
             Don’t have an account? <br /> 
-            <span className="font-semibold text-gray-200 hover:underline cursor-pointer">
+            <span className="font-semibold text-primary hover:underline cursor-pointer">
                 Contact the system administrator
             </span>
           </div>

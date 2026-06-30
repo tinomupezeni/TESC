@@ -142,17 +142,19 @@ def smoke_test_graduates():
     print("\n--- Testing Auto-Graduation Eligibility ---")
     # Create active students enrolled 2 years ago (2022), they should be eligible in 2024. But wait, it's 2026.
     # So enrollment_year = 2024 (2024 + 2 = 2026 <= 2026 -> Eligible!)
-    requests.post(f"{BASE_URL}/academic/students/", json={
+    e1_resp = requests.post(f"{BASE_URL}/academic/students/", json={
         "student_id": f"E1-{suffix}", "national_id": f"NE1-{suffix}", "first_name": "Eligible", "last_name": "One",
         "gender": "Male", "enrollment_year": 2024, "status": "Active", "institution": inst_id, "program": prog_id,
         "selected_level": "Diploma", "selected_category": "STEM"
     }, headers=super_headers, verify=False)
+    e1_id = e1_resp.json().get("id")
     
-    requests.post(f"{BASE_URL}/academic/students/", json={
+    e2_resp = requests.post(f"{BASE_URL}/academic/students/", json={
         "student_id": f"E2-{suffix}", "national_id": f"NE2-{suffix}", "first_name": "Eligible", "last_name": "Two",
         "gender": "Female", "enrollment_year": 2024, "status": "Active", "institution": inst_id, "program": prog_id,
         "selected_level": "Diploma", "selected_category": "STEM"
     }, headers=super_headers, verify=False)
+    e2_id = e2_resp.json().get("id")
 
     elig_res = requests.get(f"{BASE_URL}/academic/graduates-mgmt/eligible/", headers=headers, verify=False)
     if elig_res.status_code == 200:
@@ -171,10 +173,7 @@ def smoke_test_graduates():
     # 9. Test Auto-Graduation Confirm
     print("\n--- Testing Auto-Graduation Confirm ---")
     # Let's exclude E2 (we'll fetch its ID first)
-    all_s_res = requests.get(f"{BASE_URL}/academic/students/", headers=headers, verify=False).json()
-    all_s = all_s_res.get("results", all_s_res) if isinstance(all_s_res, dict) else all_s_res
-    e2_id = next(s['id'] for s in all_s if s['student_id'] == f"E2-{suffix}")
-    e1_id = next(s['id'] for s in all_s if s['student_id'] == f"E1-{suffix}")
+
 
     confirm_res = requests.post(
         f"{BASE_URL}/academic/graduates-mgmt/confirm-auto/",
