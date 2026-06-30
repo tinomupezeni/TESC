@@ -29,3 +29,5 @@ cryptography
 requests
 gunicorn
 bleach==6.2.0
+pytest
+pytest-django
