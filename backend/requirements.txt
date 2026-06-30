@@ -32,3 +32,5 @@ bleach==6.2.0
 pytest
 pytest-django
 sentry-sdk
+celery
+redis

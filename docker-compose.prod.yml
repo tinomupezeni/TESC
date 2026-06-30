@@ -67,6 +67,26 @@ services:
       - main_net
     restart: unless-stopped
 
+  # --- Background Worker (Celery) ---
+  celery_worker:
+    image: ghcr.io/tinomupezeni/tesc-backend:latest
+    build: ./backend
+    # This container runs the exact same code, but uses the 'celery' command instead of gunicorn!
+    command: celery -A core worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/1
+      - DEBUG=False
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - main_net
+    restart: unless-stopped
+
   # --- Frontend (Public Portal/Dashboard) ---
   frontend_client:
     image: ghcr.io/tinomupezeni/tesc-frontend:latest
