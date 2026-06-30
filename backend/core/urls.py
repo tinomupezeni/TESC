@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView # Import JWT views
+from .views import check_task_status
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -16,5 +17,6 @@ urlpatterns = [
     path("api/innovation/", include("innovation.urls")),
     path('api/iseop/', include('iseop.urls')),           # For ISEOP Programs
     
-
+    # --- Asynchronous Background Tasks ---
+    path('api/tasks/<str:task_id>/status/', check_task_status, name='task_status'),
 ]
