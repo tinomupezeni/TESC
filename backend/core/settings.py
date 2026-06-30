@@ -2,9 +2,25 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta # Added timedelta
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Load environment variables
 load_dotenv()
+
+# --- SENTRY TELEMETRY & OBSERVABILITY ---
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        
+        # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        
+        # Capture Personal Identifiable Information (like User IDs) to know exactly WHO triggered the error
+        send_default_pii=True,
+    )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
