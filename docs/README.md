@@ -10,12 +10,12 @@ Welcome to the ScalarEye (ScalarEye Central Data System) system documentation. T
 4. [Database Schema](./database-schema.md) - Database design and relationships
 5. [Authentication & Authorization](./auth/AUTHENTICATION.md) - Security implementation
 6. [API Documentation](./api/README.md) - REST API endpoints and usage
-7. [Deployment Guide](./deployment/README.md) - Setup and deployment instructions
-8. [Development Guide](./development/DEVELOPMENT.md) - Development environment setup and contribution guidelines
+7. [Deployment Guide](./deployment-guide.md) - Production environment and docker setup
+8. [Development Guide](./development-guide.md) - Local setup, docker DB, and pytest testing
 
 ## Getting Started
 
-To get started with the ScalarEye system, please refer to the [Development Guide](./development/DEVELOPMENT.md) for setting up your development environment.
+To get started with the ScalarEye system, please refer to the [Development Guide](./development-guide.md) for setting up your development environment.
 
 ## Contributing
 
