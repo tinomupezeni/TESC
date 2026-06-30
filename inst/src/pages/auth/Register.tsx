@@ -59,7 +59,7 @@ const Register = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8000/api/auth/register/";
+  const API_BASE_URL = "/api/auth/register/";
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

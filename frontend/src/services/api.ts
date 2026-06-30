@@ -1,28 +1,25 @@
 import axios from "axios";
 
 // Resolve baseURL dynamically
-// const getBaseURL = () => {
-//   if (typeof window !== "undefined") {
-//     const { hostname, protocol } = window.location;
-//     // If accessing via IP or localhost directly on port 8081/8082,
-//     // the backend is likely on 8000
-//     if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.50.")) {
-//       return `${protocol}//${hostname}:8000/api`;
-//     }
-//     // Otherwise assume standard production routing (/api proxied by nginx)
-//     if (hostname.endsWith(".zchpc.ac.zw")) {
-//       return `${protocol}//${hostname}/api`;
-//     }
-//     return `${protocol}//${hostname}/api`;
-//   }
-//   // Server-side fallback – use environment variable or a sensible default
-//   return "http://127.0.0.1:8000/api";
-// };
+const getBaseURL = () => {
+  if (typeof window !== "undefined") {
+    const { hostname, protocol } = window.location;
+    // If accessing via IP or localhost directly on port 8081/8082,
+    // the backend is likely on 8000
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.50.")) {
+      return `${protocol}//${hostname}:8000/api`;
+    }
+    // Otherwise assume standard production routing (/api proxied by nginx)
+    if (hostname.endsWith(".zchpc.ac.zw")) {
+      return `${protocol}//${hostname}/api`;
+    }
+    return `${protocol}//${hostname}/api`;
+  }
+  // Server-side fallback – use environment variable or a sensible default
+  return "https://tesc.zchpc.ac.zw/api";
+};
 
-
-// export const baseURL = getBaseURL();
-export const baseURL = "http://127.0.0.1:8000/api";
-
+export const baseURL = getBaseURL();
 
 const apiClient = axios.create({
   baseURL,

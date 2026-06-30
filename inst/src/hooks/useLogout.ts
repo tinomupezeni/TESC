@@ -11,7 +11,7 @@ export const useLogout = () => {
       
       // Call Django logout endpoint to blacklist the refresh token
       if (refreshToken) {
-        await axios.post('http://localhost:8000/api/auth/logout/', {
+        await axios.post('/api/auth/logout/', {
           refresh_token: refreshToken,
         });
       }
