@@ -45,6 +45,7 @@ services:
   # --- Backend (Django + Gunicorn) ---
   backend:
     image: ghcr.io/tinomupezeni/tesc-backend:latest
+    build: ./backend
     command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
     env_file:
       - .env
@@ -64,6 +65,7 @@ services:
   # --- Frontend (Student/Public Portal) ---
   frontend_client:
     image: ghcr.io/tinomupezeni/tesc-frontend:latest
+    build: ./frontend
     networks:
       - main_net
     restart: unless-stopped
@@ -71,6 +73,7 @@ services:
   # --- Frontend (Institution/Admin Portal) ---
   frontend_admin:
     image: ghcr.io/tinomupezeni/tesc-inst:latest
+    build: ./inst
     networks:
       - main_net
     restart: unless-stopped
