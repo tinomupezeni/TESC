@@ -84,9 +84,12 @@ export function AddFacultyDialog({ institutionId, onSuccess }: { institutionId: 
     }
   }, [open, institutionId]);
 
-  // Handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
+    if (id === "name" || id === "description") {
+      setFormData((prev) => ({ ...prev, [id]: value.toUpperCase() }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
@@ -155,8 +158,8 @@ export function AddFacultyDialog({ institutionId, onSuccess }: { institutionId: 
                   id="name" 
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="e.g. Faculty of Science" 
-                  className="pl-9" 
+                  placeholder="e.g. FACULTY OF SCIENCE" 
+                  className="pl-9 uppercase" 
                   required 
                 />
               </div>
@@ -279,7 +282,8 @@ export function AddFacultyDialog({ institutionId, onSuccess }: { institutionId: 
                 id="description" 
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Brief description..." 
+                placeholder="BRIEF DESCRIPTION..." 
+                className="uppercase"
               />
             </div>
 

@@ -134,6 +134,11 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
     if (!formData.enrollment_date)
       return toast.error("Please select enrollment date");
 
+    const today = new Date().toISOString().split("T")[0];
+    if (formData.enrollment_date > today) {
+      return toast.error("Enrollment date cannot be in the future");
+    }
+
     if (
       formData.disability_type === "Other" &&
       !formData.disability_other_text?.trim()
@@ -202,7 +207,7 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
                 required
                 value={formData.first_name}
                 onChange={(e) =>
-                  handleChange("first_name", e.target.value)
+                  handleChange("first_name", e.target.value.toUpperCase())
                 }
               />
             </div>
@@ -212,7 +217,7 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
                 required
                 value={formData.last_name}
                 onChange={(e) =>
-                  handleChange("last_name", e.target.value)
+                  handleChange("last_name", e.target.value.toUpperCase())
                 }
               />
             </div>
@@ -225,7 +230,7 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
                 required
                 value={formData.student_id}
                 onChange={(e) =>
-                  handleChange("student_id", e.target.value)
+                  handleChange("student_id", e.target.value.toUpperCase())
                 }
               />
             </div>
@@ -235,7 +240,7 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
                 required
                 value={formData.national_id}
                 onChange={(e) =>
-                  handleChange("national_id", e.target.value)
+                  handleChange("national_id", e.target.value.toUpperCase())
                 }
               />
             </div>
@@ -290,7 +295,6 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
                 <SelectContent>
                   <SelectItem value="Male">Male</SelectItem>
                   <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -356,7 +360,7 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
                 placeholder="Specify disability"
                 value={formData.disability_other_text || ""}
                 onChange={(e) =>
-                  handleChange("disability_other_text", e.target.value)
+                  handleChange("disability_other_text", e.target.value.toUpperCase())
                 }
               />
             </div>
@@ -367,6 +371,7 @@ export const IseopStudentFormDialog: React.FC<IseopFormProps> = ({
             <Input
               type="date"
               required
+              max={new Date().toISOString().split("T")[0]}
               value={formData.enrollment_date || ""}
               onChange={(e) =>
                 handleChange("enrollment_date", e.target.value)

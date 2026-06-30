@@ -125,8 +125,9 @@ export function ManageDepartmentsDialog({ facultyId, facultyName }: ManageDepart
                     <Label>Department Name</Label>
                     <Input 
                         value={newDeptName} 
-                        onChange={(e) => setNewDeptName(e.target.value)} 
-                        placeholder="e.g. Computer Science"
+                        onChange={(e) => setNewDeptName(e.target.value.toUpperCase())} 
+                        placeholder="e.g. COMPUTER SCIENCE"
+                        className="uppercase"
                         autoFocus
                     />
                 </div>
@@ -136,6 +137,7 @@ export function ManageDepartmentsDialog({ facultyId, facultyName }: ManageDepart
                         value={newDeptCode} 
                         onChange={(e) => setNewDeptCode(e.target.value.toUpperCase())} 
                         placeholder="CS"
+                        className="uppercase"
                     />
                 </div>
                 <Button size="icon" onClick={handleCreate} disabled={isSaving}>
