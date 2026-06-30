@@ -6,6 +6,29 @@ version: '3.8'
 # ============================================
 
 services:
+  # --- Reverse Proxy (Security & Routing) ---
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend_client
+      - frontend_admin
+    networks:
+      - main_net
+    restart: unless-stopped
+
+  # --- Cache (Performance) ---
+  redis:
+    image: redis:alpine
+    networks:
+      - main_net
+    restart: unless-stopped
+
   # --- Database ---
   db:
     image: postgres:15
@@ -34,9 +57,9 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/1
       - DEBUG=False
-    ports:
-      - "8000:8000"
+    # Note: No ports exposed to host directly! Safe behind Nginx.
     depends_on:
       db:
         condition: service_healthy
@@ -48,8 +71,7 @@ services:
   frontend_client:
     image: ghcr.io/tinomupezeni/tesc-frontend:latest
     build: ./frontend
-    ports:
-      - "8080:80"
+    # Note: No ports exposed to host directly! Safe behind Nginx.
     networks:
       - main_net
     restart: unless-stopped
@@ -58,8 +80,7 @@ services:
   frontend_admin:
     image: ghcr.io/tinomupezeni/tesc-inst:latest
     build: ./inst
-    ports:
-      - "8081:80"
+    # Note: No ports exposed to host directly! Safe behind Nginx.
     networks:
       - main_net
     restart: unless-stopped
@@ -67,51 +88,6 @@ services:
 volumes:  
   postgres_data:
 
-
-
-
-
-
-
-
-
-
-
-
-
 networks:
   main_net:
     driver: bridge
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
